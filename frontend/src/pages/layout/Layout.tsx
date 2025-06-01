@@ -1,4 +1,4 @@
-import { Link, Outlet } from "react-router-dom"; // Removed unused RouterLink alias
+import { Link as RouterLink, Outlet } from "react-router-dom";
 import {
   Box,
   Flex,
@@ -6,12 +6,17 @@ import {
   Image,
   Button,
   Link as ChakraLink,
+  Spinner, // Import Spinner
 } from "@chakra-ui/react";
 import logo from "../../assets/fns_logo.png";
-import { BACKEND_URL } from "../../App.tsx";
+import profileLogo from "../../assets/gg_profile.png";
 import discord_icon from "../../assets/dc-icon.svg";
+import { useAuth } from "../../context/AuthContext.tsx"; // Import useAuth
+import { memo } from "react";
 
 const Layout = () => {
+  const { isAuthenticated, user, login, logout, isLoading } = useAuth(); // Use useAuth hook
+
   return (
     <Flex direction="column" minHeight="100vh">
       <Box
@@ -23,7 +28,10 @@ const Layout = () => {
       >
         <Flex justify="space-between" align="center">
           <Flex align="center">
-            <Link to={"/"} style={{ display: "flex", alignItems: "center" }}>
+            <RouterLink
+              to={"/"}
+              style={{ display: "flex", alignItems: "center" }}
+            >
               <Image
                 src={logo}
                 alt="App Logo"
@@ -34,17 +42,44 @@ const Layout = () => {
               <Text fontSize={["md", "lg", "xl"]} fontWeight="bold">
                 FINESSE TICKETS
               </Text>
-            </Link>
+            </RouterLink>
           </Flex>
-          <Flex as="nav">
-            <Button
-              mr={[1, 2, 4]}
-              colorScheme="teal"
-              size={["sm", "md"]}
-              fontSize={["xs", "sm", "md"]}
-            >
-              <Link to={`${BACKEND_URL}/auth/discord`}>Login with Discord</Link>
-            </Button>
+          <Flex as="nav" align="center">
+            {isLoading ? (
+              <Spinner size="md" color="white" />
+            ) : isAuthenticated && user ? (
+              <>
+                <Image
+                  src={user.avatar ? user.avatar : profileLogo}
+                  alt={user.username || "User"}
+                  boxSize="40px"
+                  borderRadius="full" // Circular image
+                  border={"2px solid white"}
+                  mr={3}
+                  objectFit="cover" // Ensure the image covers the box size without distortion
+                />
+                <Text mr={3} fontSize={["sm", "md"]}>
+                  {user.username}
+                </Text>
+                <Button
+                  onClick={logout}
+                  colorScheme="red"
+                  size={["sm", "md"]}
+                  fontSize={["xs", "sm", "md"]}
+                >
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <Button
+                onClick={login} // Call login function from AuthContext
+                colorScheme="teal"
+                size={["sm", "md"]}
+                fontSize={["xs", "sm", "md"]}
+              >
+                Login with Discord
+              </Button>
+            )}
           </Flex>
         </Flex>
       </Box>
@@ -88,4 +123,4 @@ const Layout = () => {
   );
 };
 
-export default Layout;
+export default memo(Layout);

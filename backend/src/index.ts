@@ -3,13 +3,22 @@ import express from "express";
 import session from "express-session";
 import MongoStore from "connect-mongo";
 import mongoose from "mongoose";
-import passport from "./config/passport"; // Your passport config
-import authRoutes from "./routes/authRoutes"; // Your auth routes
+import passport from "./config/passport"; // passport config
+import authRoutes from "./routes/authRoutes"; // auth routes
+import cors from "cors";
 import "./bot";
 
-const PORT = process.env.PORT || 6969; // Changed default to 3000 for backend API
+const PORT = process.env.PORT || 6969;
 
 const app = express();
+
+// CORS configuration
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL, // Allow requests from your frontend URL
+    credentials: true, // Allow cookies to be sent
+  })
+);
 
 // MongoDB Connection
 mongoose
