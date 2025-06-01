@@ -13,7 +13,7 @@ export default function Home() {
       flex={1} // Added to make this Box take available vertical space
     >
       <VStack>
-        <Heading as="h1" size="2xl" mb={4}>
+        <Heading as="h1" size="4xl" mb={4}>
           Welcome to FINESSE TICKETS!
         </Heading>
         <Text fontSize="lg" color={"gray.500"} mb={8}>
