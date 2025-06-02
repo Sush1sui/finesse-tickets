@@ -5,6 +5,7 @@ import MongoStore from "connect-mongo";
 import mongoose from "mongoose";
 import passport from "./config/passport"; // passport config
 import authRoutes from "./routes/authRoutes"; // auth routes
+import dashboardRoutes from "./routes/dashboardRoutes"; // dashboard routes
 import cors from "cors";
 import "./bot";
 
@@ -52,7 +53,8 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // Routes
-app.use("/auth", authRoutes); // Prefix auth routes with /api
+app.use("/auth", authRoutes);
+app.use("/dashboard", passport.authenticate("session"), dashboardRoutes);
 
 // Basic route for testing
 app.get("/", (_req, res) => {

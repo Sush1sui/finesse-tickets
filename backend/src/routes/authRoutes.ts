@@ -1,18 +1,23 @@
-import express from 'express';
-import { discordLogin, discordCallback, logout, getAuthStatus } from '../controllers/authController';
+import { Router } from "express";
+import {
+  discordLogin,
+  discordCallback,
+  logout,
+  getAuthStatus,
+} from "../controllers/authController";
 
-const router = express.Router();
+const router = Router();
 
 // Initiates Discord OAuth flow
-router.get('/discord', discordLogin);
+router.get("/discord", discordLogin);
 
 // Discord OAuth callback
-router.get('/discord/callback', discordCallback);
+router.get("/discord/callback", discordCallback);
 
 // Logout
-router.get('/logout', logout);
+router.get("/logout", logout);
 
 // Check authentication status
-router.get('/status', getAuthStatus);
+router.get("/status", getAuthStatus);
 
 export default router;

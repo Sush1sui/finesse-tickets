@@ -37,10 +37,10 @@ function Home() {
               Welcome back, {user.username}!
             </Heading>
             <Text fontSize="lg" color={"gray.600"} mt={2} mb={4}>
-              You are logged in. You can now access your tickets.
+              You are logged in. You can now access your dashboard.
             </Text>
             <Button>
-              <Link to={"/dashboard"}>View My Tickets</Link>
+              <Link to={"/dashboard"}>View Dashboard</Link>
             </Button>
           </>
         ) : (

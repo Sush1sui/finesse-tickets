@@ -12,10 +12,13 @@
     "rootDir": "./src",
     "resolveJsonModule": true,
     "noImplicitAny": true,
-    "types": ["node", "discord.js"],
+    // "types": ["node", "discord.js"], // Keep this commented or ensure discord.js types are correctly resolved
+    "typeRoots": ["./node_modules/@types", "./src/types"],
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true
-  }
+  },
+  "include": ["src/**/*"],
+  "files": ["src/types/express/index.d.ts"] // Explicitly include the custom declaration file
 }

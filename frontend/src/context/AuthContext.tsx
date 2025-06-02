@@ -1,4 +1,10 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react"; // Added useCallback
 import type { ReactNode } from "react";
 import { BACKEND_URL } from "../App"; // Assuming BACKEND_URL is exported from App.tsx
 
@@ -12,6 +18,14 @@ interface User {
   // Add other fields your backend might send like roles, email, etc.
 }
 
+interface AdminServer {
+  id: string;
+  name: string;
+  icon: string | null; // Icon can be null
+  owner: boolean;
+  isAdmin: boolean;
+}
+
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
@@ -19,6 +33,8 @@ interface AuthContextType {
   login: () => void;
   logout: () => Promise<void>;
   checkAuthStatus: () => Promise<void>;
+  fetchAdminServers: () => Promise<void>;
+  adminServers: AdminServer[];
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,8 +43,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [adminServers, setAdminServers] = useState<AdminServer[]>([]);
 
-  const checkAuthStatus = async () => {
+  const checkAuthStatus = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await fetch(`${BACKEND_URL}/auth/status`, {
@@ -54,18 +71,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     checkAuthStatus();
-  }, []);
+  }, [checkAuthStatus]);
 
-  const login = () => {
+  const login = useCallback(() => {
     // Redirect to backend Discord OAuth URL
     window.location.href = `${BACKEND_URL}/auth/discord`;
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await fetch(`${BACKEND_URL}/auth/logout`, {
@@ -75,6 +92,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (response.ok) {
         setUser(null);
         setIsAuthenticated(false);
+        setAdminServers([]); // Clear admin servers on logout
         window.location.href = "/";
       } else {
         console.error("Logout failed:", await response.text());
@@ -85,13 +103,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setIsLoading(false); // Ensure loading state is reset after logout attempt
     }
-    // If redirection happens, the finally block's setIsLoading(false) might not be strictly necessary
-    // as the page reloads, but it's kept here for robustness in case of future changes
-    // where redirection might be conditional. However, for a direct redirect,
-    // the new page load will reset isLoading via useEffect.
-    // For clarity, if redirect is certain, the final setIsLoading(false) can be removed
-    // or only be in error paths.
-  };
+  }, []);
+
+  const fetchAdminServers = useCallback(async () => {
+    // Don't set isLoading(true) here if authLoading is already handling it for the initial page load.
+    // Or, ensure this loading state is distinct if needed for a refresh action.
+    // For now, let's assume the global isLoading is sufficient.
+    setIsLoading(true); // Potentially remove or make conditional
+    try {
+      const response = await fetch(`${BACKEND_URL}/dashboard/admin-servers`, {
+        credentials: "include", // Important to send cookies
+      });
+      if (response.ok) {
+        const data = await response.json();
+        console.log(data);
+        if (data.status === "success") {
+          setAdminServers(data.data);
+        } else {
+          console.error("Failed to fetch admin servers:", data.message);
+          setAdminServers([]); // Clear on failure
+        }
+      } else {
+        console.error("Failed to fetch admin servers:", await response.text());
+        setAdminServers([]); // Clear on failure
+      }
+    } catch (error) {
+      console.error("Error fetching admin servers:", error);
+      setAdminServers([]); // Clear on error
+    } finally {
+      setIsLoading(false); // Only set to false if set to true at the start of this function
+    }
+  }, []);
 
   return (
     <AuthContext.Provider
@@ -102,6 +144,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         login,
         logout,
         checkAuthStatus,
+        fetchAdminServers,
+        adminServers,
       }}
     >
       {children}
