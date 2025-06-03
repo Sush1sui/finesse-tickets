@@ -10,7 +10,7 @@ import { BACKEND_URL } from "../App"; // Assuming BACKEND_URL is exported from A
 
 // Define the user type based on what the backend sends
 // You might need to adjust this based on the actual user object structure from your backend
-interface User {
+export interface User {
   _id: string; // or id, depending on your backend
   discordId: string;
   username: string;
@@ -18,7 +18,7 @@ interface User {
   // Add other fields your backend might send like roles, email, etc.
 }
 
-interface AdminServer {
+export interface AdminServer {
   id: string;
   name: string;
   icon: string | null; // Icon can be null
@@ -106,10 +106,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const fetchAdminServers = useCallback(async () => {
-    // Don't set isLoading(true) here if authLoading is already handling it for the initial page load.
-    // Or, ensure this loading state is distinct if needed for a refresh action.
-    // For now, let's assume the global isLoading is sufficient.
     setIsLoading(true); // Potentially remove or make conditional
+    setAdminServers([]);
     try {
       const response = await fetch(`${BACKEND_URL}/dashboard/admin-servers`, {
         credentials: "include", // Important to send cookies
@@ -121,15 +119,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setAdminServers(data.data);
         } else {
           console.error("Failed to fetch admin servers:", data.message);
-          setAdminServers([]); // Clear on failure
         }
       } else {
         console.error("Failed to fetch admin servers:", await response.text());
-        setAdminServers([]); // Clear on failure
       }
     } catch (error) {
       console.error("Error fetching admin servers:", error);
-      setAdminServers([]); // Clear on error
     } finally {
       setIsLoading(false); // Only set to false if set to true at the start of this function
     }
