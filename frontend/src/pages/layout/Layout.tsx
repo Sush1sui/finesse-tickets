@@ -84,13 +84,7 @@ const Layout = () => {
         </Flex>
       </Box>
 
-      <Box
-        as="main"
-        flex="1"
-        p={[4, 6, 8]}
-        display="flex"
-        flexDirection="column"
-      >
+      <Box as="main" flex="1" p={[4, 6, 8]} display="flex" flexDirection="row">
         <Outlet />
       </Box>
 

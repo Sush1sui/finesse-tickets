@@ -51,25 +51,17 @@ export default function Sidebar() {
     >
       <Flex align="center" mb={6} gap={4}>
         {server?.icon ? (
-          <Box
-            border="3px solid"
-            borderColor={borderColor}
+          <Image
+            src={server.icon}
+            alt={server.name + " icon"}
             borderRadius="full"
             boxSize="48px"
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            overflow="hidden"
+            objectFit="cover"
+            border="3px solid"
+            borderColor={borderColor}
             bg={sidebarBg}
-          >
-            <Image
-              src={server.icon}
-              alt={server.name + " icon"}
-              borderRadius="full"
-              boxSize="48px"
-              objectFit="cover"
-            />
-          </Box>
+            flexShrink={0}
+          />
         ) : (
           <Box
             border="3px solid"
@@ -80,8 +72,9 @@ export default function Sidebar() {
             alignItems="center"
             justifyContent="center"
             bg={sidebarBg}
+            flexShrink={0}
           >
-            <Text fontWeight="bold" fontSize="xl">
+            <Text fontWeight="bold" fontSize="md">
               {server?.name
                 ?.split(" ")
                 .map((n) => n[0])
@@ -90,9 +83,17 @@ export default function Sidebar() {
             </Text>
           </Box>
         )}
-        <Text fontWeight="bold" fontSize="2xl">
-          {server?.name}
-        </Text>
+        <Box minW={0} maxW="170px" flex={1}>
+          <Text
+            fontWeight="bold"
+            fontSize="2xl"
+            whiteSpace="normal"
+            wordBreak="break-word"
+            lineHeight={1.1}
+          >
+            {server?.name}
+          </Text>
+        </Box>
       </Flex>
       <Box fontSize="lg">
         {navItems.map((item, idx) => (
