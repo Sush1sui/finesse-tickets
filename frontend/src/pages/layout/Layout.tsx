@@ -1,4 +1,4 @@
-import { Link as RouterLink, Outlet } from "react-router-dom";
+import { Link as RouterLink, Outlet, useParams } from "react-router-dom";
 import {
   Box,
   Flex,
@@ -11,11 +11,13 @@ import {
 import logo from "../../assets/fns_logo.png";
 import profileLogo from "../../assets/gg_profile.png";
 import discord_icon from "../../assets/dc-icon.svg";
-import { useAuth } from "../../context/AuthContext.tsx"; // Import useAuth
+import { useAuth } from "../../context/AuthContext.tsx";
 import { memo } from "react";
+import Sidebar from "../../components/custom/Sidebar.tsx";
 
 const Layout = () => {
-  const { isAuthenticated, user, login, logout, isLoading } = useAuth(); // Use useAuth hook
+  const { isAuthenticated, user, login, logout, isLoading } = useAuth();
+  const { id } = useParams();
 
   return (
     <Flex direction="column" minHeight="100vh">
@@ -85,6 +87,7 @@ const Layout = () => {
       </Box>
 
       <Box as="main" flex="1" p={[4, 6, 8]} display="flex" flexDirection="row">
+        {id ? <Sidebar /> : null}
         <Outlet />
       </Box>
 

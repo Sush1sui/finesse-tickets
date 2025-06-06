@@ -15,9 +15,7 @@ export default function App() {
           <Route path="/" element={<Layout />}>
             <Route index element={<Home />} />
             <Route path="dashboard" element={<Dashboard />} />
-            <Route path="dashboard/:id" element={<Sidebar />}>
-              <Route index element={<DashboardServer />} />
-            </Route>
+            <Route path="dashboard/:id" element={<DashboardServer />}></Route>
           </Route>
         </Routes>
       </BrowserRouter>

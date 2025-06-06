@@ -1,5 +1,5 @@
 import { Box, Flex, Text, IconButton, HStack, Image } from "@chakra-ui/react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   FiMenu,
   FiChevronLeft,
@@ -10,18 +10,11 @@ import {
 import { MdViewKanban } from "react-icons/md";
 import { useColorModeValue } from "../ui/color-mode";
 import { useAuth, type AdminServer } from "../../context/AuthContext";
-import { useParams } from "react-router-dom";
-
-const navItems = [
-  { icon: FiChevronLeft, label: "Back to servers" },
-  { icon: FiSettings, label: "Settings" },
-  { icon: FiFileText, label: "Transcripts" },
-  { icon: MdViewKanban, label: "Ticket Panels" },
-  { icon: FiUsers, label: "Staff Members" },
-];
+import { Link, useParams } from "react-router-dom";
+import LoadingSpinner from "./LoadingSpinner";
 
 export default function Sidebar() {
-  const { adminServers } = useAuth();
+  const { adminServers, fetchAdminServers, isLoading } = useAuth();
   const { id } = useParams();
   const [mobileOpen, setMobileOpen] = useState(false);
   const sidebarBg = useColorModeValue("gray.100", "gray.700");
@@ -29,89 +22,143 @@ export default function Sidebar() {
   const [server, setServer] = useState<AdminServer | null>(null);
 
   useEffect(() => {
+    if ((!adminServers || adminServers.length === 0) && id) {
+      fetchAdminServers();
+    }
     if (id && adminServers.length > 0) {
       const foundServer = adminServers.find((s) => s.id === id);
       setServer(foundServer || null);
     } else {
       setServer(null);
     }
-  }, [adminServers]);
+  }, [id, adminServers, fetchAdminServers]);
 
-  const SidebarContent = (
-    <Box
-      w={{ base: "full", md: 72 }}
-      bg={sidebarBg}
-      borderRadius="lg"
-      border="3px solid"
-      borderColor={borderColor}
-      p={4}
-      maxW="340px"
-      minW="250px"
-      mx="auto"
-    >
-      <Flex align="center" mb={6} gap={4}>
-        {server?.icon ? (
-          <Image
-            src={server.icon}
-            alt={server.name + " icon"}
-            borderRadius="full"
-            boxSize="48px"
-            objectFit="cover"
-            border="3px solid"
-            borderColor={borderColor}
-            bg={sidebarBg}
-            flexShrink={0}
-          />
-        ) : (
-          <Box
-            border="3px solid"
-            borderColor={borderColor}
-            borderRadius="full"
-            boxSize="48px"
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            bg={sidebarBg}
-            flexShrink={0}
-          >
-            <Text fontWeight="bold" fontSize="md">
-              {server?.name
-                ?.split(" ")
-                .map((n) => n[0])
-                .join("")
-                .toUpperCase()}
+  const navItems = useMemo(
+    () => [
+      { icon: FiChevronLeft, label: "Back to servers", link: "/dashboard" },
+      {
+        icon: FiSettings,
+        label: "Settings",
+        link: `/dashboard/${id}/settings`,
+      },
+      {
+        icon: FiFileText,
+        label: "Transcripts",
+        link: `/dashboard/${id}/transcripts`,
+      },
+      {
+        icon: MdViewKanban,
+        label: "Ticket Panels",
+        link: `/dashboard/${id}/ticket-panels`,
+      },
+      {
+        icon: FiUsers,
+        label: "Staff Members",
+        link: `/dashboard/${id}/staff-members`,
+      },
+    ],
+    [isLoading, id]
+  );
+
+  const SidebarContent = useMemo(
+    () => (
+      <Box
+        w={{ base: "full", md: 72 }}
+        bg={sidebarBg}
+        borderRadius="lg"
+        border="3px solid"
+        borderColor={borderColor}
+        p={4}
+        maxW="340px"
+        minW="250px"
+        mx="auto"
+      >
+        <Flex align="center" mb={6} gap={4}>
+          {server?.icon ? (
+            <Image
+              src={server.icon}
+              alt={server.name + " icon"}
+              borderRadius="full"
+              boxSize="48px"
+              objectFit="cover"
+              border="3px solid"
+              borderColor={borderColor}
+              bg={sidebarBg}
+              flexShrink={0}
+            />
+          ) : (
+            <Box
+              border="3px solid"
+              borderColor={borderColor}
+              borderRadius="full"
+              boxSize="48px"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              bg={sidebarBg}
+              flexShrink={0}
+            >
+              <Text fontWeight="bold" fontSize="md">
+                {server?.name
+                  ?.split(" ")
+                  .map((n) => n[0])
+                  .join("")
+                  .toUpperCase()}
+              </Text>
+            </Box>
+          )}
+          <Box minW={0} maxW="170px" flex={1}>
+            <Text
+              fontWeight="bold"
+              fontSize="2xl"
+              whiteSpace="normal"
+              wordBreak="break-word"
+              lineHeight={1.1}
+            >
+              {server?.name}
             </Text>
           </Box>
-        )}
-        <Box minW={0} maxW="170px" flex={1}>
-          <Text
-            fontWeight="bold"
-            fontSize="2xl"
-            whiteSpace="normal"
-            wordBreak="break-word"
-            lineHeight={1.1}
-          >
-            {server?.name}
-          </Text>
+        </Flex>
+        <Box fontSize="lg">
+          {navItems.map((item, idx) => (
+            <HStack
+              as="button"
+              _hover={{
+                fontWeight: "bold",
+                cursor: "pointer",
+                bg: useColorModeValue("gray.200", "gray.600"),
+              }}
+              cursor="pointer"
+              mb={idx !== navItems.length - 1 ? 4 : 0}
+              px={2}
+              py={2}
+              borderRadius="md"
+              transition="background 0.2s"
+              width={"100%"}
+            >
+              <Link
+                to={item.link}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  width: "100%",
+                }}
+              >
+                <Box as={item.icon} />
+                <Text>{item.label}</Text>
+              </Link>
+            </HStack>
+          ))}
         </Box>
-      </Flex>
-      <Box fontSize="lg">
-        {navItems.map((item, idx) => (
-          <HStack
-            as="button"
-            align="center"
-            gap={2}
-            _hover={{ fontWeight: "bold" }}
-            key={item.label}
-            mb={idx !== navItems.length - 1 ? 4 : 0}
-          >
-            <Box as={item.icon} />
-            <Text>{item.label}</Text>
-          </HStack>
-        ))}
       </Box>
-    </Box>
+    ),
+    [sidebarBg, borderColor, server]
   );
+
+  if (adminServers.length === 0 && isLoading) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <>
@@ -122,12 +169,11 @@ export default function Sidebar() {
         </IconButton>
       </Box>
       {/* Sidebar always on the left for desktop */}
-      <Flex direction="row" minH="100vh">
+      <Flex direction="row" m={2}>
         <Box
           display={{ base: "none", md: "block" }}
           minW="260px"
           maxW="340px"
-          h="100vh"
           position="sticky"
           top={0}
           left={0}
