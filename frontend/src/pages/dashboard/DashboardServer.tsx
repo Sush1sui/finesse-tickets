@@ -14,7 +14,7 @@ function DashboardServer() {
   const { isLoading, adminServers } = useAuth();
 
   if (adminServers.length === 0 && isLoading) {
-    return null;
+    return <LoadingSpinner />;
   }
 
   return (

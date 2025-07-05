@@ -12,59 +12,12 @@ export const getAdminServers = async (req: Request, res: Response) => {
     }
 
     const userId = req.user.discordId;
+    if (!userId) {
+      res.status(400).json({ error: "User ID is required" });
+      return;
+    }
 
-    const adminServers = client.guilds.cache
-      .filter((guild) => {
-        // Condition 1: Is the user the owner of the guild?
-        if (guild.ownerId === userId) {
-          return true;
-        }
-
-        // For other checks, the user must be a member of the guild.
-        const member = guild.members.cache.get(userId);
-        if (!member) {
-          // If not the owner and not a member, they can't have admin rights here.
-          return false;
-        }
-
-        // Condition 2: Does the member have direct "Administrator" permission?
-        if (member.permissions.has("Administrator")) {
-          return true;
-        }
-
-        // Condition 3: Does the member have a role with "Administrator" permission?
-        if (
-          member.roles.cache.some((role) =>
-            role.permissions.has("Administrator")
-          )
-        ) {
-          return true;
-        }
-
-        return false; // Not owner, no direct admin permission, no role with admin permission
-      })
-      .map((guild) => {
-        const member = guild.members.cache.get(userId); // Member should exist due to filter logic
-        const isAdminPermission = member
-          ? member.permissions.has("Administrator")
-          : false;
-        const isOwner = guild.ownerId === userId;
-
-        // Determine if admin by role (simplified)
-        const isAdminByRole = member
-          ? member.roles.cache.some((role) =>
-              role.permissions.has("Administrator")
-            )
-          : false;
-
-        return {
-          id: guild.id,
-          name: guild.name,
-          icon: guild.iconURL(),
-          owner: isOwner,
-          isAdmin: isAdminPermission || isAdminByRole, // Combine direct and role-based admin status
-        };
-      });
+    const adminServers = collectAdminServers(userId);
 
     res.status(200).json({
       status: "success",
@@ -82,3 +35,56 @@ export const getAdminServers = async (req: Request, res: Response) => {
     return;
   }
 };
+
+export function collectAdminServers(userId: string) {
+  return client.guilds.cache
+    .filter((guild) => {
+      // Condition 1: Is the user the owner of the guild?
+      if (guild.ownerId === userId) {
+        return true;
+      }
+
+      // For other checks, the user must be a member of the guild.
+      const member = guild.members.cache.get(userId);
+      if (!member) {
+        // If not the owner and not a member, they can't have admin rights here.
+        return false;
+      }
+
+      // Condition 2: Does the member have direct "Administrator" permission?
+      if (member.permissions.has("Administrator")) {
+        return true;
+      }
+
+      // Condition 3: Does the member have a role with "Administrator" permission?
+      if (
+        member.roles.cache.some((role) => role.permissions.has("Administrator"))
+      ) {
+        return true;
+      }
+
+      return false; // Not owner, no direct admin permission, no role with admin permission
+    })
+    .map((guild) => {
+      const member = guild.members.cache.get(userId); // Member should exist due to filter logic
+      const isAdminPermission = member
+        ? member.permissions.has("Administrator")
+        : false;
+      const isOwner = guild.ownerId === userId;
+
+      // Determine if admin by role (simplified)
+      const isAdminByRole = member
+        ? member.roles.cache.some((role) =>
+            role.permissions.has("Administrator")
+          )
+        : false;
+
+      return {
+        id: guild.id,
+        name: guild.name,
+        icon: guild.iconURL(),
+        owner: isOwner,
+        isAdmin: isAdminPermission || isAdminByRole, // Combine direct and role-based admin status
+      };
+    });
+}
