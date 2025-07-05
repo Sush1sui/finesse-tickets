@@ -8,6 +8,7 @@ import authRoutes from "./routes/authRoutes"; // auth routes
 import dashboardRoutes from "./routes/dashboardRoutes"; // dashboard routes
 import cors from "cors";
 import "./bot";
+import discordServerRoutes from "./routes/discordServerRoutes";
 
 const PORT = process.env.PORT || 6969;
 
@@ -55,6 +56,7 @@ app.use(passport.session());
 // Routes
 app.use("/auth", authRoutes);
 app.use("/dashboard", passport.authenticate("session"), dashboardRoutes);
+app.use("/server", passport.authenticate("session"), discordServerRoutes);
 
 // Basic route for testing
 app.get("/", (_req, res) => {
