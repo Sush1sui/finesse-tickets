@@ -4,6 +4,7 @@ import { Box, Text } from "@chakra-ui/react";
 import CustomRadioGroup from "../../components/custom/input/CustomRadioGroup";
 import { useAuth } from "../../context/AuthContext";
 import LoadingSpinner from "../../components/custom/LoadingSpinner";
+import { useDiscordServer } from "../../context/DiscordServerContext";
 
 const RadioGroupOptions = [
   { value: "byName", label: "By Name (ticket-name)" },
@@ -11,19 +12,26 @@ const RadioGroupOptions = [
 ];
 
 function DashboardServer() {
+  const { server, isLoading: isServerLoading } = useDiscordServer();
   const { isLoading, adminServers } = useAuth();
+  const bgColor = useColorModeValue("gray.100", "gray.700");
+  const borderColor = useColorModeValue("gray.400", "gray.600");
 
   if (adminServers.length === 0 && isLoading) {
+    return <LoadingSpinner />;
+  }
+
+  if (isServerLoading && !server) {
     return <LoadingSpinner />;
   }
 
   return (
     <Box
       w={{ base: "full", md: 72 }}
-      bg={useColorModeValue("gray.100", "gray.700")}
+      bg={bgColor}
       borderRadius="lg"
       border="3px solid"
-      borderColor={useColorModeValue("gray.400", "gray.600")}
+      borderColor={borderColor}
       p={4}
       mx={{ base: 0, md: 4 }}
       display="flex"

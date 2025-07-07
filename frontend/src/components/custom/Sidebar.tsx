@@ -9,29 +9,31 @@ import {
 } from "react-icons/fi";
 import { MdViewKanban } from "react-icons/md";
 import { useColorModeValue } from "../ui/color-mode";
-import { useAuth, type AdminServer } from "../../context/AuthContext";
 import { Link, useParams } from "react-router-dom";
 import LoadingSpinner from "./LoadingSpinner";
+import {
+  useDiscordServer,
+  type DiscordServer,
+} from "../../context/DiscordServerContext";
 
 export default function Sidebar() {
-  const { adminServers, fetchAdminServers, isLoading } = useAuth();
+  const { server: discordServer, fetchServer, isLoading } = useDiscordServer();
   const { id } = useParams();
   const [mobileOpen, setMobileOpen] = useState(false);
   const sidebarBg = useColorModeValue("gray.100", "gray.700");
   const borderColor = useColorModeValue("gray.400", "gray.600");
-  const [server, setServer] = useState<AdminServer | null>(null);
+  const hoverBg = useColorModeValue("gray.200", "gray.600");
+  const [server, setServer] = useState<DiscordServer | null>(null);
 
   useEffect(() => {
-    if ((!adminServers || adminServers.length === 0) && id) {
-      fetchAdminServers();
+    if (!discordServer && id) {
+      fetchServer(id);
     }
-    if (id && adminServers.length > 0) {
-      const foundServer = adminServers.find((s) => s.id === id);
-      setServer(foundServer || null);
-    } else {
-      setServer(null);
+
+    if (discordServer) {
+      setServer(discordServer);
     }
-  }, [id, adminServers, fetchAdminServers]);
+  }, [id, discordServer, fetchServer]);
 
   const navItems = useMemo(
     () => [
@@ -57,7 +59,7 @@ export default function Sidebar() {
         link: `/dashboard/${id}/staff-members`,
       },
     ],
-    [isLoading, id]
+    [id]
   );
 
   const SidebarContent = useMemo(
@@ -122,11 +124,12 @@ export default function Sidebar() {
         <Box fontSize="lg">
           {navItems.map((item, idx) => (
             <HStack
+              key={idx}
               as="button"
               _hover={{
                 fontWeight: "bold",
                 cursor: "pointer",
-                bg: useColorModeValue("gray.200", "gray.600"),
+                bg: hoverBg,
               }}
               cursor="pointer"
               mb={idx !== navItems.length - 1 ? 4 : 0}
@@ -153,10 +156,10 @@ export default function Sidebar() {
         </Box>
       </Box>
     ),
-    [sidebarBg, borderColor, server]
+    [sidebarBg, borderColor, server, navItems, hoverBg]
   );
 
-  if (adminServers.length === 0 && isLoading) {
+  if ((!discordServer || !server) && isLoading) {
     return <LoadingSpinner />;
   }
 

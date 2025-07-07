@@ -106,8 +106,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const fetchAdminServers = useCallback(async () => {
+    if (!isAuthenticated) return; // Prevent fetching if not authenticated
+
     setIsLoading(true); // Potentially remove or make conditional
-    setAdminServers([]);
     try {
       const response = await fetch(`${BACKEND_URL}/dashboard/admin-servers`, {
         credentials: "include", // Important to send cookies
@@ -128,7 +129,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setIsLoading(false); // Only set to false if set to true at the start of this function
     }
-  }, []);
+  }, [isAuthenticated]); // Add isAuthenticated as a dependency
 
   return (
     <AuthContext.Provider
