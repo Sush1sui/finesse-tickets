@@ -160,7 +160,7 @@ export default function Sidebar() {
   );
 
   if ((!discordServer || !server) && isLoading) {
-    return <LoadingSpinner />;
+    return null;
   }
 
   return (

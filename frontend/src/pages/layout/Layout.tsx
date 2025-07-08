@@ -47,9 +47,7 @@ const Layout = () => {
             </RouterLink>
           </Flex>
           <Flex as="nav" align="center">
-            {isLoading ? (
-              <Spinner size="md" color="white" />
-            ) : isAuthenticated && user ? (
+            {isAuthenticated && user ? (
               <>
                 <Image
                   src={user.avatar ? user.avatar : profileLogo}

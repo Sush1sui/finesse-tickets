@@ -5,9 +5,19 @@ type CustomRadioGroupProps = {
   name: string;
   label: string;
   options: { value: string; label: string }[];
+  value?: string;
+  onChange?: (value: string) => void;
+  isDisabled?: boolean;
 };
 
-function CustomRadioGroup({ name, label, options }: CustomRadioGroupProps) {
+function CustomRadioGroup({
+  name,
+  label,
+  options,
+  value,
+  onChange,
+  isDisabled,
+}: CustomRadioGroupProps) {
   return (
     <Box mt={6}>
       <Text fontWeight="semibold" fontSize="lg" mb={2}>
@@ -22,6 +32,9 @@ function CustomRadioGroup({ name, label, options }: CustomRadioGroupProps) {
               id={option.value}
               value={option.value}
               style={{ accentColor: "#3182ce", width: "18px", height: "18px" }}
+              checked={value === option.value}
+              onChange={() => onChange?.(option.value)}
+              disabled={isDisabled}
             />
             <label
               htmlFor={option.value}

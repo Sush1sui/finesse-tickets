@@ -48,14 +48,14 @@ export const DiscordServerProvider = ({
   useEffect(() => {
     if (id) {
       fetchServer(id);
-    } else {
-      console.error("No server ID provided in URL parameters.");
-      setIsLoading(false);
+      return;
     }
+    setIsLoading(false);
   }, [id]);
 
   const fetchServer = useCallback(async (serverId: string) => {
     setIsLoading(true);
+    setServer(null);
     try {
       const response = await fetch(`${BACKEND_URL}/server/${serverId}`, {
         credentials: "include", // Important to send cookies
@@ -65,11 +65,9 @@ export const DiscordServerProvider = ({
         setServer(data.data);
       } else {
         console.error("Failed to fetch server:", response.statusText);
-        setServer(null);
       }
     } catch (error) {
       console.error("Error fetching server:", error);
-      setServer(null);
     }
     setIsLoading(false);
   }, []);

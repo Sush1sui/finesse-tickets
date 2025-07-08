@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import DiscordServer from "../models/DiscordServer";
 import { collectAdminServers } from "./dashboardController";
+import { client } from "../bot";
 
 export async function getServer(req: Request, res: Response) {
   try {
@@ -37,6 +38,17 @@ export async function getServer(req: Request, res: Response) {
       return;
     }
 
+    const guild = client.guilds.cache.get(serverId);
+    if (!guild) {
+      res.status(404).json({ error: "Guild not found" });
+      return;
+    }
+
+    const channels = guild.channels.cache.map((channel) => ({
+      id: channel.id,
+      name: channel.name,
+    }));
+
     if (!serverFromDB) {
       const newServer = await DiscordServer.create({
         guildId: serverId,
@@ -58,7 +70,7 @@ export async function getServer(req: Request, res: Response) {
       res.status(201).json({
         status: "success",
         message: "Server created successfully",
-        data: newServer,
+        data: { ...newServer.toObject(), channels },
       });
       return;
     }
@@ -66,7 +78,7 @@ export async function getServer(req: Request, res: Response) {
     res.status(200).json({
       status: "success",
       message: "Server fetched successfully",
-      data: serverFromDB,
+      data: { ...serverFromDB.toObject(), channels },
     });
   } catch (error) {
     console.error("Error fetching server:", error);
