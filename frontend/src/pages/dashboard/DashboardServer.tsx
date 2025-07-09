@@ -6,6 +6,7 @@ import { useAuth } from "../../context/AuthContext";
 import LoadingSpinner from "../../components/custom/LoadingSpinner";
 import { useDiscordServer } from "../../context/DiscordServerContext";
 import CustomSelectSingle from "../../components/custom/input/CustomSelectSingle";
+import CustomTextInput from "../../components/custom/input/CustomTextInput";
 
 const RadioGroupOptions = [
   { value: "number", label: "By Name (ticket-name)" },
@@ -21,11 +22,14 @@ function DashboardServer() {
   const channelChoices = useMemo(
     () =>
       createListCollection({
-        items:
-          server?.channels.map((channel) => ({
+        items: server?.channels
+          .map((channel) => ({
             value: channel.id,
             label: channel.name,
-          })) || [],
+          }))
+          .concat({ value: "", label: "No Channel" }) || [
+          { value: "", label: "No Channel" },
+        ],
       }),
     [server]
   );
@@ -37,6 +41,9 @@ function DashboardServer() {
   const [transcriptChannelId, setTranscriptChannelId] = useState<
     string | undefined
   >(server?.ticketTranscriptChannelId);
+  const [maxTicketPerUser, setMaxTicketPerUser] = useState<number>(
+    server?.maxTicketsPerUser || 1
+  );
 
   if (adminServers.length === 0 && isLoading) {
     return <LoadingSpinner />;
@@ -81,15 +88,30 @@ function DashboardServer() {
         isDisabled={!server}
       />
 
-      {/* Ticket Transcript Channel */}
-      <CustomSelectSingle
-        name="ticketTranscriptChannel"
-        title="Ticket transcript channel"
-        options={channelChoices}
-        value={transcriptChannelId}
-        onChange={(value) => setTranscriptChannelId(value)}
-        isDisabled={!server}
-      />
+      <Box display={"flex"} flexWrap={"wrap"} gap={10}>
+        {/* Ticket Transcript Channel */}
+        <CustomSelectSingle
+          name="ticketTranscriptChannel"
+          title="Ticket transcript channel"
+          options={channelChoices}
+          value={transcriptChannelId}
+          onChange={(value) =>
+            setTranscriptChannelId(value === "" ? undefined : value)
+          }
+          isDisabled={!server}
+        />
+
+        {/* Max Tickets Per User */}
+        <CustomTextInput
+          label="Max Tickets Per User"
+          name="maxTicketsPerUser"
+          isNumber={true}
+          placeholder="1"
+          value={maxTicketPerUser.toString()}
+          onChange={(value) => setMaxTicketPerUser(Number(value))}
+          isDisabled={!server}
+        />
+      </Box>
     </Box>
   );
 }

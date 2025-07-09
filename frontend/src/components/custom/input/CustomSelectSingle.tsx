@@ -1,5 +1,6 @@
 import { Portal, Select, type ListCollection } from "@chakra-ui/react";
 import type { ValueChangeDetails } from "@zag-js/select";
+import { memo } from "react";
 
 type CustomSelectSingleProps = {
   name: string;
@@ -11,7 +12,7 @@ type CustomSelectSingleProps = {
   isDisabled?: boolean;
 };
 
-export default function CustomSelectSingle({
+function CustomSelectSingle({
   options,
   name,
   title,
@@ -26,7 +27,7 @@ export default function CustomSelectSingle({
       collection={options}
       size="sm"
       name={name}
-      width="320px"
+      width="220px"
       value={value ? [value] : []}
       onValueChange={(details: ValueChangeDetails<any>) => {
         if (onChange) {
@@ -64,3 +65,5 @@ export default function CustomSelectSingle({
     </Select.Root>
   );
 }
+
+export default memo(CustomSelectSingle);

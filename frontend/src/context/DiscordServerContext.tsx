@@ -23,6 +23,8 @@ export interface DiscordServer {
     sinceOpenWithNoResponse: number;
     sinceLastMessageWithNoResponse: number;
   };
+  channels: { id: string; name: string }[];
+  roles: { id: string; name: string }[];
 }
 
 interface DiscordServerContextType {
