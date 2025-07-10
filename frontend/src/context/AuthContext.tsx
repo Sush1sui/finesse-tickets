@@ -7,6 +7,7 @@ import {
 } from "react"; // Added useCallback
 import type { ReactNode } from "react";
 import { BACKEND_URL } from "../App"; // Assuming BACKEND_URL is exported from App.tsx
+import { useNavigate } from "react-router-dom";
 
 // Define the user type based on what the backend sends
 // You might need to adjust this based on the actual user object structure from your backend
@@ -44,6 +45,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [adminServers, setAdminServers] = useState<AdminServer[]>([]);
+  const nav = useNavigate();
 
   const checkAuthStatus = useCallback(async () => {
     setIsLoading(true);
@@ -56,6 +58,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (data.status === "success" && data.user) {
           setUser(data.user);
           setIsAuthenticated(true);
+          return;
         } else {
           setUser(null);
           setIsAuthenticated(false);
@@ -64,6 +67,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(null);
         setIsAuthenticated(false);
       }
+      nav("/"); // Redirect to home if not authenticated
     } catch (error) {
       console.error("Failed to fetch auth status:", error);
       setUser(null);

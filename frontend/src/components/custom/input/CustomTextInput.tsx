@@ -1,4 +1,5 @@
 import { Field, Input } from "@chakra-ui/react";
+import { memo } from "react";
 
 type CustomTextInputProps = {
   label: string;
@@ -10,7 +11,7 @@ type CustomTextInputProps = {
   isDisabled?: boolean;
 };
 
-export default function CustomTextInput({
+function CustomTextInput({
   label,
   name,
   isNumber,
@@ -32,9 +33,9 @@ export default function CustomTextInput({
   };
 
   return (
-    <Field.Root mt={6} width={"150px"}>
+    <Field.Root width={"190px"}>
       {/* <Field.Root required> */}
-      <Field.Label color="white">
+      <Field.Label color="white" fontWeight="semibold" fontSize="md" mb={2}>
         {label} {/*  <Field.RequiredIndicator /> */}
       </Field.Label>
       {placeholder ? (
@@ -65,3 +66,5 @@ export default function CustomTextInput({
     </Field.Root>
   );
 }
+
+export default memo(CustomTextInput);

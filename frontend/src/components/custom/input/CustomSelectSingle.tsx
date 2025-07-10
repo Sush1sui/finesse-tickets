@@ -23,7 +23,6 @@ function CustomSelectSingle({
 }: CustomSelectSingleProps) {
   return (
     <Select.Root
-      mt={6}
       collection={options}
       size="sm"
       name={name}
@@ -37,7 +36,9 @@ function CustomSelectSingle({
       disabled={isDisabled}
     >
       <Select.HiddenSelect />
-      <Select.Label color="white">{title}</Select.Label>
+      <Select.Label color="white" fontWeight="semibold" fontSize="md" mb={2}>
+        {title}
+      </Select.Label>
       <Select.Control bg="#313338" borderColor="#4E5058" borderWidth="1px">
         <Select.Trigger>
           <Select.ValueText color="white" placeholder={placeholder} />

@@ -19,8 +19,8 @@ function CustomRadioGroup({
   isDisabled,
 }: CustomRadioGroupProps) {
   return (
-    <Box mt={6}>
-      <Text fontWeight="semibold" fontSize="lg" mb={2}>
+    <Box>
+      <Text fontWeight="semibold" fontSize="md" mb={2}>
         {label}
       </Text>
       <Box display="flex" gap={6}>
