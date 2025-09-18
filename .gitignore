@@ -3,4 +3,24 @@
 .env.local
 .env.*.local
 
+# Compiled executable
+fns-go.exe
+
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
 node_modules/
