@@ -63,15 +63,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthLoading(true);
     try {
       const response = await fetch(`${API_BASE}/auth/logout`, {
-        method: "GET",
+        method: "POST", // prefer POST for state-changing ops; server can still accept GET if needed
         credentials: "include",
+        headers: {
+          Accept: "application/json",
+        },
       });
-      if (response.ok) {
+
+      // If server issued a redirect (browser navigation), follow it after clearing client state
+      if (response.redirected) {
         setUser(null);
-        window.location.href = "/";
-      } else {
+        window.location.href = response.url;
+        return;
+      }
+
+      if (!response.ok) {
+        // try to read error body for debugging
+        const text = await response.text().catch(() => "");
+        console.error("Logout failed:", response.status, text);
         throw new Error("Logout failed.");
       }
+
+      const data = await response.json();
+
+      if (!data || data.message !== "Logged out") {
+        console.error("Unexpected logout response:", data);
+        throw new Error("Unexpected logout response.");
+      }
+
+      setUser(null);
+      window.location.href = "/";
     } catch (error) {
       alert("Error during logout. Please try again.");
       console.error("Error during logout:", error);

@@ -17,7 +17,7 @@ authRouter.get(
   authCtrl.oauthCallback
 );
 
-authRouter.get("/logout", authCtrl.logout);
+authRouter.post("/logout", authCtrl.logout);
 authRouter.get("/me", authCtrl.me);
 
 export default authRouter;
