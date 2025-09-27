@@ -3,12 +3,13 @@ import express from "express";
 import session from "express-session";
 import MongoStore from "connect-mongo";
 import passport from "passport";
+import cors from "cors";
 
 import "./config/passport/passport"; // register passport strategy
 import "./config/db/database"; // connect to database
 
 import authRouter from "./routes/auth.route";
-import cors from "cors";
+import dashboardRouter from "./routes/dashboard.route";
 
 // CORS setup
 const corsOptions = {
@@ -47,6 +48,7 @@ app.use(passport.session());
 
 // routes
 app.use("/auth", authRouter);
+app.use("/dashboard", dashboardRouter);
 
 app.get("/", (_req, res) => res.json({ message: "Do it with Finesse!" }));
 

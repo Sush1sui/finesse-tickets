@@ -10,7 +10,7 @@ import (
 	"github.com/Sush1sui/fns-tickets/internal/bot"
 	"github.com/Sush1sui/fns-tickets/internal/common"
 	"github.com/Sush1sui/fns-tickets/internal/config"
-	"github.com/Sush1sui/fns-tickets/internal/server"
+	"github.com/Sush1sui/fns-tickets/internal/server/routes"
 )
 
 func main() {
@@ -20,7 +20,7 @@ func main() {
 	}
 
 	addr := fmt.Sprintf(":%s", config.GlobalConfig.Port)
-	router := server.NewRouter()
+	router := routes.NewRouter()
 	fmt.Printf("Server is listening on Port: %s\n", config.GlobalConfig.Port)
 
 	go func() {

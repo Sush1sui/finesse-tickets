@@ -2,33 +2,46 @@ import { memo, useState } from "react";
 import { Button } from "../ui/button";
 import { ModeToggle } from "../mode-toggle";
 import { useAuth } from "@/context/AuthContext";
+import Spinner from "../ui/spinner";
+import { Link } from "react-router-dom";
+import fns_logo from "../../assets/FNS_logo.gif";
 
 export default memo(function Header() {
   const { user, authLoading, logout, login } = useAuth();
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="w-full bg-background/90 backdrop-blur-sm border-b border-border">
+    <header className="w-full bg-background/90 backdrop-blur-sm border-b border-border overflow-visible">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-4">
-            <a
-              href="/"
-              className="text-lg font-extrabold tracking-tight text-foreground"
+            <Link
+              to="/"
+              className="text-lg font-extrabold tracking-tight text-foreground flex items-center gap-1"
             >
+              <img
+                src={fns_logo}
+                alt="Finesse Tickets Logo"
+                className="w-10 h-10"
+              />
               FINESSE TICKETS
-            </a>
+            </Link>
 
             <nav className="hidden sm:flex items-center gap-3 text-sm text-muted-foreground">
-              <a href="/" className="px-2 py-1 rounded-md hover:bg-accent/40">
-                Home
-              </a>
-              <a
-                href="/dashboard"
-                className="px-2 py-1 rounded-md hover:bg-accent/40"
+              <Link
+                to="/"
+                className="inline-block px-4 py-2 rounded-md border border-border bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
               >
-                Dashboard
-              </a>
+                Home
+              </Link>
+              {user && (
+                <Link
+                  to="/dashboard"
+                  className="inline-block px-4 py-2 rounded-md border border-border bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
+                >
+                  Dashboard
+                </Link>
+              )}
             </nav>
           </div>
 
@@ -39,13 +52,13 @@ export default memo(function Header() {
               !user ? (
                 <Button
                   variant="outline"
-                  className="hidden sm:inline-flex"
+                  className="hidden sm:inline-flex cursor-pointer transition-colors duration-150 hover:bg-foreground hover:text-background dark:hover:bg-foreground dark:hover:text-background"
                   onClick={login}
                 >
                   Login
                 </Button>
               ) : (
-                <div className="relative">
+                <div className="relative z-99999 overflow-visible">
                   {/* Profile dropdown */}
                   <button
                     aria-haspopup="menu"
@@ -70,7 +83,7 @@ export default memo(function Header() {
                   {open && (
                     <div
                       role="menu"
-                      className="absolute right-0 mt-2 w-44 bg-card border border-border rounded-md shadow-sm z-30 py-1"
+                      className="absolute right-0 mt-2 w-44 bg-card border border-border rounded-md shadow-sm z-[9999] py-1"
                     >
                       <button
                         role="menuitem"
@@ -84,7 +97,7 @@ export default memo(function Header() {
                 </div>
               )
             ) : (
-              "Loading..."
+              <Spinner />
             )}
           </div>
         </div>

@@ -37,6 +37,8 @@ passport.use(
           user.avatar = profile.avatar
             ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`
             : undefined;
+
+          // update tokens so server can make API calls on behalf of user
           user.accessToken = accessToken;
           user.refreshToken = refreshToken;
           await user.save();

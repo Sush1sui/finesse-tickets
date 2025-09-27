@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import User from "../model/User";
+import { AuthRequest } from "../types/auth";
 
 export const oauthCallback = async (
   _req: Request,
@@ -7,8 +8,6 @@ export const oauthCallback = async (
   next: NextFunction
 ) => {
   try {
-    // req.user is set by passport on successful auth
-    // TODO: run your findOrCreate / session augmentation here if needed
     const redirectTo = process.env.FRONTEND_URL || "/";
     return res.redirect(redirectTo);
   } catch (err) {
@@ -17,6 +16,7 @@ export const oauthCallback = async (
 };
 
 export const logout = async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   const cookieName = "connect.sid";
   const frontend = process.env.FRONTEND_URL || "/";
   const wantsJson =
@@ -24,28 +24,32 @@ export const logout = async (req: Request, res: Response) => {
     (req.xhr as boolean);
 
   try {
-    const currentUser = (req as any).user;
+    const currentUser = authReq.user;
     // Remove provider tokens for this user/session
-    if (currentUser?._id) {
+    if (currentUser && currentUser._id) {
       try {
         await User.updateOne(
           { _id: currentUser._id },
           { $unset: { accessToken: "", refreshToken: "" } }
         );
-        console.log("Cleared provider tokens for user:", currentUser._id);
       } catch (e) {
         console.warn("Failed to clear provider tokens:", e);
       }
     }
 
-    // passport logout + session destroy
-    await new Promise<void>((resolve, reject) => {
-      (req as any).logout((err: any) => (err ? reject(err) : resolve()));
-    });
+    // passport logout (callback form) if available
+    if (typeof authReq.logout === "function") {
+      await new Promise<void>((resolve, reject) =>
+        authReq.logout!((err?: unknown) => (err ? reject(err) : resolve()))
+      );
+    }
 
+    // destroy session if present
     if (req.session) {
       await new Promise<void>((resolve, reject) =>
-        req.session.destroy((err: any) => (err ? reject(err) : resolve()))
+        req.session!.destroy((err: Error | null) =>
+          err ? reject(err) : resolve()
+        )
       );
     }
 
@@ -61,12 +65,13 @@ export const logout = async (req: Request, res: Response) => {
 };
 
 export const me = (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   const isAuth =
-    typeof (req as any).isAuthenticated === "function" &&
-    (req as any).isAuthenticated();
+    typeof authReq.isAuthenticated === "function" &&
+    authReq.isAuthenticated?.();
   if (!isAuth) {
     console.log("Not authenticated");
     return res.status(401).json({ user: null });
   }
-  return res.json({ status: "ok", user: (req as any).user });
+  return res.json({ status: "ok", user: authReq.user });
 };
