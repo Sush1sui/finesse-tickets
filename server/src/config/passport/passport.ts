@@ -1,6 +1,7 @@
 import passport from "passport";
 import { Strategy, Profile, Scope } from "passport-discord-auth";
 import User from "../../model/User";
+import { encryptText } from "../../utils/encryption";
 
 passport.serializeUser((user: any, done) => {
   done(null, user.id);
@@ -39,8 +40,10 @@ passport.use(
             : undefined;
 
           // update tokens so server can make API calls on behalf of user
-          user.accessToken = accessToken;
-          user.refreshToken = refreshToken;
+          // encrypt tokens before saving
+          if (accessToken) user.accessToken = encryptText(accessToken);
+          if (refreshToken) user.refreshToken = encryptText(refreshToken);
+
           await user.save();
           return done(null, user);
         }
@@ -51,8 +54,9 @@ passport.use(
           avatar: profile.avatar
             ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`
             : undefined,
-          accessToken,
-          refreshToken,
+          // store encrypted tokens
+          accessToken: accessToken ? encryptText(accessToken) : undefined,
+          refreshToken: refreshToken ? encryptText(refreshToken) : undefined,
         });
         await newUser.save();
         return done(null, newUser);

@@ -2,7 +2,7 @@ import Spinner from "@/components/ui/spinner";
 import ServerCard from "../../components/server-card";
 import { useAuth } from "@/context/AuthContext";
 import { useCallback, useEffect, useState, memo, useMemo } from "react";
-import { getDiscordGuildIconUrl } from "@/lib/utils";
+import { getDiscordGuildIconUrl, truncateName } from "@/lib/utils";
 
 type ServersType = {
   id: string;
@@ -68,9 +68,13 @@ export default memo(function Dashboard() {
     [servers]
   );
 
-  console.log(servers);
-
-  if (authLoading || fetching) return <Spinner />;
+  if (authLoading || fetching)
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 p-6">
+        <h2 className="text-xl font-bold">Fetching Servers Please Wait...</h2>
+        <Spinner />
+      </div>
+    );
   if (!user) return <div>Please log in to access the dashboard.</div>;
 
   return (
@@ -85,7 +89,7 @@ export default memo(function Dashboard() {
             <ServerCard
               key={s.id}
               to={`/dashboard/guild/${s.id}`}
-              title={s.name}
+              title={truncateName(s.name)}
               icon={
                 s.icon ? (
                   <img

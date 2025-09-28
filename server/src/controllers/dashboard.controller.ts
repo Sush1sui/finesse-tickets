@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import User from "../model/User";
 import { AuthRequest } from "../types/auth";
+import { decryptText, encryptText } from "../utils/encryption";
 
 const DISCORD_API = "https://discord.com/api/v10";
 const BOT_SERVER_URL = process.env.BOT_SERVER_URL || "http://localhost:3002";
@@ -34,7 +35,35 @@ export async function GetPermittedDiscordServersHandler(
   const dbUser = await User.findById(user._id)
     .select("accessToken")
     .lean<{ accessToken?: string }>();
-  const token = dbUser?.accessToken;
+  let token: string | undefined;
+  if (dbUser?.accessToken) {
+    try {
+      // try decrypting (encrypted format)
+      token = decryptText(dbUser.accessToken);
+    } catch (e) {
+      // not encrypted (old record) — assume plaintext, use it and migrate to encrypted form
+      console.warn(
+        "Access token not encrypted; migrating to encrypted form for user",
+        user._id
+      );
+      token = dbUser.accessToken as string;
+      // migrate in background (best-effort)
+      (async () => {
+        try {
+          await User.updateOne(
+            { _id: user._id },
+            { $set: { accessToken: encryptText(token!) } }
+          ).exec();
+          console.info(
+            "Migrated accessToken to encrypted storage for user",
+            user._id
+          );
+        } catch (migErr) {
+          console.warn("Failed to migrate accessToken:", migErr);
+        }
+      })();
+    }
+  }
   if (!token) {
     return res
       .status(403)

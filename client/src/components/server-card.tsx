@@ -24,7 +24,16 @@ export default function ServerCard({
       }`}
       aria-label={title}
     >
-      <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-md border border-border bg-card flex items-center justify-center text-sm text-foreground overflow-hidden transition-shadow hover:shadow-lg">
+      <div
+        className={
+          "w-20 h-20 sm:w-24 sm:h-24 rounded-md border border-border bg-card " +
+          "flex items-center justify-center text-sm text-foreground overflow-hidden " +
+          "transition-transform transition-shadow duration-150 ease-out " +
+          "hover:scale-105 hover:shadow-2xl hover:border-indigo-400 " +
+          "focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:outline-none"
+        }
+        style={{ borderColor: "rgba(131, 147, 177, 0.4)" }}
+      >
         {icon ?? (
           <div className="w-full h-full bg-gradient-to-br from-slate-700 to-slate-600" />
         )}

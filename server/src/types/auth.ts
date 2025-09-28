@@ -5,6 +5,8 @@ export type SessionUser = {
   _id: Types.ObjectId | string;
   username?: string;
   avatar?: string;
+  accessToken?: string;
+  refreshToken?: string;
 };
 
 export type AuthRequest = Request & {

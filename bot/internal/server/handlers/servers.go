@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 	"os"
 
@@ -12,19 +12,26 @@ import (
 type presenceReq struct {
     GuildIds []string `json:"guildIds"`
 }
+type serverInfo struct {
+    ID   string `json:"id"`
+    Name string `json:"name"`
+    Icon string `json:"icon,omitempty"`
+}
+type presenceRes struct {
+    Servers []serverInfo `json:"servers"`
+}
 
 func GetAllServersHandler(w http.ResponseWriter, r *http.Request) {
-    expected := os.Getenv("API_KEY")
+    // API key check
+    expected := os.Getenv("BOT_API_KEY")
     if expected != "" {
         if r.Header.Get("X-API-Key") != expected {
-            fmt.Println("Unauthorized access attempt")
             http.Error(w, "unauthorized", http.StatusUnauthorized)
             return
         }
     }
 
     if r.Method != http.MethodPost {
-        fmt.Println("Invalid method")
         http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
         return
     }
@@ -32,35 +39,57 @@ func GetAllServersHandler(w http.ResponseWriter, r *http.Request) {
     // decode JSON body
     var req presenceReq
     if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-        fmt.Println("Invalid request body:", err)
+        log.Println("Invalid request body:", err)
         http.Error(w, "invalid request", http.StatusBadRequest)
         return
     }
+    _ = r.Body.Close()
+
     if len(req.GuildIds) == 0 {
-        fmt.Println("Empty guildIds")
         http.Error(w, "invalid request: guildIds required", http.StatusBadRequest)
         return
     }
 
-    // get all servers the bot is in using bot's cache
-    servers := bot.GetSession().State.Guilds
-    var botServers []map[string]any
-    for _, g := range servers {
-        for _, id := range req.GuildIds {
-            if g.ID == id {
-                botServers = append(botServers, map[string]any{
-                    "id":   g.ID,
-                    "name": g.Name,
-                    "icon": g.Icon,
-                })
-            }
-        }
+    // ensure bot session/state exists
+    s := bot.GetSession()
+    if s == nil {
+        log.Println("Bot session is nil - bot not ready")
+        http.Error(w, "bot not ready", http.StatusServiceUnavailable)
+        return
+    }
+    if s.State == nil {
+        log.Println("Bot session state is nil - bot not ready")
+        http.Error(w, "bot not ready", http.StatusServiceUnavailable)
+        return
     }
 
-    resp := map[string]interface{}{
-        "servers": botServers,
+    // build a lookup of requested guild ids for quick membership test
+    reqSet := map[string]struct{}{}
+    for _, id := range req.GuildIds {
+        reqSet[id] = struct{}{}
     }
+
+    // iterate bot's cached guilds (discordgo.Guild)
+    out := make([]serverInfo, 0, len(req.GuildIds))
+    for _, g := range s.State.Guilds {
+        if g == nil {
+            continue
+        }
+        if _, ok := reqSet[g.ID]; !ok {
+            continue
+        }
+        icon := ""
+        if g.Icon != "" {
+            icon = g.Icon
+        }
+        out = append(out, serverInfo{
+            ID:   g.ID,
+            Name: g.Name,
+            Icon: icon,
+        })
+    }
+
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusOK)
-    _ = json.NewEncoder(w).Encode(resp)
+    _ = json.NewEncoder(w).Encode(presenceRes{Servers: out})
 }
