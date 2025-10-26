@@ -120,3 +120,43 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Avatar button and image styles - clean accessible focus ring and subtle image border */
+.avatar-btn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  display: inline-block;
+  line-height: 0;
+  border-radius: 9999px; /* circular */
+}
+
+.avatar-btn:focus {
+  outline: none;
+}
+
+.avatar-btn:focus-visible {
+  /* Use theme-neutral soft ring (black/white with low alpha) instead of colored accent */
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.06);
+  border-radius: 9999px;
+}
+
+.dark .avatar-btn:focus-visible {
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.06);
+}
+
+.avatar-img {
+  display: block;
+  border-radius: 9999px;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* removed frame border to avoid colored/outlined ring; keep subtle lift only */
+  border: none;
+  box-shadow: 0 4px 12px rgba(2, 6, 23, 0.06);
+}
+
+.dark .avatar-img {
+  border: none;
+  box-shadow: 0 6px 18px rgba(2, 6, 23, 0.12);
+}

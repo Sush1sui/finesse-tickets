@@ -1,18 +1,19 @@
 "use client";
 
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
+import { useAuth } from "@/context/AuthContext";
 
 const baseStyles: Record<string, React.CSSProperties> = {
   header: {
     width: "100%",
     backdropFilter: "blur(6px)",
-    borderBottom: "1px solid rgba(0,0,0,0.06)",
+    borderBottom: "none",
     overflow: "visible",
   },
   inner: {
@@ -83,17 +84,38 @@ export default memo(function Header() {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  // small client-side auth stub so header works until you wire real auth
-  const [user, setUser] = useState<{
-    username: string;
-    avatar?: string;
-  } | null>(null);
-  const [authLoading] = useState(false);
+  // Use real auth context
+  const { user, authLoading, login, logout } = useAuth();
   const [open, setOpen] = useState(false);
+  const avatarRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Close menu when clicking outside or pressing Escape
+  useEffect(() => {
+    if (!open) return;
+
+    function handlePointerDown(e: PointerEvent) {
+      const target = e.target as Node | null;
+      if (avatarRef.current && target && !avatarRef.current.contains(target)) {
+        setOpen(false);
+      }
+    }
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
 
   const isDark = mounted ? resolvedTheme === "dark" : false;
 
@@ -101,16 +123,14 @@ export default memo(function Header() {
     header: {
       ...baseStyles.header,
       background: isDark ? "rgba(10,11,14,0.7)" : "rgba(255,255,255,0.9)",
-      borderBottom: isDark
-        ? "1px solid rgba(255,255,255,0.04)"
-        : baseStyles.header.borderBottom,
-      color: isDark ? "#e6eef8" : "#0f1720",
+      borderBottom: "none",
+      color: isDark ? "#fff" : "#000",
     } as React.CSSProperties,
     inner: baseStyles.inner,
     left: baseStyles.left,
     brandLink: {
       ...baseStyles.brandLink,
-      color: isDark ? "#f8fafc" : "#0f1720",
+      color: isDark ? "#fff" : "#000",
     } as React.CSSProperties,
     nav: baseStyles.nav,
     navLink: {
@@ -118,43 +138,35 @@ export default memo(function Header() {
       border: isDark
         ? "1px solid rgba(255,255,255,0.06)"
         : "1px solid rgba(0,0,0,0.06)",
-      background: isDark ? "rgba(255,255,255,0.03)" : "transparent",
-      color: isDark ? "#e6eef8" : "#0f1720",
+      background: "transparent",
+      color: isDark ? "#fff" : "#000",
     } as React.CSSProperties,
     right: baseStyles.right,
     avatarWrap: baseStyles.avatarWrap,
     avatarBtn: {
       ...baseStyles.avatarBtn,
-      background: isDark
-        ? "linear-gradient(135deg, rgba(79,70,229,1), rgba(219,39,119,1))"
-        : "linear-gradient(135deg, rgba(99,102,241,1), rgba(236,72,153,1))",
-      color: "#fff",
+      // Improve contrast in light mode: use a subtle gray background + slight shadow
+      background: isDark ? "#000" : "rgba(0,0,0,0.03)",
+      color: isDark ? "#fff" : "#000",
       border: isDark
         ? "1px solid rgba(255,255,255,0.06)"
         : "1px solid rgba(0,0,0,0.06)",
+      boxShadow: isDark ? undefined : "0 1px 2px rgba(0,0,0,0.04)",
     } as React.CSSProperties,
     menu: {
       ...baseStyles.menu,
-      background: isDark ? "#0b1220" : "#fff",
+      background: isDark ? "#000" : "#fff",
       border: isDark
         ? "1px solid rgba(255,255,255,0.04)"
         : "1px solid rgba(0,0,0,0.04)",
-      color: isDark ? "#e6eef8" : "#0f1720",
+      color: isDark ? "#fff" : "#000",
     } as React.CSSProperties,
     menuItem: {
       ...baseStyles.menuItem,
-      color: isDark ? "#e6eef8" : "#0f1720",
+      color: isDark ? "#fff" : "#000",
     } as React.CSSProperties,
     logoImg: baseStyles.logoImg,
   };
-
-  function login() {
-    setUser({ username: "nick", avatar: undefined });
-  }
-  function logout() {
-    setUser(null);
-    setOpen(false);
-  }
 
   return (
     <header style={styles.header}>
@@ -196,28 +208,31 @@ export default memo(function Header() {
                 Login
               </Button>
             ) : (
-              <div style={styles.avatarWrap}>
+              <div style={styles.avatarWrap} ref={avatarRef}>
                 <button
                   aria-haspopup="menu"
                   aria-expanded={open}
                   onClick={() => setOpen((v) => !v)}
                   title="Open profile menu"
-                  style={styles.avatarBtn}
+                  className="avatar-btn"
+                  style={{ ...styles.avatarBtn }}
                 >
-                  {user.avatar ? (
+                  {user.image ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={user.avatar}
-                      alt={`${user.username}'s avatar`}
+                      src={user.image}
+                      alt={`${user.name}'s avatar`}
+                      className="avatar-img"
                       style={{
                         width: "100%",
                         height: "100%",
                         objectFit: "cover",
+                        borderRadius: "50%",
                       }}
                     />
                   ) : (
                     <span style={{ fontSize: 14 }}>
-                      {user.username.charAt(0).toUpperCase()}
+                      {user.name?.charAt(0).toUpperCase() || "U"}
                     </span>
                   )}
                 </button>
@@ -253,7 +268,7 @@ export default memo(function Header() {
                 width: 28,
                 height: 28,
                 borderRadius: 8,
-                background: "#eee",
+                background: isDark ? "#000" : "rgba(0,0,0,0.04)",
               }}
             />
           )}

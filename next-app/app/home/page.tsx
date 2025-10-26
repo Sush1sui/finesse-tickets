@@ -4,12 +4,12 @@ import { memo, useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
+import { useAuth } from "@/context/AuthContext";
 import Spinner from "@/components/spinner";
 
 export default memo(function HomeRoot() {
-  // local auth stub (replace with your AuthContext wiring later)
-  const [user, setUser] = useState<{ username: string } | null>(null);
-  const [authLoading, setAuthLoading] = useState(false);
+  // Use real auth context
+  const { user, authLoading, login } = useAuth();
 
   // theme handling
   const { resolvedTheme } = useTheme();
@@ -23,14 +23,6 @@ export default memo(function HomeRoot() {
   const buttonBorder = isDark
     ? "1px solid rgba(255,255,255,0.06)"
     : "1px solid rgba(0,0,0,0.06)";
-
-  function login() {
-    setAuthLoading(true);
-    setTimeout(() => {
-      setUser({ username: "nick" });
-      setAuthLoading(false);
-    }, 500);
-  }
 
   return (
     <main
