@@ -7,6 +7,7 @@ import ServerCard from "@/components/server-card";
 import { Spinner } from "@/components/ui/spinner";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 type ServersType = {
   id: string;
@@ -168,8 +169,8 @@ export default function Dashboard() {
               title={truncateName(s.name)}
               icon={
                 s.icon ? (
-                  <img
-                    src={getDiscordGuildIconUrl(s.id, s.icon)}
+                  <Image
+                    src={getDiscordGuildIconUrl(s.id, s.icon)!}
                     alt={`${s.name} icon`}
                     className="w-full h-full object-cover"
                   />

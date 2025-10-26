@@ -34,7 +34,8 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account, profile }) {
       console.log("[next-auth signIn callback] Starting", {
         userId: user?.id,
-        profileId: (profile as any)?.id,
+        // avoid `any` to satisfy eslint: narrow profile to expected shape for logging
+        profileId: (profile as { id?: string })?.id,
         hasAccessToken: !!account?.access_token,
       });
 
