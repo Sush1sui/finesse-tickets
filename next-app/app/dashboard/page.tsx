@@ -141,19 +141,7 @@ export default function Dashboard() {
         </h1>
       </div>
 
-      <div
-        style={{
-          borderRadius: "0.5rem",
-          border: `1px solid ${
-            isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)"
-          }`,
-          backgroundColor: isDark ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.6)",
-          padding: "2rem",
-          boxShadow: isDark
-            ? "0 4px 20px rgba(0,0,0,0.4)"
-            : "0 2px 10px rgba(0,0,0,0.06)",
-        }}
-      >
+      <div>
         <div
           style={{
             display: "grid",
@@ -171,6 +159,8 @@ export default function Dashboard() {
                 s.icon ? (
                   <Image
                     src={getDiscordGuildIconUrl(s.id, s.icon)!}
+                    width={120}
+                    height={120}
                     alt={`${s.name} icon`}
                     className="w-full h-full object-cover"
                   />

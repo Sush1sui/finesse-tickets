@@ -15,12 +15,16 @@ export default function Footer() {
     footer: {
       height: 56,
       borderTop: isDark
-        ? "1px solid rgba(255,255,255,0.04)"
-        : "1px solid rgba(0,0,0,0.04)",
+        ? "1px solid rgba(255,255,255,0.06)"
+        : "1px solid rgba(0,0,0,0.06)",
       display: "flex",
       alignItems: "center",
       background: isDark ? "#06070a" : "#ffffff",
       color: isDark ? "rgba(230,238,248,0.65)" : "rgba(15,23,32,0.45)",
+      /* use an outer ring only — remove inset/internal stroke */
+      boxShadow: isDark
+        ? "0 -6px 12px rgba(0,0,0,0.04), 0 0 0 2px rgba(255,255,255,0.03)"
+        : "0 -6px 12px rgba(2,6,23,0.04), 0 0 0 2px rgba(0,0,0,0.03)",
     },
     container: {
       maxWidth: 1100,

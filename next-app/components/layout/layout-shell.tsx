@@ -74,14 +74,12 @@ export default function LayoutShell({
   const cardStyle: React.CSSProperties = {
     width: "100%",
     height: "100%",
-    background: isDark ? "rgba(6,7,10,0.6)" : "rgba(255,255,255,0.95)",
+    /* Removed background and border per design request */
     borderRadius: 12,
+    /* outer ring only for subtle elevation */
     boxShadow: isDark
-      ? "0 8px 24px rgba(0,0,0,0.6)"
-      : "0 8px 24px rgba(2,6,23,0.06)",
-    border: isDark
-      ? "1px solid rgba(255,255,255,0.04)"
-      : "1px solid rgba(0,0,0,0.04)",
+      ? "0 8px 24px rgba(0,0,0,0.6), 0 0 0 2px rgba(255,255,255,0.04)"
+      : "0 8px 24px rgba(2,6,23,0.06), 0 0 0 2px rgba(2,6,23,0.04)",
     padding: 20,
     boxSizing: "border-box",
     minHeight: "60vh",

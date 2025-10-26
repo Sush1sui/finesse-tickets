@@ -155,19 +155,30 @@ export default memo(function Header() {
     } as React.CSSProperties,
     menu: {
       ...baseStyles.menu,
-      background: isDark ? "#000" : "#fff",
+      // Dark: use a slightly translucent surface so the menu reads on top of the page
+      // Light: keep white but add a subtle elevation/outline so it doesn't blend into the page
+      background: isDark ? "rgba(18,18,20,0.95)" : "#fff",
       border: isDark
-        ? "1px solid rgba(255,255,255,0.15)"
-        : "1px solid rgba(0,0,0,0.15)",
+        ? "1px solid rgba(255,255,255,0.06)"
+        : "1px solid rgba(0,0,0,0.06)",
       color: isDark ? "#fff" : "#000",
+      boxShadow: isDark
+        ? "0 8px 30px rgba(0,0,0,0.6)" // stronger drop in dark mode for separation
+        : "0 8px 30px rgba(2,6,23,0.06)",
+      // Add a faint outline in light mode for extra separation
+      outline: isDark ? undefined : "1px solid rgba(0,0,0,0.02)",
+      padding: 8,
     } as React.CSSProperties,
     menuItem: {
       ...baseStyles.menuItem,
       color: isDark ? "#fff" : "#000",
-      borderRadius: "4px",
+      borderRadius: "6px",
+      transition: "background 120ms ease, color 120ms ease",
+      // add keyboard focus ring for accessibility
+      outline: "none",
     } as React.CSSProperties,
     menuItemHover: {
-      background: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)",
+      background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
     } as React.CSSProperties,
     logoImg: baseStyles.logoImg,
   };
@@ -271,6 +282,15 @@ export default memo(function Header() {
                           onMouseLeave={(e) => {
                             e.currentTarget.style.background = "transparent";
                           }}
+                          onFocus={(e) =>
+                            Object.assign(
+                              e.currentTarget.style,
+                              styles.menuItemHover
+                            )
+                          }
+                          onBlur={(e) => {
+                            e.currentTarget.style.background = "transparent";
+                          }}
                         >
                           Dashboard
                         </button>
@@ -286,6 +306,15 @@ export default memo(function Header() {
                           )
                         }
                         onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "transparent";
+                        }}
+                        onFocus={(e) =>
+                          Object.assign(
+                            e.currentTarget.style,
+                            styles.menuItemHover
+                          )
+                        }
+                        onBlur={(e) => {
                           e.currentTarget.style.background = "transparent";
                         }}
                       >
