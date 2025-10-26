@@ -21,7 +21,8 @@ export async function middleware(request: NextRequest) {
   // If trying to access a protected route without authentication, redirect to home
   if (isProtectedRoute && !token) {
     const url = request.nextUrl.clone();
-    url.pathname = "/home";
+    // Redirect unauthenticated users to the site root (/) which is the sign-in/landing page
+    url.pathname = "/";
     return NextResponse.redirect(url);
   }
 

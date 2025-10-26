@@ -3,6 +3,7 @@
 import { memo, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
 import { motion, AnimatePresence } from "framer-motion";
@@ -119,6 +120,19 @@ export default memo(function Header() {
 
   const isDark = mounted ? resolvedTheme === "dark" : false;
 
+  // current pathname to apply active link styling
+  const pathname = usePathname?.() || "/";
+  const isHome = pathname === "/" || pathname === "/home";
+  const isDashboard = pathname.startsWith("/dashboard");
+
+  const activeNavStyle: React.CSSProperties = {
+    background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
+    fontWeight: 700,
+    border: isDark
+      ? "1px solid rgba(255,255,255,0.14)"
+      : "1px solid rgba(0,0,0,0.14)",
+  };
+
   const styles = {
     header: {
       ...baseStyles.header,
@@ -160,7 +174,7 @@ export default memo(function Header() {
       background: isDark ? "rgba(18,18,20,0.95)" : "#fff",
       border: isDark
         ? "1px solid rgba(255,255,255,0.06)"
-        : "1px solid rgba(0,0,0,0.06)",
+        : "1px solid rgba(0,0,0,0.12)",
       color: isDark ? "#fff" : "#000",
       boxShadow: isDark
         ? "0 8px 30px rgba(0,0,0,0.6)" // stronger drop in dark mode for separation
@@ -178,7 +192,7 @@ export default memo(function Header() {
       outline: "none",
     } as React.CSSProperties,
     menuItemHover: {
-      background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
+      background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)",
     } as React.CSSProperties,
     logoImg: baseStyles.logoImg,
   };
@@ -199,11 +213,20 @@ export default memo(function Header() {
           </Link>
 
           <nav style={styles.nav} aria-label="Primary navigation">
-            <Link href="/" style={styles.navLink}>
+            <Link
+              href="/"
+              style={{ ...styles.navLink, ...(isHome ? activeNavStyle : {}) }}
+            >
               Home
             </Link>
             {user && (
-              <Link href="/dashboard" style={styles.navLink}>
+              <Link
+                href="/dashboard"
+                style={{
+                  ...styles.navLink,
+                  ...(isDashboard ? activeNavStyle : {}),
+                }}
+              >
                 Dashboard
               </Link>
             )}
@@ -271,7 +294,12 @@ export default memo(function Header() {
                         style={{ textDecoration: "none" }}
                       >
                         <button
-                          style={styles.menuItem}
+                          style={{
+                            ...styles.menuItem,
+                            ...(isDashboard
+                              ? { background: styles.menuItemHover.background }
+                              : {}),
+                          }}
                           role="menuitem"
                           onMouseEnter={(e) =>
                             Object.assign(

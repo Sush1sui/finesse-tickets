@@ -22,7 +22,7 @@ export default memo(function HomeRoot() {
   const iconBg = isDark ? "rgba(255,255,255,0.03)" : "rgba(15,23,32,0.08)";
   const buttonBorder = isDark
     ? "1px solid rgba(255,255,255,0.06)"
-    : "1px solid rgba(0,0,0,0.06)";
+    : "1px solid rgba(0, 0, 0, 0.16)";
 
   return (
     <main
