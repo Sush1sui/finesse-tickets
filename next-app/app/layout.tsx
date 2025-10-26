@@ -3,7 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { NextAuthProvider } from "@/components/providers/session-provider";
-import { auth } from "@/lib/auth";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { AuthProvider } from "@/context/AuthContext";
 import LayoutShell from "@/components/layout/layout-shell";
 
@@ -29,7 +30,7 @@ export default async function RootLayout({
 }>) {
   // get server session and forward to client SessionProvider so the
   // client is immediately aware of auth state after the OAuth redirect
-  const session = await auth();
+  const session = await getServerSession(authOptions);
 
   return (
     <html lang="en" suppressHydrationWarning>

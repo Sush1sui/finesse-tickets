@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/context/AuthContext";
-import Spinner from "@/components/spinner";
+import { Spinner } from "@/components/ui/spinner";
 
 export default memo(function HomeRoot() {
   // Use real auth context
@@ -172,6 +172,7 @@ export default memo(function HomeRoot() {
               alignItems: "center",
               gap: 8,
               border: buttonBorder,
+              cursor: "pointer",
             }}
           >
             Login with Discord

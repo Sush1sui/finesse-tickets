@@ -157,13 +157,17 @@ export default memo(function Header() {
       ...baseStyles.menu,
       background: isDark ? "#000" : "#fff",
       border: isDark
-        ? "1px solid rgba(255,255,255,0.04)"
-        : "1px solid rgba(0,0,0,0.04)",
+        ? "1px solid rgba(255,255,255,0.15)"
+        : "1px solid rgba(0,0,0,0.15)",
       color: isDark ? "#fff" : "#000",
     } as React.CSSProperties,
     menuItem: {
       ...baseStyles.menuItem,
       color: isDark ? "#fff" : "#000",
+      borderRadius: "4px",
+    } as React.CSSProperties,
+    menuItemHover: {
+      background: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)",
     } as React.CSSProperties,
     logoImg: baseStyles.logoImg,
   };
@@ -203,7 +207,11 @@ export default memo(function Header() {
               <Button
                 variant="outline"
                 onClick={login}
-                style={{ display: "inline-flex", alignItems: "center" }}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  cursor: "pointer",
+                }}
               >
                 Login
               </Button>
@@ -247,13 +255,39 @@ export default memo(function Header() {
                       style={styles.menu}
                       role="menu"
                     >
-                      <button style={styles.menuItem} role="menuitem">
-                        Dashboard
-                      </button>
+                      <Link
+                        href="/dashboard"
+                        style={{ textDecoration: "none" }}
+                      >
+                        <button
+                          style={styles.menuItem}
+                          role="menuitem"
+                          onMouseEnter={(e) =>
+                            Object.assign(
+                              e.currentTarget.style,
+                              styles.menuItemHover
+                            )
+                          }
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = "transparent";
+                          }}
+                        >
+                          Dashboard
+                        </button>
+                      </Link>
                       <button
                         style={styles.menuItem}
                         role="menuitem"
                         onClick={logout}
+                        onMouseEnter={(e) =>
+                          Object.assign(
+                            e.currentTarget.style,
+                            styles.menuItemHover
+                          )
+                        }
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "transparent";
+                        }}
                       >
                         Logout
                       </button>

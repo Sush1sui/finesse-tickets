@@ -1,11 +1,9 @@
-import NextAuth, { DefaultSession } from "next-auth";
-import Discord from "next-auth/providers/discord";
+import NextAuth, { DefaultSession, NextAuthOptions } from "next-auth";
+import DiscordProvider from "next-auth/providers/discord";
 import mongoose from "mongoose";
 import dbConnect from "@/lib/db";
 import User from "@/models/User";
 import { encryptText } from "@/lib/encryption";
-import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
-import clientPromise from "@/lib/mongodb";
 
 declare module "next-auth" {
   interface Session {
@@ -20,10 +18,9 @@ declare module "next-auth" {
   }
 }
 
-export const { handlers, signIn, signOut, auth } = NextAuth({
-  adapter: MongoDBAdapter(clientPromise),
+export const authOptions: NextAuthOptions = {
   providers: [
-    Discord({
+    DiscordProvider({
       clientId: process.env.DISCORD_CLIENT_ID!,
       clientSecret: process.env.DISCORD_CLIENT_SECRET!,
       authorization: {
@@ -35,12 +32,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ],
   callbacks: {
     async signIn({ user, account, profile }) {
-      console.log("[next-auth signIn] profile, account available:", {
-        profile: profile
-          ? { id: (profile as any).id, username: (profile as any).username }
-          : null,
+      console.log("[next-auth signIn callback] Starting", {
+        userId: user?.id,
+        profileId: (profile as any)?.id,
         hasAccessToken: !!account?.access_token,
-        hasRefreshToken: !!account?.refresh_token,
       });
 
       await dbConnect();
@@ -52,6 +47,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           avatar?: string;
         };
 
+        // Store encrypted OAuth tokens in your Mongoose User collection
         let dbUser = await User.findOne({ discordId: discordProfile.id });
 
         if (dbUser) {
@@ -70,8 +66,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           }
 
           await dbUser.save();
+          console.log("[next-auth signIn] Updated existing mongoose user");
         } else {
-          // Create new user
+          // Create new user in your Mongoose collection
           dbUser = await User.create({
             discordId: discordProfile.id,
             username: discordProfile.username,
@@ -85,23 +82,23 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               ? encryptText(account.refresh_token)
               : undefined,
           });
+          console.log("[next-auth signIn] Created new mongoose user");
         }
 
-        // Attach MongoDB _id to user object for session callback
+        // Attach user ID and discordId for JWT callback
         user.id = (dbUser._id as mongoose.Types.ObjectId).toString();
         user.discordId = discordProfile.id;
 
-        console.log("[next-auth signIn] persisted user id:", user.id);
-
+        console.log("[next-auth signIn callback] Success");
         return true;
       } catch (error) {
-        console.error("Error in signIn callback:", error);
+        console.error("[next-auth signIn callback] Error:", error);
         return false;
       }
     },
 
     async jwt({ token, user }) {
-      // Persist the OAuth access_token and user id to the token right after signin
+      // Persist user id and discordId to JWT token
       if (user) {
         token.id = user.id;
         token.discordId = user.discordId;
@@ -114,11 +111,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
 
     async session({ session, token }) {
-      // Send properties to the client
+      // Send properties to the client from JWT token
       if (session.user) {
         session.user.id = token.id as string;
         session.user.discordId = token.discordId as string;
-        console.log("[next-auth session] session prepared for client", {
+        console.log("[next-auth session callback] Final session:", {
           id: session.user.id,
           discordId: session.user.discordId,
           name: session.user.name,
@@ -132,7 +129,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     error: "/",
   },
   session: {
-    // Use database sessions so session state is stored server-side (session id cookie)
-    strategy: "database",
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
-});
+  debug: process.env.NODE_ENV === "development",
+};
+
+export default NextAuth(authOptions);
