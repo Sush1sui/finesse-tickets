@@ -24,8 +24,12 @@ type presenceRes struct {
 func GetAllServersHandler(w http.ResponseWriter, r *http.Request) {
     // API key check
     expected := os.Getenv("BOT_API_KEY")
+    if expected == "" {
+        log.Println("WARNING: BOT_API_KEY not set in environment")
+    }
     if expected != "" {
         if r.Header.Get("X-API-Key") != expected {
+            log.Printf("Unauthorized access attempt. Expected key present: %v, Received: %v", expected != "", r.Header.Get("X-API-Key") != "")
             http.Error(w, "unauthorized", http.StatusUnauthorized)
             return
         }
