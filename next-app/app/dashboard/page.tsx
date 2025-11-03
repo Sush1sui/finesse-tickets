@@ -73,66 +73,10 @@ export default function Dashboard() {
 
   // Redirect to home if not authenticated after loading
   useEffect(() => {
-    // Verify server session before redirecting to avoid false client-side redirects.
-    // Use a short timeout + single retry to handle transient network issues.
-    let isActive = true;
-
-    async function tryFetchWithTimeout(url: string, timeoutMs = 2000) {
-      const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), timeoutMs);
-      try {
-        const res = await fetch(url, {
-          method: "GET",
-          credentials: "include",
-          headers: { Accept: "application/json" },
-          signal: controller.signal,
-        });
-        return res;
-      } finally {
-        clearTimeout(id);
-      }
+    if (!authLoading && !user) {
+      // Simple redirect without complex retry logic
+      router.push("/");
     }
-
-    async function verifyAndRedirect() {
-      if (!authLoading && !user) {
-        try {
-          let res;
-          try {
-            res = await tryFetchWithTimeout("/api/auth/me", 2000);
-          } catch (err) {
-            // first attempt failed (timeout/network). Retry once.
-            console.warn("First /api/auth/me attempt failed, retrying...", err);
-            try {
-              res = await tryFetchWithTimeout("/api/auth/me", 2000);
-            } catch (err2) {
-              // both attempts failed — don't redirect on transient network failures
-              console.error("/api/auth/me verification failed twice:", err2);
-              return;
-            }
-          }
-
-          if (!isActive) return;
-
-          if (res.status === 401) {
-            // Server explicitly says there's no session — safe to redirect
-            router.push("/");
-          } else if (!res.ok) {
-            // unexpected server error — log and avoid redirecting
-            console.error("Unexpected response from /api/auth/me:", res.status);
-          } else {
-            // server has a session — do nothing and allow next-auth to sync client state
-          }
-        } catch (err) {
-          console.error("Unexpected error verifying auth on server:", err);
-        }
-      }
-    }
-
-    verifyAndRedirect();
-
-    return () => {
-      isActive = false;
-    };
   }, [authLoading, user, router]);
 
   // fallback placeholders when no servers yet

@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -125,77 +125,85 @@ export default memo(function Header() {
   const isHome = pathname === "/" || pathname === "/home";
   const isDashboard = pathname.startsWith("/dashboard");
 
-  const activeNavStyle: React.CSSProperties = {
-    background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
-    fontWeight: 700,
-    border: isDark
-      ? "1px solid rgba(255,255,255,0.14)"
-      : "1px solid rgba(0,0,0,0.14)",
-  };
+  // Memoize all styles to prevent recalculation on every render
+  const styles = useMemo(() => {
+    const activeNavStyle: React.CSSProperties = {
+      background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
+      fontWeight: 700,
+      border: isDark
+        ? "1px solid rgba(255,255,255,0.14)"
+        : "1px solid rgba(0,0,0,0.14)",
+    };
 
-  const styles = {
-    header: {
-      ...baseStyles.header,
-      background: isDark ? "rgba(10,11,14,0.7)" : "rgba(255,255,255,0.9)",
-      borderBottom: "none",
-      color: isDark ? "#fff" : "#000",
-    } as React.CSSProperties,
-    inner: baseStyles.inner,
-    left: baseStyles.left,
-    brandLink: {
-      ...baseStyles.brandLink,
-      color: isDark ? "#fff" : "#000",
-    } as React.CSSProperties,
-    nav: baseStyles.nav,
-    navLink: {
-      ...baseStyles.navLink,
-      border: isDark
-        ? "1px solid rgba(255,255,255,0.06)"
-        : "1px solid rgba(0,0,0,0.06)",
-      background: "transparent",
-      color: isDark ? "#fff" : "#000",
-    } as React.CSSProperties,
-    right: baseStyles.right,
-    avatarWrap: baseStyles.avatarWrap,
-    avatarBtn: {
-      ...baseStyles.avatarBtn,
-      // Improve contrast in light mode: use a subtle gray background + slight shadow
-      background: isDark ? "#000" : "rgba(0,0,0,0.03)",
-      color: isDark ? "#fff" : "#000",
-      border: isDark
-        ? "1px solid rgba(255,255,255,0.06)"
-        : "1px solid rgba(0,0,0,0.06)",
-      boxShadow: isDark ? undefined : "0 1px 2px rgba(0,0,0,0.04)",
-    } as React.CSSProperties,
-    menu: {
-      ...baseStyles.menu,
-      // Dark: use a slightly translucent surface so the menu reads on top of the page
-      // Light: keep white but add a subtle elevation/outline so it doesn't blend into the page
-      background: isDark ? "rgba(18,18,20,0.95)" : "#fff",
-      border: isDark
-        ? "1px solid rgba(255,255,255,0.06)"
-        : "1px solid rgba(0,0,0,0.12)",
-      color: isDark ? "#fff" : "#000",
-      boxShadow: isDark
-        ? "0 8px 30px rgba(0,0,0,0.6)" // stronger drop in dark mode for separation
-        : "0 8px 30px rgba(2,6,23,0.06)",
-      // Add a faint outline in light mode for extra separation
-      outline: isDark ? undefined : "1px solid rgba(0,0,0,0.02)",
-      padding: 8,
-    } as React.CSSProperties,
-    menuItem: {
-      ...baseStyles.menuItem,
-      color: isDark ? "#fff" : "#000",
-      borderRadius: "6px",
-      transition: "background 120ms ease, color 120ms ease",
-      // add keyboard focus ring for accessibility
-      outline: "none",
-    } as React.CSSProperties,
-    menuItemHover: {
-      background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)",
-    } as React.CSSProperties,
-    logoImg: baseStyles.logoImg,
-  };
+    return {
+      header: {
+        ...baseStyles.header,
+        background: isDark ? "rgba(10,11,14,0.7)" : "rgba(255,255,255,0.9)",
+        borderBottom: "none",
+        color: isDark ? "#fff" : "#000",
+      } as React.CSSProperties,
+      inner: baseStyles.inner,
+      left: baseStyles.left,
+      brandLink: {
+        ...baseStyles.brandLink,
+        color: isDark ? "#fff" : "#000",
+      } as React.CSSProperties,
+      nav: baseStyles.nav,
+      navLink: {
+        ...baseStyles.navLink,
+        border: isDark
+          ? "1px solid rgba(255,255,255,0.06)"
+          : "1px solid rgba(0,0,0,0.06)",
+        background: "transparent",
+        color: isDark ? "#fff" : "#000",
+      } as React.CSSProperties,
+      activeNavStyle,
+      right: baseStyles.right,
+      avatarWrap: baseStyles.avatarWrap,
+      avatarBtn: {
+        ...baseStyles.avatarBtn,
+        background: isDark ? "#000" : "rgba(0,0,0,0.03)",
+        color: isDark ? "#fff" : "#000",
+        border: isDark
+          ? "1px solid rgba(255,255,255,0.06)"
+          : "1px solid rgba(0,0,0,0.06)",
+        boxShadow: isDark ? undefined : "0 1px 2px rgba(0,0,0,0.04)",
+      } as React.CSSProperties,
+      menu: {
+        ...baseStyles.menu,
+        background: isDark ? "rgba(18,18,20,0.95)" : "#fff",
+        border: isDark
+          ? "1px solid rgba(255,255,255,0.06)"
+          : "1px solid rgba(0,0,0,0.12)",
+        color: isDark ? "#fff" : "#000",
+        boxShadow: isDark
+          ? "0 8px 30px rgba(0,0,0,0.6)"
+          : "0 8px 30px rgba(2,6,23,0.06)",
+        outline: isDark ? undefined : "1px solid rgba(0,0,0,0.02)",
+        padding: 8,
+      } as React.CSSProperties,
+      menuItem: {
+        ...baseStyles.menuItem,
+        color: isDark ? "#fff" : "#000",
+        borderRadius: "6px",
+        transition: "background 120ms ease, color 120ms ease",
+        outline: "none",
+      } as React.CSSProperties,
+      menuItemHover: {
+        background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)",
+      } as React.CSSProperties,
+      logoImg: baseStyles.logoImg,
+      loadingPlaceholder: {
+        width: 28,
+        height: 28,
+        borderRadius: 8,
+        background: isDark ? "#000" : "rgba(0,0,0,0.04)",
+      } as React.CSSProperties,
+    };
+  }, [isDark]);
+
+  // Memoize event handlers
+  const toggleMenu = useCallback(() => setOpen((v) => !v), []);
 
   return (
     <header style={styles.header}>
@@ -215,7 +223,10 @@ export default memo(function Header() {
           <nav style={styles.nav} aria-label="Primary navigation">
             <Link
               href="/"
-              style={{ ...styles.navLink, ...(isHome ? activeNavStyle : {}) }}
+              style={{
+                ...styles.navLink,
+                ...(isHome ? styles.activeNavStyle : {}),
+              }}
             >
               Home
             </Link>
@@ -224,7 +235,7 @@ export default memo(function Header() {
                 href="/dashboard"
                 style={{
                   ...styles.navLink,
-                  ...(isDashboard ? activeNavStyle : {}),
+                  ...(isDashboard ? styles.activeNavStyle : {}),
                 }}
               >
                 Dashboard
@@ -254,7 +265,7 @@ export default memo(function Header() {
                 <button
                   aria-haspopup="menu"
                   aria-expanded={open}
-                  onClick={() => setOpen((v) => !v)}
+                  onClick={toggleMenu}
                   title="Open profile menu"
                   className="avatar-btn"
                   style={{ ...styles.avatarBtn }}
@@ -308,7 +319,9 @@ export default memo(function Header() {
                             )
                           }
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.background = "transparent";
+                            if (!isDashboard) {
+                              e.currentTarget.style.background = "transparent";
+                            }
                           }}
                           onFocus={(e) =>
                             Object.assign(
@@ -317,7 +330,9 @@ export default memo(function Header() {
                             )
                           }
                           onBlur={(e) => {
-                            e.currentTarget.style.background = "transparent";
+                            if (!isDashboard) {
+                              e.currentTarget.style.background = "transparent";
+                            }
                           }}
                         >
                           Dashboard
@@ -354,14 +369,7 @@ export default memo(function Header() {
               </div>
             )
           ) : (
-            <div
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: 8,
-                background: isDark ? "#000" : "rgba(0,0,0,0.04)",
-              }}
-            />
+            <div style={styles.loadingPlaceholder} />
           )}
         </div>
       </div>

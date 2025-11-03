@@ -27,9 +27,22 @@ const MODERATOR_MASK =
 
 export async function GET() {
   const { error, user } = await requireAuth();
-  if (error) return error;
+  if (error) {
+    console.log("[permitted-servers] Auth failed");
+    return error;
+  }
 
-  await dbConnect();
+  console.log("[permitted-servers] Authenticated user:", user.id);
+
+  try {
+    await dbConnect();
+  } catch (dbError) {
+    console.error("[permitted-servers] Database connection failed:", dbError);
+    return NextResponse.json(
+      { error: "Database connection failed" },
+      { status: 503 }
+    );
+  }
 
   try {
     // Fetch user's Discord access token

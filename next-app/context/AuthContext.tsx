@@ -6,6 +6,8 @@ import {
   useEffect,
   useState,
   ReactNode,
+  useMemo,
+  useCallback,
 } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 
@@ -44,26 +46,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [session]);
 
-  const login = () => {
+  // Memoize callback functions to prevent re-creating them on every render
+  const login = useCallback(() => {
     signIn("discord", { callbackUrl: "/" });
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     signOut({ callbackUrl: "/" });
-  };
+  }, []);
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        authLoading: status === "loading",
-        login,
-        logout,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  // Memoize the context value to prevent unnecessary re-renders
+  const value = useMemo(
+    () => ({
+      user,
+      authLoading: status === "loading",
+      login,
+      logout,
+    }),
+    [user, status, login, logout]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

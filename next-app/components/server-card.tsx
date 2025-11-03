@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useTheme } from "next-themes";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 
 type ServerCardProps = {
   href: string;
@@ -31,7 +31,8 @@ export default function ServerCard({
 
   const isDark = mounted ? resolvedTheme === "dark" : false;
 
-  const getCardStyles = () => {
+  // Memoize style calculation
+  const cardStyles = useMemo(() => {
     const baseStyles = {
       borderWidth: "1px",
       borderStyle: "solid",
@@ -71,7 +72,47 @@ export default function ServerCard({
     }
 
     return baseStyles;
-  };
+  }, [isDark, isHovered, isActive]);
+
+  // Memoize other styles
+  const titleStyle = useMemo(
+    () => ({
+      color: isDark ? "#fff" : "#000",
+      maxWidth: "100%",
+      overflow: "hidden" as const,
+      textOverflow: "ellipsis" as const,
+      fontWeight: isHovered ? 600 : 500,
+    }),
+    [isDark, isHovered]
+  );
+
+  const subtitleStyle = useMemo(
+    () => ({
+      color: isDark ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.7)",
+      maxWidth: "100%",
+      overflow: "hidden" as const,
+      textOverflow: "ellipsis" as const,
+    }),
+    [isDark]
+  );
+
+  const placeholderStyle = useMemo(
+    () => ({
+      background: isDark
+        ? "linear-gradient(135deg, #1a1a1a 0%, #000 100%)"
+        : "linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%)",
+    }),
+    [isDark]
+  );
+
+  // Memoize event handlers
+  const handleMouseEnter = useCallback(() => setIsHovered(true), []);
+  const handleMouseLeave = useCallback(() => {
+    setIsHovered(false);
+    setIsActive(false);
+  }, []);
+  const handleMouseDown = useCallback(() => setIsActive(true), []);
+  const handleMouseUp = useCallback(() => setIsActive(false), []);
 
   return (
     <Link
@@ -81,51 +122,30 @@ export default function ServerCard({
       }`}
       style={{ width: "100%", maxWidth: "120px" }}
       aria-label={title}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => {
-        setIsHovered(false);
-        setIsActive(false);
-      }}
-      onMouseDown={() => setIsActive(true)}
-      onMouseUp={() => setIsActive(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
     >
       <div
         className="w-24 h-24 rounded-lg flex items-center justify-center text-sm overflow-hidden"
-        style={getCardStyles()}
+        style={cardStyles}
       >
         {icon ?? (
           <div
             className="w-full h-full flex items-center justify-center"
-            style={{
-              background: isDark
-                ? "linear-gradient(135deg, #1a1a1a 0%, #000 100%)"
-                : "linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%)",
-            }}
+            style={placeholderStyle}
           />
         )}
       </div>
       <div
         className="text-sm text-center transition-all duration-300"
-        style={{
-          color: isDark ? "#fff" : "#000",
-          maxWidth: "100%",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          fontWeight: isHovered ? 600 : 500,
-        }}
+        style={titleStyle}
       >
         {title}
       </div>
       {subtitle && (
-        <div
-          className="text-xs text-center"
-          style={{
-            color: isDark ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.7)",
-            maxWidth: "100%",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
+        <div className="text-xs text-center" style={subtitleStyle}>
           {subtitle}
         </div>
       )}

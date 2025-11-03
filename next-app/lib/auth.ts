@@ -39,7 +39,15 @@ export const authOptions: NextAuthOptions = {
         hasAccessToken: !!account?.access_token,
       });
 
-      await dbConnect();
+      try {
+        await dbConnect();
+      } catch (dbError) {
+        console.error(
+          "[next-auth signIn] Database connection failed:",
+          dbError
+        );
+        return false;
+      }
 
       try {
         const discordProfile = profile as {
@@ -134,6 +142,7 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   debug: process.env.NODE_ENV === "development",
+  secret: process.env.NEXTAUTH_SECRET,
 };
 
 export default NextAuth(authOptions);
