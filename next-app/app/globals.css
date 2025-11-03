@@ -115,9 +115,17 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    box-sizing: border-box;
   }
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
+  }
+
+  #__next,
+  main {
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 }
 
@@ -159,4 +167,153 @@
 .dark .avatar-img {
   border: none;
   box-shadow: 0 6px 18px rgba(2, 6, 23, 0.12);
+}
+
+/* Guild Sidebar Responsive Styles */
+.guild-layout {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+@media (max-width: 1024px) {
+  .guild-layout {
+    flex-direction: column !important;
+    gap: 1rem !important;
+    padding: 0.5rem !important;
+  }
+
+  .guild-sidebar {
+    width: 100% !important;
+    min-width: 100% !important;
+  }
+
+  /* Make panels grid stack on tablets */
+  .panels-grid {
+    flex-direction: column !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .guild-layout {
+    padding: 0.5rem !important;
+  }
+
+  .guild-sidebar {
+    padding: 1rem !important;
+  }
+
+  .guild-sidebar-header {
+    padding: 0.5rem !important;
+  }
+
+  .guild-sidebar-nav-link {
+    padding: 0.5rem 0.75rem !important;
+  }
+
+  /* Make all form rows stack on mobile */
+  .form-row {
+    flex-direction: column !important;
+    gap: 1rem !important;
+  }
+
+  /* Make filter sections responsive */
+  .filter-card {
+    padding: 1rem !important;
+    gap: 1rem !important;
+  }
+
+  /* Make tables horizontally scrollable */
+  .table-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -1rem;
+    padding: 0 1rem;
+  }
+
+  .table-container table {
+    min-width: 600px;
+  }
+
+  /* Make panel sections stack on mobile */
+  .panels-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  /* Adjust button groups */
+  .button-group {
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+    justify-content: flex-start !important;
+  }
+
+  /* Make section headers stack */
+  .section-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1rem !important;
+  }
+
+  /* Full width search containers on mobile */
+  .search-container {
+    width: 100% !important;
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+  }
+
+  /* Prevent content overflow */
+  .page-content {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* Make cards responsive */
+  .settings-card,
+  .filter-card,
+  .transcripts-card,
+  .panel-card {
+    padding: 1rem !important;
+    margin: 0 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Extra small screens - make everything more compact */
+  .guild-layout {
+    padding: 0.25rem !important;
+  }
+
+  .guild-sidebar {
+    padding: 0.75rem !important;
+  }
+
+  /* Smaller text for mobile */
+  .page-title {
+    font-size: 1.5rem !important;
+  }
+
+  .section-title {
+    font-size: 1rem !important;
+  }
+
+  /* Smaller inputs on mobile */
+  input,
+  select,
+  textarea {
+    font-size: 14px !important;
+  }
+
+  /* Compact buttons */
+  button {
+    padding: 0.5rem 1rem !important;
+    font-size: 0.875rem !important;
+  }
+
+  /* More compact cards */
+  .settings-card,
+  .filter-card,
+  .transcripts-card,
+  .panel-card {
+    padding: 0.75rem !important;
+  }
 }

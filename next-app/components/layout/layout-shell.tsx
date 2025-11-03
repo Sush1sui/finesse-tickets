@@ -50,10 +50,21 @@ export default function LayoutShell({
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   const { resolvedTheme } = useTheme();
+  const [windowWidth, setWindowWidth] = useState(
+    typeof window !== "undefined" ? window.innerWidth : 1200
+  );
 
   useEffect(() => setMounted(true), []);
 
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const isDark = mounted ? resolvedTheme === "dark" : false;
+  const isMobile = windowWidth <= 768;
+  const isSmallMobile = windowWidth <= 480;
 
   const outerStyle: React.CSSProperties = {
     minHeight: "100vh",
@@ -65,9 +76,9 @@ export default function LayoutShell({
   const mainContainerStyle: React.CSSProperties = {
     flex: 1,
     width: "100%",
-    maxWidth: 1100,
+    maxWidth: isMobile ? "100%" : 1400,
     margin: "0 auto",
-    padding: "28px 20px",
+    padding: isSmallMobile ? "8px 4px" : isMobile ? "12px 8px" : "28px 20px",
     boxSizing: "border-box",
   };
 
@@ -75,15 +86,17 @@ export default function LayoutShell({
     width: "100%",
     height: "100%",
     /* Removed background and border per design request */
-    borderRadius: 12,
+    borderRadius: isMobile ? 8 : 12,
     /* outer ring only for subtle elevation */
     boxShadow: isDark
       ? "0 8px 24px rgba(0,0,0,0.6), 0 0 0 2px rgba(255,255,255,0.04)"
       : "0 8px 24px rgba(2,6,23,0.06), 0 0 0 2px rgba(2,6,23,0.04)",
-    padding: 20,
+    padding: isSmallMobile ? 8 : isMobile ? 12 : 20,
     boxSizing: "border-box",
     minHeight: "60vh",
     color: isDark ? "rgba(230,238,248,0.92)" : "inherit",
+    overflowX: "hidden",
+    overflowY: "visible",
   };
 
   return (
