@@ -1,38 +1,143 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState, useMemo } from "react";
 import { useTheme } from "next-themes";
 import GuildSidebar from "@/components/guild-sidebar";
 
+type GuildData = {
+  serverId: string;
+  name: string;
+  icon: string | null;
+  ticketConfig: {
+    ticketNameStyle: "num" | "name";
+    ticketTranscript: string | null;
+    maxTicketsPerUser: number;
+    ticketPermissions: {
+      attachments: boolean;
+      links: boolean;
+      reactions: boolean;
+    };
+    autoClose: {
+      enabled: boolean;
+      closeWhenUserLeaves: boolean;
+      sinceOpenWithoutResponse: {
+        Days: number;
+        Hours: number;
+        Minutes: number;
+      };
+      sinceLastResponse: {
+        Days: number;
+        Hours: number;
+        Minutes: number;
+      };
+    };
+  };
+};
+
+type Channel = {
+  channelId: string;
+  channelName: string;
+};
+
 export default function SettingsPage() {
   const params = useParams();
+  const router = useRouter();
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [guildName, setGuildName] = useState("Server Name");
+  const [loading, setLoading] = useState(true);
+  const [guildData, setGuildData] = useState<GuildData | null>(null);
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   // Form state
-  const [ticketNameStyle, setTicketNameStyle] = useState("number");
+  const [ticketNameStyle, setTicketNameStyle] = useState("num");
   const [transcriptChannel, setTranscriptChannel] = useState("");
-  const [maxTickets, setMaxTickets] = useState("");
+  const [maxTickets, setMaxTickets] = useState("1");
   const [attachFiles, setAttachFiles] = useState(false);
   const [embedLinks, setEmbedLinks] = useState(false);
   const [addReactions, setAddReactions] = useState(false);
   const [autoCloseEnabled, setAutoCloseEnabled] = useState(false);
   const [closeOnLeave, setCloseOnLeave] = useState(false);
-  const [noResponseDays, setNoResponseDays] = useState("");
-  const [noResponseHours, setNoResponseHours] = useState("");
-  const [noResponseMinutes, setNoResponseMinutes] = useState("");
-  const [lastMessageDays, setLastMessageDays] = useState("");
-  const [lastMessageHours, setLastMessageHours] = useState("");
-  const [lastMessageMinutes, setLastMessageMinutes] = useState("");
+  const [noResponseDays, setNoResponseDays] = useState("0");
+  const [noResponseHours, setNoResponseHours] = useState("0");
+  const [noResponseMinutes, setNoResponseMinutes] = useState("0");
+  const [lastMessageDays, setLastMessageDays] = useState("0");
+  const [lastMessageHours, setLastMessageHours] = useState("0");
+  const [lastMessageMinutes, setLastMessageMinutes] = useState("0");
+
+  const guildId = params?.guildId as string;
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (!guildId) return;
+
+    const fetchGuildData = async () => {
+      try {
+        setLoading(true);
+
+        // Fetch guild data
+        const guildResponse = await fetch(`/api/dashboard/guild/${guildId}`);
+        if (!guildResponse.ok) {
+          const errorData = await guildResponse.json();
+          throw new Error(errorData.error || "Failed to fetch guild data");
+        }
+        const guild = await guildResponse.json();
+        setGuildData(guild);
+
+        // Load form state from guild data
+        setTicketNameStyle(guild.ticketConfig.ticketNameStyle);
+        setTranscriptChannel(guild.ticketConfig.ticketTranscript || "");
+        setMaxTickets(guild.ticketConfig.maxTicketsPerUser.toString());
+        setAttachFiles(guild.ticketConfig.ticketPermissions.attachments);
+        setEmbedLinks(guild.ticketConfig.ticketPermissions.links);
+        setAddReactions(guild.ticketConfig.ticketPermissions.reactions);
+        setAutoCloseEnabled(guild.ticketConfig.autoClose.enabled);
+        setCloseOnLeave(guild.ticketConfig.autoClose.closeWhenUserLeaves);
+        setNoResponseDays(
+          guild.ticketConfig.autoClose.sinceOpenWithoutResponse.Days.toString()
+        );
+        setNoResponseHours(
+          guild.ticketConfig.autoClose.sinceOpenWithoutResponse.Hours.toString()
+        );
+        setNoResponseMinutes(
+          guild.ticketConfig.autoClose.sinceOpenWithoutResponse.Minutes.toString()
+        );
+        setLastMessageDays(
+          guild.ticketConfig.autoClose.sinceLastResponse.Days.toString()
+        );
+        setLastMessageHours(
+          guild.ticketConfig.autoClose.sinceLastResponse.Hours.toString()
+        );
+        setLastMessageMinutes(
+          guild.ticketConfig.autoClose.sinceLastResponse.Minutes.toString()
+        );
+
+        // Fetch channels
+        const channelsResponse = await fetch(
+          `/api/dashboard/guild/${guildId}/channels`
+        );
+        if (channelsResponse.ok) {
+          const channelsData = await channelsResponse.json();
+          setChannels(channelsData);
+        }
+      } catch (error) {
+        console.error("Error fetching guild data:", error);
+        setError(
+          error instanceof Error ? error.message : "Failed to load guild data"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchGuildData();
+  }, [guildId]);
+
   const isDark = mounted ? resolvedTheme === "dark" : false;
-  const guildId = params?.guildId as string;
 
   const styles = useMemo(
     () => ({
@@ -143,9 +248,70 @@ export default function SettingsPage() {
     console.log("Saving settings...");
   };
 
+  if (loading) {
+    return (
+      <div
+        style={{
+          minHeight: "60vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div
+        style={{
+          minHeight: "60vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "1rem",
+        }}
+      >
+        <p style={{ color: "red" }}>Error: {error}</p>
+        <button
+          onClick={() => router.push("/dashboard")}
+          style={{
+            padding: "0.5rem 1rem",
+            borderRadius: "6px",
+            cursor: "pointer",
+          }}
+        >
+          Back to Dashboard
+        </button>
+      </div>
+    );
+  }
+
+  if (!guildData) {
+    return (
+      <div
+        style={{
+          minHeight: "60vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <p>No guild data found</p>
+      </div>
+    );
+  }
+
   return (
     <div style={styles.container} className="guild-layout">
-      <GuildSidebar guildId={guildId} guildName={guildName} />
+      <GuildSidebar
+        guildId={guildId}
+        guildName={guildData.name}
+        guildIcon={guildData.icon || undefined}
+      />
 
       <main style={styles.main}>
         <div style={styles.settingsCard} className="settings-card">
@@ -194,9 +360,12 @@ export default function SettingsPage() {
                   onChange={(e) => setTranscriptChannel(e.target.value)}
                   style={styles.select}
                 >
-                  <option value="">Dropdown...</option>
-                  <option value="channel1">Channel 1</option>
-                  <option value="channel2">Channel 2</option>
+                  <option value="">Select a channel...</option>
+                  {channels.map((channel) => (
+                    <option key={channel.channelId} value={channel.channelId}>
+                      #{channel.channelName}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div style={{ flex: 1 }}>

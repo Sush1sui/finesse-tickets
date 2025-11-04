@@ -20,6 +20,7 @@ type Config struct {
 	CategoryJTCCollectionName string
 	CustomVcCollectionName string
 	FinestRoleId string
+	BotAPIKey string
 }
 
 var GlobalConfig *Config
@@ -49,12 +50,18 @@ func New() (error) {
 		return fmt.Errorf("MONGODB_NAME is not set in the environment variables")
 	}
 
+	botAPIKey := os.Getenv("BOT_API_KEY")
+	if botAPIKey == "" {
+		return fmt.Errorf("BOT_API_KEY is not set in the environment variables")
+	}
+
 	GlobalConfig = &Config{
 		Port:     port,
 		BotToken: botToken,
 		AppID:   appID,
 		ServerUrl: os.Getenv("SERVER_URL"),
 		MongoDBName: mongoDBName,
+		BotAPIKey: botAPIKey,
 	}
 	return nil
 }

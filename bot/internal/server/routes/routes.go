@@ -11,15 +11,9 @@ func NewRouter() http.Handler {
 
 	mux.HandleFunc("/", handlers.IndexHandler)
 	mux.HandleFunc("/api/servers", handlers.GetAllServersHandler)
+	mux.HandleFunc("/api/guilds/", handlers.GetGuildChannelsHandler)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-			case "/":
-				mux.ServeHTTP(w, r)
-			case "/api/servers":
-				mux.ServeHTTP(w, r)
-			default:
-				http.NotFound(w, r)
-		}
+		mux.ServeHTTP(w, r)
 	})
 }

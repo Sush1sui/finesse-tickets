@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useEffect, useState, useMemo } from "react";
+import Image from "next/image";
 
 type GuildSidebarProps = {
   guildId: string;
@@ -29,7 +30,7 @@ export default function GuildSidebar({
   const navItems = useMemo(
     () => [
       {
-        href: `/dashboard/guild/${guildId}`,
+        href: `/dashboard`,
         icon: "←",
         label: "Back to servers",
         isBack: true,
@@ -148,12 +149,12 @@ export default function GuildSidebar({
       <div style={styles.serverHeader} className="guild-sidebar-header">
         <div style={styles.serverIcon}>
           {guildIcon ? (
-            <img
+            <Image
               src={guildIcon}
               alt={guildName}
+              width={48}
+              height={48}
               style={{
-                width: "100%",
-                height: "100%",
                 borderRadius: "50%",
                 objectFit: "cover",
               }}
