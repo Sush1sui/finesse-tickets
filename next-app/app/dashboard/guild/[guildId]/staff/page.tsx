@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useTheme } from "next-themes";
 import GuildSidebar from "@/components/guild-sidebar";
 
@@ -31,7 +31,24 @@ export default function StaffPage() {
   }, []);
 
   const isDark = mounted ? resolvedTheme === "dark" : false;
-  const guildId = params?.guildId as string;
+  const guildId = useMemo(() => params?.guildId as string, [params?.guildId]);
+
+  const handleAddPanel = useCallback(() => {
+    // TODO: Implement add panel functionality
+    console.log("Add new panel");
+  }, []);
+
+  const handleEditMember = useCallback((memberId: string) => {
+    // TODO: Implement edit member functionality
+    console.log("Edit member:", memberId);
+  }, []);
+
+  const filteredMembers = useMemo(() => {
+    if (!searchTerm) return staffMembers;
+    return staffMembers.filter((member) =>
+      member.role.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [staffMembers, searchTerm]);
 
   const styles = useMemo(
     () => ({
@@ -154,15 +171,22 @@ export default function StaffPage() {
                   style={styles.searchInput}
                   placeholder="Search..."
                 />
-                <button style={styles.addButton}>+ New Panel</button>
+                <button style={styles.addButton} onClick={handleAddPanel}>
+                  + New Panel
+                </button>
               </div>
             </div>
 
             <div style={styles.memberList}>
-              {staffMembers.map((member) => (
+              {filteredMembers.map((member) => (
                 <div key={member.id} style={styles.memberItem}>
                   <span style={styles.roleName}>{member.role}</span>
-                  <button style={styles.editButton}>EDIT</button>
+                  <button
+                    style={styles.editButton}
+                    onClick={() => handleEditMember(member.id)}
+                  >
+                    EDIT
+                  </button>
                 </div>
               ))}
             </div>

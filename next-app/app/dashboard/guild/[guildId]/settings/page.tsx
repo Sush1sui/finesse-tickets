@@ -1,9 +1,10 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useTheme } from "next-themes";
 import GuildSidebar from "@/components/guild-sidebar";
+import { Spinner } from "@/components/ui/spinner";
 
 type GuildData = {
   serverId: string;
@@ -46,12 +47,14 @@ export default function SettingsPage() {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [guildData, setGuildData] = useState<GuildData | null>(null);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Form state
-  const [ticketNameStyle, setTicketNameStyle] = useState("num");
+  // Form state - initialize as null/undefined to wait for server data
+  const [ticketNameStyle, setTicketNameStyle] = useState<"num" | "name">("num");
   const [transcriptChannel, setTranscriptChannel] = useState("");
   const [maxTickets, setMaxTickets] = useState("1");
   const [attachFiles, setAttachFiles] = useState(false);
@@ -66,7 +69,7 @@ export default function SettingsPage() {
   const [lastMessageHours, setLastMessageHours] = useState("0");
   const [lastMessageMinutes, setLastMessageMinutes] = useState("0");
 
-  const guildId = params?.guildId as string;
+  const guildId = useMemo(() => params?.guildId as string, [params?.guildId]);
 
   useEffect(() => {
     setMounted(true);
@@ -240,25 +243,143 @@ export default function SettingsPage() {
         width: "100%",
         transition: "all 0.2s",
       } as React.CSSProperties,
+      successMessage: {
+        padding: "1rem",
+        borderRadius: "8px",
+        background: isDark
+          ? "rgba(34, 197, 94, 0.2)"
+          : "rgba(34, 197, 94, 0.1)",
+        border: isDark
+          ? "2px solid rgba(34, 197, 94, 0.5)"
+          : "2px solid rgba(34, 197, 94, 0.3)",
+        color: isDark ? "#86efac" : "#15803d",
+        marginBottom: "2rem",
+        fontWeight: "500",
+      } as React.CSSProperties,
+      errorMessage: {
+        padding: "1rem",
+        borderRadius: "8px",
+        background: isDark
+          ? "rgba(239, 68, 68, 0.2)"
+          : "rgba(239, 68, 68, 0.1)",
+        border: isDark
+          ? "2px solid rgba(239, 68, 68, 0.5)"
+          : "2px solid rgba(239, 68, 68, 0.3)",
+        color: isDark ? "#fca5a5" : "#991b1b",
+        marginBottom: "2rem",
+        fontWeight: "500",
+      } as React.CSSProperties,
     }),
     [isDark]
   );
 
-  const handleSave = () => {
-    console.log("Saving settings...");
-  };
+  const handleSave = useCallback(async () => {
+    if (!guildId) return;
 
-  if (loading) {
+    setSaving(true);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      const response = await fetch(`/api/dashboard/guild/${guildId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ticketConfig: {
+            ticketNameStyle: ticketNameStyle,
+            ticketTranscript: transcriptChannel || null,
+            maxTicketsPerUser: parseInt(maxTickets) || 0,
+            ticketPermissions: {
+              attachments: attachFiles,
+              links: embedLinks,
+              reactions: addReactions,
+            },
+            autoClose: {
+              enabled: autoCloseEnabled,
+              closeWhenUserLeaves: closeOnLeave,
+              sinceOpenWithoutResponse: {
+                Days: parseInt(noResponseDays) || 0,
+                Hours: parseInt(noResponseHours) || 0,
+                Minutes: parseInt(noResponseMinutes) || 0,
+              },
+              sinceLastResponse: {
+                Days: parseInt(lastMessageDays) || 0,
+                Hours: parseInt(lastMessageHours) || 0,
+                Minutes: parseInt(lastMessageMinutes) || 0,
+              },
+            },
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to save settings");
+      }
+
+      const data = await response.json();
+      setSuccessMessage("Settings saved successfully!");
+
+      // Update local guild data
+      if (data.server) {
+        setGuildData(data.server);
+      }
+
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 3000);
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      setError(
+        error instanceof Error ? error.message : "Failed to save settings"
+      );
+    } finally {
+      setSaving(false);
+    }
+  }, [
+    guildId,
+    ticketNameStyle,
+    transcriptChannel,
+    maxTickets,
+    attachFiles,
+    embedLinks,
+    addReactions,
+    autoCloseEnabled,
+    closeOnLeave,
+    noResponseDays,
+    noResponseHours,
+    noResponseMinutes,
+    lastMessageDays,
+    lastMessageHours,
+    lastMessageMinutes,
+  ]);
+
+  if (loading || !guildData) {
     return (
       <div
         style={{
           minHeight: "60vh",
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
+          gap: "1rem",
+          padding: "2rem",
         }}
       >
-        <p>Loading...</p>
+        <h2
+          style={{
+            fontSize: "1.25rem",
+            fontWeight: 700,
+            color: isDark ? "#fff" : "#000",
+          }}
+        >
+          Loading Settings Please Wait...
+        </h2>
+        <Spinner />
       </div>
     );
   }
@@ -319,6 +440,16 @@ export default function SettingsPage() {
             Settings
           </h1>
 
+          {/* Success Message */}
+          {successMessage && (
+            <div style={styles.successMessage}>✓ {successMessage}</div>
+          )}
+
+          {/* Error Message */}
+          {error && !loading && (
+            <div style={styles.errorMessage}>✗ {error}</div>
+          )}
+
           {/* Ticket Name Style */}
           <div style={styles.section}>
             <h2 style={styles.sectionTitle} className="section-title">
@@ -329,9 +460,11 @@ export default function SettingsPage() {
                 <input
                   type="radio"
                   name="ticketNameStyle"
-                  value="number"
-                  checked={ticketNameStyle === "number"}
-                  onChange={(e) => setTicketNameStyle(e.target.value)}
+                  value="num"
+                  checked={ticketNameStyle === "num"}
+                  onChange={(e) =>
+                    setTicketNameStyle(e.target.value as "num" | "name")
+                  }
                   style={styles.checkbox}
                 />
                 By Number ( #ticket-0 )
@@ -342,7 +475,9 @@ export default function SettingsPage() {
                   name="ticketNameStyle"
                   value="name"
                   checked={ticketNameStyle === "name"}
-                  onChange={(e) => setTicketNameStyle(e.target.value)}
+                  onChange={(e) =>
+                    setTicketNameStyle(e.target.value as "num" | "name")
+                  }
                   style={styles.checkbox}
                 />
                 By Name ( #ticket-sush1sui )
@@ -507,8 +642,16 @@ export default function SettingsPage() {
           </div>
 
           {/* Save Button */}
-          <button onClick={handleSave} style={styles.saveButton}>
-            SAVE
+          <button
+            onClick={handleSave}
+            style={{
+              ...styles.saveButton,
+              opacity: saving ? 0.6 : 1,
+              cursor: saving ? "not-allowed" : "pointer",
+            }}
+            disabled={saving}
+          >
+            {saving ? "SAVING..." : "SAVE"}
           </button>
         </div>
       </main>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useTheme } from "next-themes";
 import GuildSidebar from "@/components/guild-sidebar";
 
@@ -43,7 +43,22 @@ export default function PanelsPage() {
   }, []);
 
   const isDark = mounted ? resolvedTheme === "dark" : false;
-  const guildId = params?.guildId as string;
+  const guildId = useMemo(() => params?.guildId as string, [params?.guildId]);
+
+  const handleNewPanel = useCallback(() => {
+    router.push(`/dashboard/guild/${guildId}/panels/create`);
+  }, [guildId, router]);
+
+  const handleNewMultiPanel = useCallback(() => {
+    router.push(`/dashboard/guild/${guildId}/panels/create-multi`);
+  }, [guildId, router]);
+
+  const handleEditPanel = useCallback(
+    (panelId: string) => {
+      router.push(`/dashboard/guild/${guildId}/panels/${panelId}/edit`);
+    },
+    [guildId, router]
+  );
 
   const styles = useMemo(
     () => ({
@@ -142,12 +157,7 @@ export default function PanelsPage() {
             <h1 style={styles.title} className="page-title">
               Ticket Panels
             </h1>
-            <button
-              style={styles.newButton}
-              onClick={() =>
-                router.push(`/dashboard/guild/${guildId}/panels/create`)
-              }
-            >
+            <button style={styles.newButton} onClick={handleNewPanel}>
               + New Panel
             </button>
           </div>
@@ -171,11 +181,7 @@ export default function PanelsPage() {
                       <div style={styles.actionButtons}>
                         <button
                           style={styles.actionButton}
-                          onClick={() =>
-                            router.push(
-                              `/dashboard/guild/${guildId}/panels/${panel.id}/edit`
-                            )
-                          }
+                          onClick={() => handleEditPanel(panel.id)}
                         >
                           EDIT
                         </button>
@@ -196,12 +202,7 @@ export default function PanelsPage() {
             <h1 style={styles.title} className="page-title">
               Multi-Panels
             </h1>
-            <button
-              style={styles.newButton}
-              onClick={() =>
-                router.push(`/dashboard/guild/${guildId}/panels/create-multi`)
-              }
-            >
+            <button style={styles.newButton} onClick={handleNewMultiPanel}>
               + New Multi Panel
             </button>
           </div>

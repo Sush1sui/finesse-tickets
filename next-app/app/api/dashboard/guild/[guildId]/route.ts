@@ -168,3 +168,144 @@ export async function GET(
     );
   }
 }
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ guildId: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    await dbConnect();
+
+    const { guildId } = await params;
+    const body = await request.json();
+
+    // Validate user has access to this guild
+    const user = await User.findById(session.user.id);
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    if (!user.accessToken) {
+      return NextResponse.json(
+        { error: "No access token available" },
+        { status: 401 }
+      );
+    }
+
+    // Decrypt the access token
+    let decryptedToken: string;
+    try {
+      decryptedToken = decryptText(user.accessToken);
+    } catch (decryptError) {
+      console.error("Token decryption error:", decryptError);
+      return NextResponse.json(
+        { error: "Failed to decrypt access token" },
+        { status: 500 }
+      );
+    }
+
+    // Verify user has access to this guild
+    const discordResponse = await fetch(
+      "https://discord.com/api/users/@me/guilds",
+      {
+        headers: {
+          Authorization: `Bearer ${decryptedToken}`,
+        },
+      }
+    );
+
+    if (!discordResponse.ok) {
+      return NextResponse.json(
+        { error: "Failed to verify guild access" },
+        { status: 500 }
+      );
+    }
+
+    const guilds = await discordResponse.json();
+    const hasAccess = guilds.find(
+      (g: { id: string; name: string; icon: string | null }) => g.id === guildId
+    );
+
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: "You don't have access to this guild" },
+        { status: 403 }
+      );
+    }
+
+    // Find server and update
+    const server = await Server.findOne({ serverId: guildId });
+    if (!server) {
+      return NextResponse.json({ error: "Server not found" }, { status: 404 });
+    }
+
+    // Update ticket config with proper nested object merging
+    if (body.ticketConfig) {
+      // Merge each nested object properly
+      server.ticketConfig.ticketNameStyle =
+        body.ticketConfig.ticketNameStyle ??
+        server.ticketConfig.ticketNameStyle;
+      server.ticketConfig.ticketTranscript =
+        body.ticketConfig.ticketTranscript ??
+        server.ticketConfig.ticketTranscript;
+      server.ticketConfig.maxTicketsPerUser =
+        body.ticketConfig.maxTicketsPerUser ??
+        server.ticketConfig.maxTicketsPerUser;
+
+      if (body.ticketConfig.ticketPermissions) {
+        server.ticketConfig.ticketPermissions = {
+          ...server.ticketConfig.ticketPermissions,
+          ...body.ticketConfig.ticketPermissions,
+        };
+      }
+
+      if (body.ticketConfig.autoClose) {
+        server.ticketConfig.autoClose = {
+          ...server.ticketConfig.autoClose,
+          ...body.ticketConfig.autoClose,
+          sinceOpenWithoutResponse: {
+            ...server.ticketConfig.autoClose.sinceOpenWithoutResponse,
+            ...(body.ticketConfig.autoClose.sinceOpenWithoutResponse || {}),
+          },
+          sinceLastResponse: {
+            ...server.ticketConfig.autoClose.sinceLastResponse,
+            ...(body.ticketConfig.autoClose.sinceLastResponse || {}),
+          },
+        };
+      }
+    }
+
+    await server.save();
+
+    // Build the full Discord CDN icon URL
+    const iconUrl = server.icon
+      ? `https://cdn.discordapp.com/icons/${server.serverId}/${server.icon}.${
+          server.icon.startsWith("a_") ? "gif" : "png"
+        }?size=128`
+      : null;
+
+    return NextResponse.json({
+      success: true,
+      server: {
+        serverId: server.serverId,
+        name: server.name,
+        icon: iconUrl,
+        ticketConfig: server.ticketConfig,
+      },
+    });
+  } catch (error) {
+    console.error("Error updating guild settings:", error);
+    return NextResponse.json(
+      {
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
+  }
+}

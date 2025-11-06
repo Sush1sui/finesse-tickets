@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useTheme } from "next-themes";
 import GuildSidebar from "@/components/guild-sidebar";
 
@@ -41,7 +41,17 @@ export default function TranscriptsPage() {
   }, []);
 
   const isDark = mounted ? resolvedTheme === "dark" : false;
-  const guildId = params?.guildId as string;
+  const guildId = useMemo(() => params?.guildId as string, [params?.guildId]);
+
+  const handleSearch = useCallback(() => {
+    // TODO: Implement search functionality
+    console.log("Searching with filters:", {
+      ticketIdFilter,
+      usernameFilter,
+      userIdFilter,
+      panelFilter,
+    });
+  }, [ticketIdFilter, usernameFilter, userIdFilter, panelFilter]);
 
   const styles = useMemo(
     () => ({
@@ -218,7 +228,9 @@ export default function TranscriptsPage() {
             </select>
           </div>
 
-          <button style={styles.searchButton}>🔍</button>
+          <button style={styles.searchButton} onClick={handleSearch}>
+            🔍
+          </button>
         </div>
 
         {/* Transcripts Table */}
