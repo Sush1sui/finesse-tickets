@@ -88,7 +88,7 @@ export default function SettingsPage() {
           const errorData = await guildResponse.json();
           throw new Error(errorData.error || "Failed to fetch guild data");
         }
-        const guild = await guildResponse.json();
+        const guild = (await guildResponse.json()) as GuildData;
         setGuildData(guild);
 
         // Load form state from guild data

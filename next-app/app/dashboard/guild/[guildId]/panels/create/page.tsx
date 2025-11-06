@@ -4,13 +4,42 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState, useMemo } from "react";
 import { useTheme } from "next-themes";
 import GuildSidebar from "@/components/guild-sidebar";
+import EmojiPicker from "@/components/emoji-picker";
+
+type CustomEmoji = {
+  emojiId: string;
+  emojiName: string;
+  emojiAnimated: boolean;
+  emojiUrl: string;
+  emojiFormat: string;
+};
+
+type Role = {
+  roleId: string;
+  roleName: string;
+};
+
+type Category = {
+  categoryId: string;
+  categoryName: string;
+};
+
+type Channel = {
+  channelId: string;
+  channelName: string;
+};
 
 export default function CreatePanelPage() {
   const params = useParams();
   const router = useRouter();
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [guildName, setGuildName] = useState("Server Name");
+  const [customEmojis, setCustomEmojis] = useState<CustomEmoji[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [channels, setChannels] = useState<Channel[]>([]);
 
   // Form state
   const [mentionOnOpen, setMentionOnOpen] = useState("");
@@ -41,6 +70,43 @@ export default function CreatePanelPage() {
 
   const isDark = mounted ? resolvedTheme === "dark" : false;
   const guildId = params?.guildId as string;
+
+  // Fetch guild data (roles, categories, channels, emojis)
+  useEffect(() => {
+    if (!guildId) return;
+
+    const fetchGuildData = async () => {
+      try {
+        setLoading(true);
+
+        // Fetch combined data (roles, categories, channels) in a single request
+        const [dataResponse, emojisResponse] = await Promise.all([
+          fetch(`/api/dashboard/guild/${guildId}/data`),
+          fetch(`/api/dashboard/guild/${guildId}/emojis`),
+        ]);
+
+        // Parse JSON in parallel
+        const [guildData, emojisData] = await Promise.all([
+          dataResponse.ok
+            ? dataResponse.json()
+            : { roles: [], categories: [], channels: [] },
+          emojisResponse.ok ? emojisResponse.json() : [],
+        ]);
+
+        // Update state all at once
+        setRoles(guildData.roles || []);
+        setCategories(guildData.categories || []);
+        setChannels(guildData.channels || []);
+        setCustomEmojis(emojisData);
+      } catch (error) {
+        console.error("Error fetching guild data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchGuildData();
+  }, [guildId]);
 
   const styles = useMemo(
     () => ({
@@ -164,6 +230,33 @@ export default function CreatePanelPage() {
     router.push(`/dashboard/guild/${guildId}/panels`);
   };
 
+  // Show loading spinner while fetching data
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 p-8">
+        <h2
+          className={`text-xl font-bold ${
+            isDark ? "text-white" : "text-black"
+          }`}
+        >
+          Loading Panel Data...
+        </h2>
+        <div
+          className="rounded-full"
+          style={{
+            width: "40px",
+            height: "40px",
+            border: `4px solid ${
+              isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"
+            }`,
+            borderTop: `4px solid ${isDark ? "#fff" : "#000"}`,
+            animation: "spin 1s linear infinite",
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div style={styles.container} className="guild-layout">
       <GuildSidebar guildId={guildId} guildName={guildName} />
@@ -184,8 +277,11 @@ export default function CreatePanelPage() {
                 style={styles.select}
               >
                 <option value="">Select roles...</option>
-                <option value="role1">Role 1</option>
-                <option value="role2">Role 2</option>
+                {roles.map((role) => (
+                  <option key={role.roleId} value={role.roleId}>
+                    @{role.roleName}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -197,8 +293,11 @@ export default function CreatePanelPage() {
                 style={styles.select}
               >
                 <option value="">CATEGORY...</option>
-                <option value="cat1">Category 1</option>
-                <option value="cat2">Category 2</option>
+                {categories.map((category) => (
+                  <option key={category.categoryId} value={category.categoryId}>
+                    {category.categoryName}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -247,8 +346,11 @@ export default function CreatePanelPage() {
                 style={styles.select}
               >
                 <option value="">ex: create-a-ticket</option>
-                <option value="channel1">Channel 1</option>
-                <option value="channel2">Channel 2</option>
+                {channels.map((channel) => (
+                  <option key={channel.channelId} value={channel.channelId}>
+                    #{channel.channelName}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -282,26 +384,15 @@ export default function CreatePanelPage() {
           </div>
 
           {/* Button Emoji */}
-          <div style={styles.formRow}>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>BUTTON EMOJI</label>
-              <div style={styles.checkboxGroup}>
-                <input
-                  type="checkbox"
-                  checked={customEmoji}
-                  onChange={(e) => setCustomEmoji(e.target.checked)}
-                  style={{ cursor: "pointer" }}
-                />
-                <span>Custom Emoji</span>
-                <input
-                  type="text"
-                  value={emojiValue}
-                  onChange={(e) => setEmojiValue(e.target.value)}
-                  style={{ ...styles.input, flex: 1 }}
-                  placeholder="🎫"
-                />
-              </div>
-            </div>
+          <div style={styles.formGroup}>
+            <label style={styles.label}>BUTTON EMOJI</label>
+            <EmojiPicker
+              value={emojiValue}
+              onChange={setEmojiValue}
+              customEmojis={customEmojis}
+              useCustom={customEmoji}
+              onToggleCustom={setCustomEmoji}
+            />
           </div>
 
           {/* Image URLs */}

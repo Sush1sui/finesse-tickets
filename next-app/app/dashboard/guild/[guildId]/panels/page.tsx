@@ -4,17 +4,34 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useTheme } from "next-themes";
 import GuildSidebar from "@/components/guild-sidebar";
+import { Spinner } from "@/components/ui/spinner";
 
 type Panel = {
-  id: string;
+  _id: string;
   channel: string;
   title: string;
+  btnText: string;
+  btnColor: string;
+  btnEmoji: string | null;
 };
 
-type MultiPanel = {
-  id: string;
-  channel: string;
-  title: string;
+type Channel = {
+  channelId: string;
+  channelName: string;
+};
+
+type Emoji = {
+  emojiId: string;
+  emojiName: string;
+  emojiAnimated: boolean;
+  emojiUrl: string;
+  emojiFormat: string;
+};
+
+type GuildData = {
+  serverId: string;
+  name: string;
+  icon: string | null;
 };
 
 export default function PanelsPage() {
@@ -22,21 +39,11 @@ export default function PanelsPage() {
   const router = useRouter();
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [guildName, setGuildName] = useState("Server Name");
-
-  // Mock data
-  const [panels] = useState<Panel[]>([
-    { id: "1", channel: "#・┊create-a-ticket", title: "SERVER CONCERNS" },
-    { id: "2", channel: "#・┊create-a-ticket", title: "PRIZE CLAIM" },
-  ]);
-
-  const [multiPanels] = useState<MultiPanel[]>([
-    {
-      id: "1",
-      channel: "#・┊create-a-ticket",
-      title: "Open ticket for staff support.",
-    },
-  ]);
+  const [loading, setLoading] = useState(true);
+  const [guildData, setGuildData] = useState<GuildData | null>(null);
+  const [panels, setPanels] = useState<Panel[]>([]);
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -44,6 +51,70 @@ export default function PanelsPage() {
 
   const isDark = mounted ? resolvedTheme === "dark" : false;
   const guildId = useMemo(() => params?.guildId as string, [params?.guildId]);
+
+  useEffect(() => {
+    if (!guildId) return;
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+
+        // Fetch guild data
+        const guildResponse = await fetch(`/api/dashboard/guild/${guildId}`);
+        if (!guildResponse.ok) {
+          throw new Error("Failed to fetch guild data");
+        }
+        const guild = await guildResponse.json();
+        setGuildData(guild);
+
+        // Fetch channels
+        const channelsResponse = await fetch(
+          `/api/dashboard/guild/${guildId}/channels`
+        );
+        if (channelsResponse.ok) {
+          const channelsData = await channelsResponse.json();
+          setChannels(channelsData);
+        }
+
+        // Fetch panels
+        const panelsResponse = await fetch(
+          `/api/dashboard/guild/${guildId}/panels`
+        );
+        if (panelsResponse.ok) {
+          const data = await panelsResponse.json();
+          setPanels(data.panels || []);
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setError(
+          error instanceof Error ? error.message : "Failed to load data"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [guildId]);
+
+  // Helper function to get channel name from channel ID
+  const getChannelName = useCallback(
+    (channelId: string) => {
+      const channel = channels.find((c) => c.channelId === channelId);
+      return channel ? channel.channelName : channelId;
+    },
+    [channels]
+  );
+
+  const regularPanels = useMemo(
+    () => panels.filter((p) => !p.btnText.includes("Multi")),
+    [panels]
+  );
+
+  const multiPanels = useMemo(
+    () => panels.filter((p) => p.btnText.includes("Multi")),
+    [panels]
+  );
 
   const handleNewPanel = useCallback(() => {
     router.push(`/dashboard/guild/${guildId}/panels/create`);
@@ -58,6 +129,30 @@ export default function PanelsPage() {
       router.push(`/dashboard/guild/${guildId}/panels/${panelId}/edit`);
     },
     [guildId, router]
+  );
+
+  const handleDeletePanel = useCallback(
+    async (panelId: string) => {
+      if (!confirm("Are you sure you want to delete this panel?")) return;
+
+      try {
+        const response = await fetch(
+          `/api/dashboard/guild/${guildId}/panels/${panelId}`,
+          { method: "DELETE" }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to delete panel");
+        }
+
+        // Remove from local state
+        setPanels((prev) => prev.filter((p) => p._id !== panelId));
+      } catch (error) {
+        console.error("Error deleting panel:", error);
+        alert("Failed to delete panel");
+      }
+    },
+    [guildId]
   );
 
   const styles = useMemo(
@@ -146,9 +241,67 @@ export default function PanelsPage() {
     [isDark]
   );
 
+  if (loading || !guildData) {
+    return (
+      <div
+        style={{
+          minHeight: "60vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "1rem",
+          padding: "2rem",
+        }}
+      >
+        <h2
+          style={{
+            fontSize: "1.25rem",
+            fontWeight: 700,
+            color: isDark ? "#fff" : "#000",
+          }}
+        >
+          Loading Panels Please Wait...
+        </h2>
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div
+        style={{
+          minHeight: "60vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "1rem",
+        }}
+      >
+        <p style={{ color: "red" }}>Error: {error}</p>
+        <button
+          onClick={() => router.push("/dashboard")}
+          style={{
+            padding: "0.5rem 1rem",
+            borderRadius: "6px",
+            cursor: "pointer",
+          }}
+        >
+          Back to Dashboard
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div style={styles.container} className="guild-layout">
-      <GuildSidebar guildId={guildId} guildName={guildName} />
+      <GuildSidebar
+        guildId={guildId}
+        guildName={guildData.name}
+        guildIcon={guildData.icon || undefined}
+      />
 
       <main style={styles.main} className="panels-grid">
         {/* Ticket Panels */}
@@ -161,7 +314,7 @@ export default function PanelsPage() {
               + New Panel
             </button>
           </div>
-          <p style={styles.subtitle}>Your Panels: {panels.length}/3</p>
+          <p style={styles.subtitle}>Your Panels: {regularPanels.length}/3</p>
 
           <div className="table-container">
             <table style={styles.table}>
@@ -173,24 +326,47 @@ export default function PanelsPage() {
                 </tr>
               </thead>
               <tbody>
-                {panels.map((panel) => (
-                  <tr key={panel.id}>
-                    <td style={styles.td}>{panel.channel}</td>
-                    <td style={styles.td}>{panel.title}</td>
-                    <td style={styles.td}>
-                      <div style={styles.actionButtons}>
-                        <button
-                          style={styles.actionButton}
-                          onClick={() => handleEditPanel(panel.id)}
-                        >
-                          EDIT
-                        </button>
-                        <button style={styles.actionButton}>VIEW</button>
-                        <button style={styles.actionButton}>DELETE</button>
-                      </div>
+                {regularPanels.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={3}
+                      style={{
+                        ...styles.td,
+                        textAlign: "center",
+                        opacity: 0.6,
+                      }}
+                    >
+                      No panels created yet. Click &quot;+ New Panel&quot; to
+                      create one.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  regularPanels.map((panel) => (
+                    <tr key={panel._id}>
+                      <td style={styles.td}>
+                        #{getChannelName(panel.channel)}
+                      </td>
+                      <td style={styles.td}>{panel.title}</td>
+                      <td style={styles.td}>
+                        <div style={styles.actionButtons}>
+                          <button
+                            style={styles.actionButton}
+                            onClick={() => handleEditPanel(panel._id)}
+                          >
+                            EDIT
+                          </button>
+                          <button style={styles.actionButton}>VIEW</button>
+                          <button
+                            style={styles.actionButton}
+                            onClick={() => handleDeletePanel(panel._id)}
+                          >
+                            DELETE
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -217,22 +393,44 @@ export default function PanelsPage() {
                 </tr>
               </thead>
               <tbody>
-                {multiPanels.map((panel) => (
-                  <tr key={panel.id}>
-                    <td style={styles.td}>{panel.channel}</td>
-                    <td style={styles.td}>{panel.title}</td>
-                    <td style={styles.td}>
-                      <div
-                        style={styles.actionButtons}
-                        className="button-group"
-                      >
-                        <button style={styles.actionButton}>ADDON</button>
-                        <button style={styles.actionButton}>VIEW</button>
-                        <button style={styles.actionButton}>DELETE</button>
-                      </div>
+                {multiPanels.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={3}
+                      style={{
+                        ...styles.td,
+                        textAlign: "center",
+                        opacity: 0.6,
+                      }}
+                    >
+                      No multi-panels created yet.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  multiPanels.map((panel) => (
+                    <tr key={panel._id}>
+                      <td style={styles.td}>
+                        #{getChannelName(panel.channel)}
+                      </td>
+                      <td style={styles.td}>{panel.title}</td>
+                      <td style={styles.td}>
+                        <div
+                          style={styles.actionButtons}
+                          className="button-group"
+                        >
+                          <button style={styles.actionButton}>ADDON</button>
+                          <button style={styles.actionButton}>VIEW</button>
+                          <button
+                            style={styles.actionButton}
+                            onClick={() => handleDeletePanel(panel._id)}
+                          >
+                            DELETE
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
