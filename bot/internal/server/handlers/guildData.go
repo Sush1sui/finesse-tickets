@@ -46,23 +46,20 @@ func GetGuildDataHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Fetch roles
-	roles, err := sess.GuildRoles(guildID)
+	// Try to get guild from cache first (much faster)
+	guild, err := sess.State.Guild(guildID)
 	if err != nil {
-		http.Error(w, "Failed to fetch guild roles", http.StatusInternalServerError)
-		return
-	}
-
-	// Fetch channels
-	channels, err := sess.GuildChannels(guildID)
-	if err != nil {
-		http.Error(w, "Failed to fetch guild channels", http.StatusInternalServerError)
-		return
+		// Fallback to API call if not in cache
+		guild, err = sess.Guild(guildID)
+		if err != nil {
+			http.Error(w, "Failed to fetch guild", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	// Filter and format roles (exclude @everyone)
 	var roleList []Role
-	for _, role := range roles {
+	for _, role := range guild.Roles {
 		// Skip @everyone role (its ID equals the guild ID)
 		if role.ID == guildID {
 			continue
@@ -73,21 +70,16 @@ func GetGuildDataHandler(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	// Filter and format categories
+	// Filter and format categories and channels from guild.Channels
 	var categoryList []Category
-	for _, ch := range channels {
+	var channelList []Channel
+	for _, ch := range guild.Channels {
 		if ch.Type == discordgo.ChannelTypeGuildCategory {
 			categoryList = append(categoryList, Category{
 				CategoryID:   ch.ID,
 				CategoryName: ch.Name,
 			})
-		}
-	}
-
-	// Filter and format channels (text and announcement only)
-	var channelList []Channel
-	for _, ch := range channels {
-		if ch.Type == discordgo.ChannelTypeGuildText || ch.Type == discordgo.ChannelTypeGuildNews {
+		} else if ch.Type == discordgo.ChannelTypeGuildText || ch.Type == discordgo.ChannelTypeGuildNews {
 			channelList = append(channelList, Channel{
 				ChannelID:   ch.ID,
 				ChannelName: ch.Name,

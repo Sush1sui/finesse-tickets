@@ -25,6 +25,45 @@ const MODERATOR_MASK =
   PERM_VIEW_AUDIT |
   PERM_ADMIN;
 
+// Refresh Discord access token using refresh token
+async function refreshAccessToken(
+  refreshToken: string
+): Promise<{ accessToken: string; refreshToken: string } | null> {
+  try {
+    const response = await fetch(`${DISCORD_API}/oauth2/token`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        client_id: process.env.DISCORD_CLIENT_ID!,
+        client_secret: process.env.DISCORD_CLIENT_SECRET!,
+        grant_type: "refresh_token",
+        refresh_token: refreshToken,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "");
+      console.error(
+        "[refresh] Failed to refresh token:",
+        response.status,
+        errorText
+      );
+      return null;
+    }
+
+    const data = await response.json();
+    return {
+      accessToken: data.access_token,
+      refreshToken: data.refresh_token,
+    };
+  } catch (error) {
+    console.error("[refresh] Error refreshing token:", error);
+    return null;
+  }
+}
+
 export async function GET() {
   const { error, user } = await requireAuth();
   if (error) {
@@ -45,10 +84,14 @@ export async function GET() {
   }
 
   try {
-    // Fetch user's Discord access token
-    const dbUser = await User.findById(user.id).select("accessToken").lean();
+    // Fetch user's Discord access token and refresh token
+    const dbUser = await User.findById(user.id)
+      .select("accessToken refreshToken")
+      .lean();
 
     let token: string | undefined;
+    let refreshToken: string | undefined;
+
     if (dbUser?.accessToken) {
       try {
         token = decryptText(dbUser.accessToken);
@@ -67,6 +110,14 @@ export async function GET() {
       }
     }
 
+    if (dbUser?.refreshToken) {
+      try {
+        refreshToken = decryptText(dbUser.refreshToken);
+      } catch {
+        refreshToken = dbUser.refreshToken;
+      }
+    }
+
     if (!token) {
       return NextResponse.json(
         { error: "No Discord token; please re-authenticate" },
@@ -75,9 +126,43 @@ export async function GET() {
     }
 
     // Fetch user's guilds from Discord
-    const apiRes = await fetch(`${DISCORD_API}/users/@me/guilds`, {
+    let apiRes = await fetch(`${DISCORD_API}/users/@me/guilds`, {
       headers: { Authorization: `Bearer ${token}` },
     });
+
+    // If token expired (401), try to refresh it
+    if (apiRes.status === 401 && refreshToken) {
+      console.log(
+        "[permitted-servers] Access token expired, attempting refresh..."
+      );
+      const newTokens = await refreshAccessToken(refreshToken);
+
+      if (newTokens) {
+        // Update tokens in database
+        await User.updateOne(
+          { _id: user.id },
+          {
+            $set: {
+              accessToken: encryptText(newTokens.accessToken),
+              refreshToken: encryptText(newTokens.refreshToken),
+            },
+          }
+        );
+        console.log("[permitted-servers] Token refreshed successfully");
+
+        // Retry the request with new token
+        token = newTokens.accessToken;
+        apiRes = await fetch(`${DISCORD_API}/users/@me/guilds`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } else {
+        console.error("[permitted-servers] Token refresh failed");
+        return NextResponse.json(
+          { error: "Session expired; please re-authenticate" },
+          { status: 401 }
+        );
+      }
+    }
 
     if (!apiRes.ok) {
       const text = await apiRes.text().catch(() => "");

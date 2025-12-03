@@ -20,14 +20,6 @@ type Channel = {
   channelName: string;
 };
 
-type Emoji = {
-  emojiId: string;
-  emojiName: string;
-  emojiAnimated: boolean;
-  emojiUrl: string;
-  emojiFormat: string;
-};
-
 type GuildData = {
   serverId: string;
   name: string;
@@ -59,31 +51,27 @@ export default function PanelsPage() {
       try {
         setLoading(true);
 
-        // Fetch guild data
-        const guildResponse = await fetch(`/api/dashboard/guild/${guildId}`);
+        // Fetch all data in parallel for better performance
+        const [guildResponse, channelsResponse, panelsResponse] =
+          await Promise.all([
+            fetch(`/api/dashboard/guild/${guildId}`),
+            fetch(`/api/dashboard/guild/${guildId}/channels`),
+            fetch(`/api/dashboard/guild/${guildId}/panels`),
+          ]);
+
         if (!guildResponse.ok) {
           throw new Error("Failed to fetch guild data");
         }
-        const guild = await guildResponse.json();
+
+        const [guild, channelsData, panelsData] = await Promise.all([
+          guildResponse.json(),
+          channelsResponse.ok ? channelsResponse.json() : [],
+          panelsResponse.ok ? panelsResponse.json() : { panels: [] },
+        ]);
+
         setGuildData(guild);
-
-        // Fetch channels
-        const channelsResponse = await fetch(
-          `/api/dashboard/guild/${guildId}/channels`
-        );
-        if (channelsResponse.ok) {
-          const channelsData = await channelsResponse.json();
-          setChannels(channelsData);
-        }
-
-        // Fetch panels
-        const panelsResponse = await fetch(
-          `/api/dashboard/guild/${guildId}/panels`
-        );
-        if (panelsResponse.ok) {
-          const data = await panelsResponse.json();
-          setPanels(data.panels || []);
-        }
+        setChannels(channelsData);
+        setPanels(panelsData.panels || []);
       } catch (error) {
         console.error("Error fetching data:", error);
         setError(

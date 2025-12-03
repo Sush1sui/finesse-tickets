@@ -45,16 +45,20 @@ func GetGuildChannelsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Fetch guild channels
-	channels, err := sess.GuildChannels(guildID)
+	// Try to get guild from cache first (much faster)
+	guild, err := sess.State.Guild(guildID)
 	if err != nil {
-		http.Error(w, "Failed to fetch guild channels", http.StatusInternalServerError)
-		return
+		// Fallback to API call if not in cache
+		guild, err = sess.Guild(guildID)
+		if err != nil {
+			http.Error(w, "Failed to fetch guild", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	// Filter for text channels only and format response
 	var textChannels []Channel
-	for _, ch := range channels {
+	for _, ch := range guild.Channels {
 		// Only include text channels (type 0) and announcement channels (type 5)
 		if ch.Type == discordgo.ChannelTypeGuildText || ch.Type == discordgo.ChannelTypeGuildNews {
 			textChannels = append(textChannels, Channel{

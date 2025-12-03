@@ -3,8 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Panel from "@/models/Panel";
-import User from "@/models/User";
-import { decryptText } from "@/lib/encryption";
+import { verifyGuildAccess } from "@/lib/discord";
 
 export async function GET(
   request: NextRequest,
@@ -20,53 +19,14 @@ export async function GET(
 
     const { guildId } = await params;
 
-    // Verify user has access to this guild
-    const user = await User.findById(session.user.id);
-    if (!user || !user.accessToken) {
-      return NextResponse.json(
-        { error: "User not found or no access token" },
-        { status: 404 }
-      );
-    }
-
-    // Decrypt and verify guild access
-    let decryptedToken: string;
-    try {
-      decryptedToken = decryptText(user.accessToken);
-    } catch (decryptError) {
-      console.error("Token decryption error:", decryptError);
-      return NextResponse.json(
-        { error: "Failed to decrypt access token" },
-        { status: 500 }
-      );
-    }
-
-    const discordResponse = await fetch(
-      "https://discord.com/api/users/@me/guilds",
-      {
-        headers: {
-          Authorization: `Bearer ${decryptedToken}`,
-        },
-      }
-    );
-
-    if (!discordResponse.ok) {
-      return NextResponse.json(
-        { error: "Failed to verify guild access" },
-        { status: 500 }
-      );
-    }
-
-    const guilds = await discordResponse.json();
-    const hasAccess = guilds.find(
-      (g: { id: string; name: string; icon: string | null }) => g.id === guildId
+    // Verify guild access with automatic token refresh
+    const { hasAccess, error, status } = await verifyGuildAccess(
+      session.user.id,
+      guildId
     );
 
     if (!hasAccess) {
-      return NextResponse.json(
-        { error: "You don't have access to this guild" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error }, { status: status || 403 });
     }
 
     // Fetch panels for this guild
@@ -102,49 +62,14 @@ export async function POST(
     const { guildId } = await params;
     const body = await request.json();
 
-    // Verify user has access
-    const user = await User.findById(session.user.id);
-    if (!user || !user.accessToken) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    let decryptedToken: string;
-    try {
-      decryptedToken = decryptText(user.accessToken);
-    } catch (decryptError) {
-      console.error("Token decryption error:", decryptError);
-      return NextResponse.json(
-        { error: "Failed to decrypt access token" },
-        { status: 500 }
-      );
-    }
-
-    const discordResponse = await fetch(
-      "https://discord.com/api/users/@me/guilds",
-      {
-        headers: {
-          Authorization: `Bearer ${decryptedToken}`,
-        },
-      }
-    );
-
-    if (!discordResponse.ok) {
-      return NextResponse.json(
-        { error: "Failed to verify guild access" },
-        { status: 500 }
-      );
-    }
-
-    const guilds = await discordResponse.json();
-    const hasAccess = guilds.find(
-      (g: { id: string; name: string; icon: string | null }) => g.id === guildId
+    // Verify guild access with automatic token refresh
+    const { hasAccess, error, status } = await verifyGuildAccess(
+      session.user.id,
+      guildId
     );
 
     if (!hasAccess) {
-      return NextResponse.json(
-        { error: "You don't have access to this guild" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error }, { status: status || 403 });
     }
 
     // Create new panel

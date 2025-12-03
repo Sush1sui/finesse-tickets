@@ -495,7 +495,7 @@ export default function SettingsPage() {
                   onChange={(e) => setTranscriptChannel(e.target.value)}
                   style={styles.select}
                 >
-                  <option value="">Select a channel...</option>
+                  <option value="">None</option>
                   {channels.map((channel) => (
                     <option key={channel.channelId} value={channel.channelId}>
                       #{channel.channelName}
@@ -561,7 +561,7 @@ export default function SettingsPage() {
                   onChange={(e) => setAutoCloseEnabled(e.target.checked)}
                   style={styles.checkbox}
                 />
-                ☑ Enabled
+                Enabled
               </label>
               <label style={styles.label}>
                 <input
@@ -570,7 +570,7 @@ export default function SettingsPage() {
                   onChange={(e) => setCloseOnLeave(e.target.checked)}
                   style={styles.checkbox}
                 />
-                ☑ Close when user leave
+                Close when user leave
               </label>
             </div>
 

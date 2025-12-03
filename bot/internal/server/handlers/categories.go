@@ -44,16 +44,20 @@ func GetGuildCategoriesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Fetch all channels from Discord API
-	channels, err := sess.GuildChannels(guildID)
+	// Try to get guild from cache first (much faster)
+	guild, err := sess.State.Guild(guildID)
 	if err != nil {
-		http.Error(w, "Failed to fetch channels", http.StatusInternalServerError)
-		return
+		// Fallback to API call if not in cache
+		guild, err = sess.Guild(guildID)
+		if err != nil {
+			http.Error(w, "Failed to fetch guild", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	// Filter for category channels only (type 4)
 	var response []Category
-	for _, channel := range channels {
+	for _, channel := range guild.Channels {
 		if channel.Type == discordgo.ChannelTypeGuildCategory {
 			response = append(response, Category{
 				CategoryID:   channel.ID,

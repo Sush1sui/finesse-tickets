@@ -43,16 +43,20 @@ func GetGuildRolesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Fetch roles from Discord API
-	roles, err := sess.GuildRoles(guildID)
+	// Try to get guild from cache first (much faster)
+	guild, err := sess.State.Guild(guildID)
 	if err != nil {
-		http.Error(w, "Failed to fetch roles", http.StatusInternalServerError)
-		return
+		// Fallback to API call if not in cache
+		guild, err = sess.Guild(guildID)
+		if err != nil {
+			http.Error(w, "Failed to fetch guild", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	// Map to response structure
 	var response []Role
-	for _, role := range roles {
+	for _, role := range guild.Roles {
 		// Skip @everyone role
 		if role.ID == guildID {
 			continue

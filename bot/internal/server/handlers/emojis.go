@@ -47,16 +47,20 @@ func GetGuildEmojisHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Fetch guild emojis
-	emojis, err := sess.GuildEmojis(guildID)
+	// Try to get guild from cache first (much faster)
+	guild, err := sess.State.Guild(guildID)
 	if err != nil {
-		http.Error(w, "Failed to fetch guild emojis", http.StatusInternalServerError)
-		return
+		// Fallback to API call if not in cache
+		guild, err = sess.Guild(guildID)
+		if err != nil {
+			http.Error(w, "Failed to fetch guild", http.StatusInternalServerError)
+			return
+		}
 	}
 
-	// Format response
+	// Format response using cached emojis
 	var customEmojis []Emoji
-	for _, emoji := range emojis {
+	for _, emoji := range guild.Emojis {
 		// Build emoji URL
 		extension := "png"
 		if emoji.Animated {
