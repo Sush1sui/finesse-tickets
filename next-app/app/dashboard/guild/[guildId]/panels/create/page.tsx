@@ -5,6 +5,8 @@ import { useEffect, useState, useMemo } from "react";
 import { useTheme } from "next-themes";
 import GuildSidebar from "@/components/guild-sidebar";
 import EmojiPicker from "@/components/emoji-picker";
+import { ToastContainer } from "@/components/ui/toast";
+import { useToast } from "@/hooks/useToast";
 
 type CustomEmoji = {
   emojiId: string;
@@ -33,8 +35,10 @@ export default function CreatePanelPage() {
   const params = useParams();
   const router = useRouter();
   const { resolvedTheme } = useTheme();
+  const { toasts, success, error, removeToast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
   const [guildName, setGuildName] = useState("Server Name");
   const [customEmojis, setCustomEmojis] = useState<CustomEmoji[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -42,7 +46,7 @@ export default function CreatePanelPage() {
   const [channels, setChannels] = useState<Channel[]>([]);
 
   // Form state
-  const [mentionOnOpen, setMentionOnOpen] = useState("");
+  const [mentionOnOpen, setMentionOnOpen] = useState<string[]>([]);
   const [ticketCategory, setTicketCategory] = useState("");
   const [panelTitle, setPanelTitle] = useState("");
   const [panelContent, setPanelContent] = useState("");
@@ -225,9 +229,78 @@ export default function CreatePanelPage() {
     [isDark]
   );
 
-  const handleCreate = () => {
-    console.log("Creating panel...");
-    router.push(`/dashboard/guild/${guildId}/panels`);
+  const handleCreate = async () => {
+    // Validate required fields
+    if (!panelTitle.trim()) {
+      error("Panel title is required");
+      return;
+    }
+    if (!buttonText.trim()) {
+      error("Button text is required");
+      return;
+    }
+    if (!panelChannel) {
+      error("Please select a panel channel");
+      return;
+    }
+
+    try {
+      setCreating(true);
+
+      const panelData = {
+        // Panel config
+        channel: panelChannel,
+        title: panelTitle,
+        content: panelContent,
+        color: panelColor,
+        largeImgUrl: largeImageUrl || null,
+        smallImgUrl: smallImageUrl || null,
+
+        // Button config
+        btnText: buttonText,
+        btnColor: buttonColor,
+        btnEmoji: emojiValue || null,
+
+        // Ticket config
+        mentionOnOpen: mentionOnOpen,
+        ticketCategory: ticketCategory || null,
+
+        // Welcome embed config
+        welcomeEmbed: {
+          color: welcomeEmbedColor,
+          title: welcomeTitle || null,
+          titleImgUrl: welcomeTitleUrl || null,
+          largeImgUrl: welcomeLargeImage || null,
+          smallImgUrl: welcomeSmallImage || null,
+          footerText: welcomeFooter || null,
+          footerImgUrl: welcomeFooterIcon || null,
+        },
+      };
+
+      const response = await fetch(`/api/dashboard/guild/${guildId}/panels`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(panelData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create panel");
+      }
+
+      // Success - show toast and redirect
+      success("Panel created successfully!");
+      setTimeout(() => {
+        router.push(`/dashboard/guild/${guildId}/panels`);
+      }, 1000);
+    } catch (err) {
+      console.error("Error creating panel:", err);
+      error(err instanceof Error ? err.message : "Failed to create panel");
+    } finally {
+      setCreating(false);
+    }
   };
 
   // Show loading spinner while fetching data
@@ -259,6 +332,7 @@ export default function CreatePanelPage() {
 
   return (
     <div style={styles.container} className="guild-layout">
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
       <GuildSidebar guildId={guildId} guildName={guildName} />
 
       <main style={styles.main}>
@@ -271,14 +345,116 @@ export default function CreatePanelPage() {
           <div style={styles.formRow} className="form-row">
             <div style={styles.formGroup}>
               <label style={styles.label}>MENTION ON OPEN</label>
+
+              {/* Selected Role Chips - Display Above */}
+              {mentionOnOpen.length > 0 && (
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "0.5rem",
+                    marginBottom: "0.5rem",
+                  }}
+                >
+                  {mentionOnOpen.map((roleId) => {
+                    const role = roles.find((r) => r.roleId === roleId);
+                    return (
+                      <div
+                        key={roleId}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.375rem",
+                          padding: "0.25rem 0.625rem",
+                          background: isDark
+                            ? "rgba(255, 255, 255, 0.1)"
+                            : "rgba(0, 0, 0, 0.1)",
+                          border: isDark
+                            ? "1px solid rgba(255, 255, 255, 0.2)"
+                            : "1px solid rgba(0, 0, 0, 0.2)",
+                          borderRadius: "6px",
+                          fontSize: "0.8125rem",
+                          fontWeight: "500",
+                          color: isDark ? "#fff" : "#000",
+                          transition: "all 0.2s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = "translateY(-1px)";
+                          e.currentTarget.style.background = isDark
+                            ? "rgba(255, 255, 255, 0.15)"
+                            : "rgba(0, 0, 0, 0.15)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = "translateY(0)";
+                          e.currentTarget.style.background = isDark
+                            ? "rgba(255, 255, 255, 0.1)"
+                            : "rgba(0, 0, 0, 0.1)";
+                        }}
+                      >
+                        <span>@{role?.roleName || roleId}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMentionOnOpen(
+                              mentionOnOpen.filter((id) => id !== roleId)
+                            );
+                          }}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: isDark ? "#f87171" : "#ef4444",
+                            cursor: "pointer",
+                            fontSize: "1rem",
+                            lineHeight: "1",
+                            padding: "0",
+                            display: "flex",
+                            alignItems: "center",
+                            transition: "transform 0.15s ease",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = "scale(1.2)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = "scale(1)";
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Dropdown Select */}
               <select
-                value={mentionOnOpen}
-                onChange={(e) => setMentionOnOpen(e.target.value)}
-                style={styles.select}
+                value=""
+                onChange={(e) => {
+                  const roleId = e.target.value;
+                  if (roleId && !mentionOnOpen.includes(roleId)) {
+                    setMentionOnOpen([...mentionOnOpen, roleId]);
+                  }
+                }}
+                style={{
+                  ...styles.select,
+                  colorScheme: isDark ? "dark" : "light",
+                }}
               >
-                <option value="">Select roles...</option>
+                <option
+                  value=""
+                  style={{ background: isDark ? "#1f1f1f" : "#fff" }}
+                >
+                  {mentionOnOpen.length > 0
+                    ? "Add more roles..."
+                    : "Select roles..."}
+                </option>
                 {roles.map((role) => (
-                  <option key={role.roleId} value={role.roleId}>
+                  <option
+                    key={role.roleId}
+                    value={role.roleId}
+                    style={{ background: isDark ? "#1f1f1f" : "#fff" }}
+                  >
                     @{role.roleName}
                   </option>
                 ))}
@@ -396,7 +572,7 @@ export default function CreatePanelPage() {
           </div>
 
           {/* Image URLs */}
-          <div style={styles.formRow}>
+          <div style={styles.formRow} className="mt-6">
             <div style={styles.formGroup}>
               <label style={styles.label}>LARGE IMAGE URL</label>
               <input
@@ -510,8 +686,16 @@ export default function CreatePanelPage() {
           </div>
 
           {/* Create Button */}
-          <button onClick={handleCreate} style={styles.createButton}>
-            CREATE
+          <button
+            onClick={handleCreate}
+            style={{
+              ...styles.createButton,
+              opacity: creating ? 0.6 : 1,
+              cursor: creating ? "not-allowed" : "pointer",
+            }}
+            disabled={creating}
+          >
+            {creating ? "CREATING..." : "CREATE"}
           </button>
         </div>
       </main>

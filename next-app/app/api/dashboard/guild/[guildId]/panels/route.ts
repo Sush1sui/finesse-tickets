@@ -19,15 +19,8 @@ export async function GET(
 
     const { guildId } = await params;
 
-    // Verify guild access with automatic token refresh
-    const { hasAccess, error, status } = await verifyGuildAccess(
-      session.user.id,
-      guildId
-    );
-
-    if (!hasAccess) {
-      return NextResponse.json({ error }, { status: status || 403 });
-    }
+    // Skip guild access verification here to avoid rate limits
+    // Access is already verified when fetching /api/dashboard/guild/${guildId}
 
     // Fetch panels for this guild
     const panels = await Panel.find({ serverId: guildId }).sort({

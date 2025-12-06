@@ -4,48 +4,69 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState, useMemo } from "react";
 import { useTheme } from "next-themes";
 import GuildSidebar from "@/components/guild-sidebar";
+import EmojiPicker from "@/components/emoji-picker";
+import { ToastContainer } from "@/components/ui/toast";
+import { useToast } from "@/hooks/useToast";
+
+type CustomEmoji = {
+  emojiId: string;
+  emojiName: string;
+  emojiAnimated: boolean;
+  emojiUrl: string;
+  emojiFormat: string;
+};
+
+type Role = {
+  roleId: string;
+  roleName: string;
+};
+
+type Category = {
+  categoryId: string;
+  categoryName: string;
+};
+
+type Channel = {
+  channelId: string;
+  channelName: string;
+};
 
 export default function EditPanelPage() {
   const params = useParams();
   const router = useRouter();
   const { resolvedTheme } = useTheme();
+  const { toasts, success, error, removeToast } = useToast();
   const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [guildName, setGuildName] = useState("Server Name");
+  const [customEmojis, setCustomEmojis] = useState<CustomEmoji[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [channels, setChannels] = useState<Channel[]>([]);
 
   // Form state (pre-filled with existing data)
-  const [mentionOnOpen, setMentionOnOpen] = useState("roles-here");
-  const [ticketCategory, setTicketCategory] = useState("CATEGORY");
-  const [panelTitle, setPanelTitle] = useState("Open a ticket!");
-  const [panelContent, setPanelContent] = useState(
-    "By clicking a button, a ticket will be opened for you..."
-  );
+  const [mentionOnOpen, setMentionOnOpen] = useState<string[]>([]);
+  const [ticketCategory, setTicketCategory] = useState("");
+  const [panelTitle, setPanelTitle] = useState("");
+  const [panelContent, setPanelContent] = useState("");
   const [panelColor, setPanelColor] = useState("#00ff00");
-  const [panelChannel, setPanelChannel] = useState("ex: create-a-ticket");
+  const [panelChannel, setPanelChannel] = useState("");
   const [buttonColor, setButtonColor] = useState("blue");
-  const [buttonText, setButtonText] = useState("Open a ticket");
+  const [buttonText, setButtonText] = useState("");
   const [customEmoji, setCustomEmoji] = useState(false);
-  const [emojiValue, setEmojiValue] = useState("🎫");
-  const [largeImageUrl, setLargeImageUrl] = useState(
-    "https://example/image.png"
-  );
-  const [smallImageUrl, setSmallImageUrl] = useState(
-    "https://example/image.png"
-  );
+  const [emojiValue, setEmojiValue] = useState("");
+  const [largeImageUrl, setLargeImageUrl] = useState("");
+  const [smallImageUrl, setSmallImageUrl] = useState("");
 
   // Welcome Message
   const [welcomeEmbedColor, setWelcomeEmbedColor] = useState("#00ff00");
-  const [welcomeTitle, setWelcomeTitle] = useState("Embed title");
-  const [welcomeTitleUrl, setWelcomeTitleUrl] = useState("https://example.com");
-  const [welcomeLargeImage, setWelcomeLargeImage] = useState(
-    "https://example/image.png"
-  );
-  const [welcomeSmallImage, setWelcomeSmallImage] = useState(
-    "https://example/image.png"
-  );
-  const [welcomeFooter, setWelcomeFooter] = useState("Footer Text");
-  const [welcomeFooterIcon, setWelcomeFooterIcon] = useState(
-    "https://example/image.png"
-  );
+  const [welcomeTitle, setWelcomeTitle] = useState("");
+  const [welcomeTitleUrl, setWelcomeTitleUrl] = useState("");
+  const [welcomeLargeImage, setWelcomeLargeImage] = useState("");
+  const [welcomeSmallImage, setWelcomeSmallImage] = useState("");
+  const [welcomeFooter, setWelcomeFooter] = useState("");
+  const [welcomeFooterIcon, setWelcomeFooterIcon] = useState("");
 
   useEffect(() => {
     setMounted(true);
@@ -54,6 +75,76 @@ export default function EditPanelPage() {
   const isDark = mounted ? resolvedTheme === "dark" : false;
   const guildId = params?.guildId as string;
   const panelId = params?.panelId as string;
+
+  // Fetch guild data (roles, categories, channels, emojis) AND panel data
+  useEffect(() => {
+    if (!guildId || !panelId) return;
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+
+        // Fetch guild data and panel data in parallel
+        const [dataResponse, emojisResponse, panelResponse] = await Promise.all(
+          [
+            fetch(`/api/dashboard/guild/${guildId}/data`),
+            fetch(`/api/dashboard/guild/${guildId}/emojis`),
+            fetch(`/api/dashboard/guild/${guildId}/panels/${panelId}`),
+          ]
+        );
+
+        // Parse JSON in parallel
+        const [guildData, emojisData, panelData] = await Promise.all([
+          dataResponse.ok
+            ? dataResponse.json()
+            : { roles: [], categories: [], channels: [] },
+          emojisResponse.ok ? emojisResponse.json() : [],
+          panelResponse.ok ? panelResponse.json() : null,
+        ]);
+
+        // Update guild data state
+        setRoles(guildData.roles || []);
+        setCategories(guildData.categories || []);
+        setChannels(guildData.channels || []);
+        setCustomEmojis(emojisData);
+
+        // Populate form with panel data
+        if (panelData?.panel) {
+          const panel = panelData.panel;
+
+          setMentionOnOpen(panel.mentionOnOpen || []);
+          setTicketCategory(panel.ticketCategory || "");
+          setPanelTitle(panel.title || "");
+          setPanelContent(panel.content || "");
+          setPanelColor(panel.color || "#00ff00");
+          setPanelChannel(panel.channel || "");
+          setButtonColor(panel.btnColor || "blue");
+          setButtonText(panel.btnText || "");
+          setEmojiValue(panel.btnEmoji || "");
+          setLargeImageUrl(panel.largeImgUrl || "");
+          setSmallImageUrl(panel.smallImgUrl || "");
+
+          // Welcome embed data
+          if (panel.welcomeEmbed) {
+            setWelcomeEmbedColor(panel.welcomeEmbed.color || "#00ff00");
+            setWelcomeTitle(panel.welcomeEmbed.title || "");
+            setWelcomeTitleUrl(panel.welcomeEmbed.titleImgUrl || "");
+            setWelcomeLargeImage(panel.welcomeEmbed.largeImgUrl || "");
+            setWelcomeSmallImage(panel.welcomeEmbed.smallImgUrl || "");
+            setWelcomeFooter(panel.welcomeEmbed.footerText || "");
+            setWelcomeFooterIcon(panel.welcomeEmbed.footerImgUrl || "");
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching data:", err);
+        error("Failed to load panel data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [guildId, panelId]);
 
   const styles = useMemo(
     () => ({
@@ -172,13 +263,113 @@ export default function EditPanelPage() {
     [isDark]
   );
 
-  const handleSave = () => {
-    console.log("Saving panel...");
-    router.push(`/dashboard/guild/${guildId}/panels`);
+  const handleSave = async () => {
+    // Validate required fields
+    if (!panelTitle.trim()) {
+      error("Panel title is required");
+      return;
+    }
+    if (!buttonText.trim()) {
+      error("Button text is required");
+      return;
+    }
+    if (!panelChannel) {
+      error("Please select a panel channel");
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      const panelData = {
+        // Panel config
+        channel: panelChannel,
+        title: panelTitle,
+        content: panelContent,
+        color: panelColor,
+        largeImgUrl: largeImageUrl || null,
+        smallImgUrl: smallImageUrl || null,
+
+        // Button config
+        btnText: buttonText,
+        btnColor: buttonColor,
+        btnEmoji: emojiValue || null,
+
+        // Ticket config
+        mentionOnOpen: mentionOnOpen,
+        ticketCategory: ticketCategory || null,
+
+        // Welcome embed config
+        welcomeEmbed: {
+          color: welcomeEmbedColor,
+          title: welcomeTitle || null,
+          titleImgUrl: welcomeTitleUrl || null,
+          largeImgUrl: welcomeLargeImage || null,
+          smallImgUrl: welcomeSmallImage || null,
+          footerText: welcomeFooter || null,
+          footerImgUrl: welcomeFooterIcon || null,
+        },
+      };
+
+      const response = await fetch(
+        `/api/dashboard/guild/${guildId}/panels/${panelId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(panelData),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to update panel");
+      }
+
+      // Success - show toast and redirect
+      success("Panel updated successfully!");
+      setTimeout(() => {
+        router.push(`/dashboard/guild/${guildId}/panels`);
+      }, 1000);
+    } catch (err) {
+      console.error("Error updating panel:", err);
+      error(err instanceof Error ? err.message : "Failed to update panel");
+    } finally {
+      setSaving(false);
+    }
   };
+
+  // Show loading spinner while fetching data
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 p-8">
+        <h2
+          className={`text-xl font-bold ${
+            isDark ? "text-white" : "text-black"
+          }`}
+        >
+          Loading Panel Data...
+        </h2>
+        <div
+          className="rounded-full"
+          style={{
+            width: "40px",
+            height: "40px",
+            border: `4px solid ${
+              isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"
+            }`,
+            borderTop: `4px solid ${isDark ? "#fff" : "#000"}`,
+            animation: "spin 1s linear infinite",
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div style={styles.container} className="guild-layout">
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
       <GuildSidebar guildId={guildId} guildName={guildName} />
 
       <main style={styles.main}>
@@ -191,13 +382,119 @@ export default function EditPanelPage() {
           <div style={styles.formRow} className="form-row">
             <div style={styles.formGroup}>
               <label style={styles.label}>MENTION ON OPEN</label>
+
+              {/* Selected Role Chips - Display Above */}
+              {mentionOnOpen.length > 0 && (
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "0.5rem",
+                    marginBottom: "0.5rem",
+                  }}
+                >
+                  {mentionOnOpen.map((roleId) => {
+                    const role = roles.find((r) => r.roleId === roleId);
+                    return (
+                      <div
+                        key={roleId}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.375rem",
+                          padding: "0.25rem 0.625rem",
+                          background: isDark
+                            ? "rgba(255, 255, 255, 0.1)"
+                            : "rgba(0, 0, 0, 0.1)",
+                          border: isDark
+                            ? "1px solid rgba(255, 255, 255, 0.2)"
+                            : "1px solid rgba(0, 0, 0, 0.2)",
+                          borderRadius: "6px",
+                          fontSize: "0.8125rem",
+                          fontWeight: "500",
+                          color: isDark ? "#fff" : "#000",
+                          transition: "all 0.2s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = "translateY(-1px)";
+                          e.currentTarget.style.background = isDark
+                            ? "rgba(255, 255, 255, 0.15)"
+                            : "rgba(0, 0, 0, 0.15)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = "translateY(0)";
+                          e.currentTarget.style.background = isDark
+                            ? "rgba(255, 255, 255, 0.1)"
+                            : "rgba(0, 0, 0, 0.1)";
+                        }}
+                      >
+                        <span>@{role?.roleName || roleId}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMentionOnOpen(
+                              mentionOnOpen.filter((id) => id !== roleId)
+                            );
+                          }}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: isDark ? "#f87171" : "#ef4444",
+                            cursor: "pointer",
+                            fontSize: "1rem",
+                            lineHeight: "1",
+                            padding: "0",
+                            display: "flex",
+                            alignItems: "center",
+                            transition: "transform 0.15s ease",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = "scale(1.2)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = "scale(1)";
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Dropdown Select */}
               <select
-                value={mentionOnOpen}
-                onChange={(e) => setMentionOnOpen(e.target.value)}
-                style={styles.select}
+                value=""
+                onChange={(e) => {
+                  const roleId = e.target.value;
+                  if (roleId && !mentionOnOpen.includes(roleId)) {
+                    setMentionOnOpen([...mentionOnOpen, roleId]);
+                  }
+                }}
+                style={{
+                  ...styles.select,
+                  colorScheme: isDark ? "dark" : "light",
+                }}
               >
-                <option value="">Select roles...</option>
-                <option value="roles-here">Roles-here</option>
+                <option
+                  value=""
+                  style={{ background: isDark ? "#1f1f1f" : "#fff" }}
+                >
+                  {mentionOnOpen.length > 0
+                    ? "Add more roles..."
+                    : "Select roles..."}
+                </option>
+                {roles.map((role) => (
+                  <option
+                    key={role.roleId}
+                    value={role.roleId}
+                    style={{ background: isDark ? "#1f1f1f" : "#fff" }}
+                  >
+                    @{role.roleName}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -208,7 +505,12 @@ export default function EditPanelPage() {
                 onChange={(e) => setTicketCategory(e.target.value)}
                 style={styles.select}
               >
-                <option value="CATEGORY">CATEGORY</option>
+                <option value="">CATEGORY...</option>
+                {categories.map((category) => (
+                  <option key={category.categoryId} value={category.categoryId}>
+                    {category.categoryName}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -222,6 +524,7 @@ export default function EditPanelPage() {
                 value={panelTitle}
                 onChange={(e) => setPanelTitle(e.target.value)}
                 style={styles.input}
+                placeholder="Open a ticket!"
               />
             </div>
 
@@ -231,6 +534,7 @@ export default function EditPanelPage() {
                 value={panelContent}
                 onChange={(e) => setPanelContent(e.target.value)}
                 style={styles.textarea}
+                placeholder="By clicking a button, a ticket will be opened for you..."
               />
             </div>
           </div>
@@ -254,7 +558,12 @@ export default function EditPanelPage() {
                 onChange={(e) => setPanelChannel(e.target.value)}
                 style={styles.select}
               >
-                <option value="ex: create-a-ticket">ex: create-a-ticket</option>
+                <option value="">ex: create-a-ticket</option>
+                {channels.map((channel) => (
+                  <option key={channel.channelId} value={channel.channelId}>
+                    #{channel.channelName}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -269,6 +578,9 @@ export default function EditPanelPage() {
                 style={styles.select}
               >
                 <option value="blue">Blue</option>
+                <option value="green">Green</option>
+                <option value="red">Red</option>
+                <option value="gray">Gray</option>
               </select>
             </div>
 
@@ -279,30 +591,21 @@ export default function EditPanelPage() {
                 value={buttonText}
                 onChange={(e) => setButtonText(e.target.value)}
                 style={styles.input}
+                placeholder="Open a ticket"
               />
             </div>
           </div>
 
           {/* Button Emoji */}
-          <div style={styles.formRow}>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>BUTTON EMOJI</label>
-              <div style={styles.checkboxGroup}>
-                <input
-                  type="checkbox"
-                  checked={customEmoji}
-                  onChange={(e) => setCustomEmoji(e.target.checked)}
-                  style={{ cursor: "pointer" }}
-                />
-                <span>Custom Emoji</span>
-                <input
-                  type="text"
-                  value={emojiValue}
-                  onChange={(e) => setEmojiValue(e.target.value)}
-                  style={{ ...styles.input, flex: 1 }}
-                />
-              </div>
-            </div>
+          <div style={styles.formGroup}>
+            <label style={styles.label}>BUTTON EMOJI</label>
+            <EmojiPicker
+              value={emojiValue}
+              onChange={setEmojiValue}
+              customEmojis={customEmojis}
+              useCustom={customEmoji}
+              onToggleCustom={setCustomEmoji}
+            />
           </div>
 
           {/* Image URLs */}
@@ -314,6 +617,7 @@ export default function EditPanelPage() {
                 value={largeImageUrl}
                 onChange={(e) => setLargeImageUrl(e.target.value)}
                 style={styles.input}
+                placeholder="https://example/image.png"
               />
             </div>
 
@@ -324,6 +628,7 @@ export default function EditPanelPage() {
                 value={smallImageUrl}
                 onChange={(e) => setSmallImageUrl(e.target.value)}
                 style={styles.input}
+                placeholder="https://example/image.png"
               />
             </div>
           </div>
@@ -350,6 +655,7 @@ export default function EditPanelPage() {
                   value={welcomeTitle}
                   onChange={(e) => setWelcomeTitle(e.target.value)}
                   style={styles.input}
+                  placeholder="Embed title"
                 />
               </div>
             </div>
@@ -362,6 +668,7 @@ export default function EditPanelPage() {
                   value={welcomeTitleUrl}
                   onChange={(e) => setWelcomeTitleUrl(e.target.value)}
                   style={styles.input}
+                  placeholder="https://example.com"
                 />
               </div>
             </div>
@@ -374,6 +681,7 @@ export default function EditPanelPage() {
                   value={welcomeLargeImage}
                   onChange={(e) => setWelcomeLargeImage(e.target.value)}
                   style={styles.input}
+                  placeholder="https://example/image.png"
                 />
               </div>
 
@@ -384,6 +692,7 @@ export default function EditPanelPage() {
                   value={welcomeSmallImage}
                   onChange={(e) => setWelcomeSmallImage(e.target.value)}
                   style={styles.input}
+                  placeholder="https://example/image.png"
                 />
               </div>
             </div>
@@ -396,6 +705,7 @@ export default function EditPanelPage() {
                   value={welcomeFooter}
                   onChange={(e) => setWelcomeFooter(e.target.value)}
                   style={styles.input}
+                  placeholder="Footer Text"
                 />
               </div>
 
@@ -406,14 +716,23 @@ export default function EditPanelPage() {
                   value={welcomeFooterIcon}
                   onChange={(e) => setWelcomeFooterIcon(e.target.value)}
                   style={styles.input}
+                  placeholder="https://example/image.png"
                 />
               </div>
             </div>
           </div>
 
           {/* Save Button */}
-          <button onClick={handleSave} style={styles.saveButton}>
-            SAVE
+          <button
+            onClick={handleSave}
+            style={{
+              ...styles.saveButton,
+              opacity: saving ? 0.6 : 1,
+              cursor: saving ? "not-allowed" : "pointer",
+            }}
+            disabled={saving}
+          >
+            {saving ? "SAVING..." : "SAVE"}
           </button>
         </div>
       </main>

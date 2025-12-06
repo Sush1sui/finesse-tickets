@@ -343,7 +343,7 @@ export default function PanelsPage() {
                           >
                             EDIT
                           </button>
-                          <button style={styles.actionButton}>VIEW</button>
+                          <button style={styles.actionButton}>SEND</button>
                           <button
                             style={styles.actionButton}
                             onClick={() => handleDeletePanel(panel._id)}
@@ -407,7 +407,7 @@ export default function PanelsPage() {
                           className="button-group"
                         >
                           <button style={styles.actionButton}>ADDON</button>
-                          <button style={styles.actionButton}>VIEW</button>
+                          <button style={styles.actionButton}>SEND</button>
                           <button
                             style={styles.actionButton}
                             onClick={() => handleDeletePanel(panel._id)}

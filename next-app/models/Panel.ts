@@ -13,9 +13,10 @@ interface WelcomeEmbed {
 export interface IPanel extends Document {
   serverId: string;
   channel: string;
-  mentionOnOpen: boolean;
+  mentionOnOpen: string[];
   ticketCategory: string | null;
   title: string;
+  content: string;
   color: string;
   btnColor: "blue" | "green" | "red" | "gray";
   btnText: string;
@@ -31,9 +32,10 @@ const PanelSchema = new Schema<IPanel>(
   {
     serverId: { type: String, required: true, index: true },
     channel: { type: String, required: true },
-    mentionOnOpen: { type: Boolean, default: false },
+    mentionOnOpen: { type: [String], default: [] },
     ticketCategory: { type: String, default: null },
     title: { type: String, required: true },
+    content: { type: String, default: "" },
     color: { type: String, required: true },
     btnColor: {
       type: String,
@@ -60,7 +62,11 @@ const PanelSchema = new Schema<IPanel>(
   { timestamps: true }
 );
 
-const Panel: Model<IPanel> =
-  mongoose.models.Panel || mongoose.model<IPanel>("Panel", PanelSchema);
+// Delete existing model to force schema refresh
+if (mongoose.models.Panel) {
+  delete mongoose.models.Panel;
+}
+
+const Panel: Model<IPanel> = mongoose.model<IPanel>("Panel", PanelSchema);
 
 export default Panel;
