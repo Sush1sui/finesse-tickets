@@ -3,10 +3,12 @@ package deploy
 import (
 	"log"
 
+	"github.com/Sush1sui/fns-tickets/internal/bot/events"
 	"github.com/bwmarrin/discordgo"
 )
 
 var EventHandlers = []any{
+	events.HandleButtonInteraction,
 }
 
 func DeployEvents(s *discordgo.Session) {

@@ -10,6 +10,10 @@ import LayoutShell from "@/components/layout/layout-shell";
 export const metadata: Metadata = {
   title: "Finesse Tickets",
   description: "Discord Ticket Bot Dashboard",
+  icons: {
+    icon: "/fns_logo.png",
+    apple: "/fns_logo.png",
+  },
 };
 
 export default async function RootLayout({

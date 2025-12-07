@@ -11,6 +11,7 @@ func NewRouter() http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", handlers.IndexHandler)
+	mux.HandleFunc("/send-panel", handlers.SendPanelHandler)
 	mux.HandleFunc("/api/servers", handlers.GetAllServersHandler)
 	mux.HandleFunc("/api/guilds/", func(w http.ResponseWriter, r *http.Request) {
 		// Route based on the path suffix

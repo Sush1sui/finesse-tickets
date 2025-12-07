@@ -21,6 +21,7 @@ type Config struct {
 	CustomVcCollectionName string
 	FinestRoleId string
 	BotAPIKey string
+	NextAppURL string
 }
 
 var GlobalConfig *Config
@@ -55,6 +56,11 @@ func New() (error) {
 		return fmt.Errorf("BOT_API_KEY is not set in the environment variables")
 	}
 
+	nextAppURL := os.Getenv("NEXT_APP_URL")
+	if nextAppURL == "" {
+		nextAppURL = "http://localhost:3000" // Default
+	}
+
 	GlobalConfig = &Config{
 		Port:     port,
 		BotToken: botToken,
@@ -62,6 +68,7 @@ func New() (error) {
 		ServerUrl: os.Getenv("SERVER_URL"),
 		MongoDBName: mongoDBName,
 		BotAPIKey: botAPIKey,
+		NextAppURL: nextAppURL,
 	}
 	return nil
 }
