@@ -22,6 +22,7 @@ type PanelData struct {
 type WelcomeEmbedData struct {
 	Color        string  `json:"color"`
 	Title        *string `json:"title"`
+	Description  *string `json:"description"`
 	TitleImgUrl  *string `json:"titleImgUrl"`
 	LargeImgUrl  *string `json:"largeImgUrl"`
 	SmallImgUrl  *string `json:"smallImgUrl"`
@@ -144,9 +145,15 @@ func sendWelcomeMessage(s *discordgo.Session, channelID string, user *discordgo.
 		// Custom welcome embed
 		colorInt := parseColor(panelData.WelcomeEmbed.Color)
 		
+		// Use custom description if provided, otherwise use default
+		description := fmt.Sprintf("Welcome %s! A staff member will assist you shortly.", user.Mention())
+		if panelData.WelcomeEmbed.Description != nil && *panelData.WelcomeEmbed.Description != "" {
+			description = *panelData.WelcomeEmbed.Description
+		}
+		
 		embed = &discordgo.MessageEmbed{
 			Color:       colorInt,
-			Description: fmt.Sprintf("Welcome %s! A staff member will assist you shortly.", user.Mention()),
+			Description: description,
 		}
 
 		if panelData.WelcomeEmbed.Title != nil {

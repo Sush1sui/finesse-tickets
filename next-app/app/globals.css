@@ -327,3 +327,113 @@
     transform: rotate(360deg);
   }
 }
+/* Modern Responsive Styles */
+@media (max-width: 1024px) {
+  .guild-layout {
+    flex-direction: column !important;
+  }
+
+  .panels-grid {
+    flex-direction: column !important;
+  }
+
+  .guild-sidebar {
+    width: 100% !important;
+    min-width: auto !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .guild-layout {
+    padding: 1rem !important;
+    gap: 1rem !important;
+  }
+
+  .panel-card,
+  .settings-card,
+  .filter-card,
+  .transcripts-card {
+    padding: 1.5rem !important;
+    border-radius: 12px !important;
+  }
+
+  .section-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1rem !important;
+  }
+
+  .section-header button {
+    width: 100%;
+  }
+
+  table {
+    font-size: 0.875rem !important;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .guild-layout {
+    padding: 0.75rem !important;
+  }
+
+  .panel-card {
+    padding: 1rem !important;
+  }
+
+  .page-title {
+    font-size: 1.5rem !important;
+  }
+
+  table {
+    font-size: 0.8125rem !important;
+  }
+
+  .button-group {
+    flex-direction: column !important;
+    width: 100%;
+  }
+
+  .button-group button {
+    width: 100%;
+  }
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Better focus states */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #5865f2;
+  outline-offset: 2px;
+}
+
+/* Hover effects for buttons */
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Disable animations for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

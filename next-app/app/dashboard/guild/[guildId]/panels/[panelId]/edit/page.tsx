@@ -62,6 +62,7 @@ export default function EditPanelPage() {
   // Welcome Message
   const [welcomeEmbedColor, setWelcomeEmbedColor] = useState("#00ff00");
   const [welcomeTitle, setWelcomeTitle] = useState("");
+  const [welcomeDescription, setWelcomeDescription] = useState("");
   const [welcomeTitleUrl, setWelcomeTitleUrl] = useState("");
   const [welcomeLargeImage, setWelcomeLargeImage] = useState("");
   const [welcomeSmallImage, setWelcomeSmallImage] = useState("");
@@ -128,6 +129,7 @@ export default function EditPanelPage() {
           if (panel.welcomeEmbed) {
             setWelcomeEmbedColor(panel.welcomeEmbed.color || "#00ff00");
             setWelcomeTitle(panel.welcomeEmbed.title || "");
+            setWelcomeDescription(panel.welcomeEmbed.description || "");
             setWelcomeTitleUrl(panel.welcomeEmbed.titleImgUrl || "");
             setWelcomeLargeImage(panel.welcomeEmbed.largeImgUrl || "");
             setWelcomeSmallImage(panel.welcomeEmbed.smallImgUrl || "");
@@ -152,22 +154,57 @@ export default function EditPanelPage() {
         minHeight: "60vh",
         display: "flex",
         gap: "2rem",
-        padding: "1rem",
+        padding: "2rem",
+        maxWidth: "1600px",
+        margin: "0 auto",
       } as React.CSSProperties,
       main: {
         flex: 1,
       } as React.CSSProperties,
       card: {
-        padding: "2rem",
+        padding: "2.5rem",
         border: isDark
-          ? "2px solid rgba(255,255,255,0.1)"
-          : "2px solid rgba(0,0,0,0.1)",
-        borderRadius: "12px",
+          ? "1px solid rgba(255,255,255,0.08)"
+          : "1px solid rgba(0,0,0,0.08)",
+        borderRadius: "16px",
+        background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.01)",
+        boxShadow: isDark
+          ? "0 4px 16px rgba(0,0,0,0.3)"
+          : "0 4px 16px rgba(0,0,0,0.08)",
+      } as React.CSSProperties,
+      header: {
+        display: "flex",
+        alignItems: "center",
+        gap: "1rem",
+        marginBottom: "2.5rem",
+        paddingBottom: "1.5rem",
+        borderBottom: isDark
+          ? "1px solid rgba(255,255,255,0.1)"
+          : "1px solid rgba(0,0,0,0.1)",
+      } as React.CSSProperties,
+      backButton: {
+        padding: "0.625rem 1.25rem",
+        borderRadius: "8px",
+        border: "none",
+        background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)",
+        color: isDark ? "#fff" : "#000",
+        fontSize: "0.875rem",
+        fontWeight: "500",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        gap: "0.5rem",
+        transition: "all 0.2s ease",
+        boxShadow: isDark
+          ? "0 2px 8px rgba(0,0,0,0.2)"
+          : "0 2px 8px rgba(0,0,0,0.05)",
       } as React.CSSProperties,
       title: {
-        fontSize: "1.875rem",
+        fontSize: "2rem",
         fontWeight: "700",
-        marginBottom: "2rem",
+        flex: 1,
+        color: "#fff",
+        letterSpacing: "-0.02em",
       } as React.CSSProperties,
       formRow: {
         display: "grid",
@@ -178,86 +215,109 @@ export default function EditPanelPage() {
       formGroup: {
         display: "flex",
         flexDirection: "column",
-        gap: "0.5rem",
+        gap: "0.625rem",
       } as React.CSSProperties,
       label: {
         fontSize: "0.75rem",
         fontWeight: "600",
         textTransform: "uppercase",
-        opacity: 0.7,
+        opacity: 0.75,
+        letterSpacing: "0.05em",
       } as React.CSSProperties,
       input: {
-        padding: "0.5rem",
-        borderRadius: "6px",
+        padding: "0.75rem 1rem",
+        borderRadius: "8px",
         border: isDark
-          ? "1px solid rgba(255,255,255,0.2)"
-          : "1px solid rgba(0,0,0,0.2)",
-        background: isDark ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.9)",
+          ? "1px solid rgba(255,255,255,0.12)"
+          : "1px solid rgba(0,0,0,0.12)",
+        background: isDark ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.8)",
         color: isDark ? "#fff" : "#000",
+        fontSize: "0.9375rem",
+        transition: "all 0.2s ease",
+        boxShadow: isDark
+          ? "0 1px 3px rgba(0,0,0,0.2)"
+          : "0 1px 3px rgba(0,0,0,0.05)",
       } as React.CSSProperties,
       textarea: {
-        padding: "0.5rem",
-        borderRadius: "6px",
+        padding: "0.75rem 1rem",
+        borderRadius: "8px",
         border: isDark
-          ? "1px solid rgba(255,255,255,0.2)"
-          : "1px solid rgba(0,0,0,0.2)",
-        background: isDark ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.9)",
+          ? "1px solid rgba(255,255,255,0.12)"
+          : "1px solid rgba(0,0,0,0.12)",
+        background: isDark ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.8)",
         color: isDark ? "#fff" : "#000",
         minHeight: "100px",
         resize: "vertical",
         fontFamily: "inherit",
+        fontSize: "0.9375rem",
+        transition: "all 0.2s ease",
+        boxShadow: isDark
+          ? "0 1px 3px rgba(0,0,0,0.2)"
+          : "0 1px 3px rgba(0,0,0,0.05)",
       } as React.CSSProperties,
       select: {
-        padding: "0.5rem",
-        borderRadius: "6px",
+        padding: "0.75rem 1rem",
+        borderRadius: "8px",
         border: isDark
-          ? "1px solid rgba(255,255,255,0.2)"
-          : "1px solid rgba(0,0,0,0.2)",
-        background: isDark ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.9)",
+          ? "1px solid rgba(255,255,255,0.12)"
+          : "1px solid rgba(0,0,0,0.12)",
+        background: isDark ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.8)",
         color: isDark ? "#fff" : "#000",
         cursor: "pointer",
+        fontSize: "0.9375rem",
+        transition: "all 0.2s ease",
+        boxShadow: isDark
+          ? "0 1px 3px rgba(0,0,0,0.2)"
+          : "0 1px 3px rgba(0,0,0,0.05)",
       } as React.CSSProperties,
       colorInput: {
         padding: "0.5rem",
-        borderRadius: "6px",
+        borderRadius: "8px",
         border: isDark
-          ? "1px solid rgba(255,255,255,0.2)"
-          : "1px solid rgba(0,0,0,0.2)",
-        background: isDark ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.9)",
+          ? "1px solid rgba(255,255,255,0.12)"
+          : "1px solid rgba(0,0,0,0.12)",
+        background: isDark ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.8)",
         cursor: "pointer",
-        height: "40px",
+        height: "48px",
+        width: "100%",
+        transition: "all 0.2s ease",
       } as React.CSSProperties,
       checkboxGroup: {
         display: "flex",
         alignItems: "center",
-        gap: "0.5rem",
+        gap: "0.75rem",
+        padding: "0.75rem",
+        borderRadius: "8px",
+        background: isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)",
       } as React.CSSProperties,
       section: {
-        marginTop: "2rem",
+        marginTop: "2.5rem",
         marginBottom: "1.5rem",
       } as React.CSSProperties,
       sectionTitle: {
-        fontSize: "1rem",
+        fontSize: "1.125rem",
         fontWeight: "600",
-        marginBottom: "1rem",
-        paddingBottom: "0.5rem",
+        marginBottom: "1.5rem",
+        paddingBottom: "0.75rem",
         borderBottom: isDark
-          ? "1px solid rgba(255,255,255,0.1)"
-          : "1px solid rgba(0,0,0,0.1)",
+          ? "2px solid rgba(255,255,255,0.12)"
+          : "2px solid rgba(0,0,0,0.08)",
+        letterSpacing: "0.02em",
       } as React.CSSProperties,
       saveButton: {
         padding: "1rem 2rem",
-        borderRadius: "8px",
-        border: isDark
-          ? "2px solid rgba(255,255,255,0.2)"
-          : "2px solid rgba(0,0,0,0.2)",
-        background: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)",
-        color: isDark ? "#fff" : "#000",
+        borderRadius: "10px",
+        border: "none",
+        background: "linear-gradient(135deg, #5865F2 0%, #4752C4 100%)",
+        color: "#fff",
         fontSize: "1rem",
         fontWeight: "600",
         cursor: "pointer",
         width: "100%",
-        marginTop: "2rem",
+        marginTop: "2.5rem",
+        transition: "all 0.2s ease",
+        boxShadow: "0 4px 12px rgba(88, 101, 242, 0.4)",
+        letterSpacing: "0.02em",
       } as React.CSSProperties,
     }),
     [isDark]
@@ -303,6 +363,7 @@ export default function EditPanelPage() {
         welcomeEmbed: {
           color: welcomeEmbedColor,
           title: welcomeTitle || null,
+          description: welcomeDescription || null,
           titleImgUrl: welcomeTitleUrl || null,
           largeImgUrl: welcomeLargeImage || null,
           smallImgUrl: welcomeSmallImage || null,
@@ -374,9 +435,25 @@ export default function EditPanelPage() {
 
       <main style={styles.main}>
         <div style={styles.card} className="panel-card">
-          <h1 style={styles.title} className="page-title">
-            Edit Panel
-          </h1>
+          <div style={styles.header}>
+            <button
+              style={styles.backButton}
+              onClick={() => router.push(`/dashboard/guild/${guildId}/panels`)}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = isDark
+                  ? "rgba(255,255,255,0.1)"
+                  : "rgba(0,0,0,0.05)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "transparent";
+              }}
+            >
+              ← Back
+            </button>
+            <h1 style={styles.title} className="page-title">
+              Edit Panel
+            </h1>
+          </div>
 
           {/* First Row */}
           <div style={styles.formRow} className="form-row">
@@ -655,9 +732,23 @@ export default function EditPanelPage() {
                   value={welcomeTitle}
                   onChange={(e) => setWelcomeTitle(e.target.value)}
                   style={styles.input}
-                  placeholder="Embed title"
+                  placeholder="TICKET CATEGORY 1"
                 />
               </div>
+            </div>
+
+            <div style={styles.formGroup}>
+              <label style={styles.label}>DESCRIPTION</label>
+              <textarea
+                value={welcomeDescription}
+                onChange={(e) => setWelcomeDescription(e.target.value)}
+                style={{
+                  ...styles.input,
+                  minHeight: "100px",
+                  resize: "vertical",
+                }}
+                placeholder="Welcome message description..."
+              />
             </div>
 
             <div style={styles.formRow}>

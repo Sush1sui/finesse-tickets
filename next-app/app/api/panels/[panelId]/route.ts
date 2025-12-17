@@ -4,12 +4,13 @@ import Panel from "@/models/Panel";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { panelId: string } }
+  { params }: { params: Promise<{ panelId: string }> }
 ) {
   try {
     await dbConnect();
 
-    const panel = await Panel.findById(params.panelId);
+    const { panelId } = await params;
+    const panel = await Panel.findById(panelId);
     if (!panel) {
       return NextResponse.json({ error: "Panel not found" }, { status: 404 });
     }

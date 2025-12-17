@@ -3,6 +3,7 @@ import mongoose, { Document, Model, Schema } from "mongoose";
 interface WelcomeEmbed {
   color: string;
   title: string | null;
+  description: string | null;
   titleImgUrl: string | null;
   largeImgUrl: string | null;
   smallImgUrl: string | null;
@@ -50,6 +51,7 @@ const PanelSchema = new Schema<IPanel>(
       type: {
         color: { type: String, required: true },
         title: { type: String, default: null },
+        description: { type: String, default: null },
         titleImgUrl: { type: String, default: null },
         largeImgUrl: { type: String, default: null },
         smallImgUrl: { type: String, default: null },

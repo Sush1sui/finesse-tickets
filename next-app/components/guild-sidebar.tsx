@@ -41,14 +41,14 @@ export default function GuildSidebar({
         label: "Settings",
       },
       {
-        href: `/dashboard/guild/${guildId}/transcripts`,
-        icon: "📋",
-        label: "Transcripts",
-      },
-      {
         href: `/dashboard/guild/${guildId}/panels`,
         icon: "🎫",
         label: "Ticket Panels",
+      },
+      {
+        href: `/dashboard/guild/${guildId}/transcripts`,
+        icon: "📋",
+        label: "Transcripts",
       },
       {
         href: `/dashboard/guild/${guildId}/staff`,
