@@ -6,7 +6,7 @@ import Panel from "@/models/Panel";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { guildId: string; panelId: string } }
+  { params }: { params: Promise<{ guildId: string; panelId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -16,12 +16,14 @@ export async function POST(
 
     await dbConnect();
 
-    const panel = await Panel.findById(params.panelId);
+    const { guildId, panelId } = await params;
+
+    const panel = await Panel.findById(panelId);
     if (!panel) {
       return NextResponse.json({ error: "Panel not found" }, { status: 404 });
     }
 
-    if (panel.serverId !== params.guildId) {
+    if (panel.serverId !== guildId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

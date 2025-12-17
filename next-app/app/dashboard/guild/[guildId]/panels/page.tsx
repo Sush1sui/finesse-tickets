@@ -7,6 +7,13 @@ import GuildSidebar from "@/components/guild-sidebar";
 import { Spinner } from "@/components/ui/spinner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/hooks/useToast";
+import {
+  usePanels,
+  useDeletePanel,
+  useSendPanel,
+  useGuildInfo,
+  useGuildChannels,
+} from "@/hooks/useGuildQueries";
 
 type Panel = {
   _id: string;
@@ -34,11 +41,6 @@ export default function PanelsPage() {
   const { resolvedTheme } = useTheme();
   const toast = useToast();
   const [mounted, setMounted] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [guildData, setGuildData] = useState<GuildData | null>(null);
-  const [panels, setPanels] = useState<Panel[]>([]);
-  const [channels, setChannels] = useState<Channel[]>([]);
-  const [error, setError] = useState<string | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -53,46 +55,27 @@ export default function PanelsPage() {
   const isDark = mounted ? resolvedTheme === "dark" : false;
   const guildId = useMemo(() => params?.guildId as string, [params?.guildId]);
 
-  useEffect(() => {
-    if (!guildId) return;
+  // Use React Query hooks - ALL data is cached and shared across pages!
+  const {
+    data: guildData,
+    isLoading: guildLoading,
+    error: guildError,
+  } = useGuildInfo(guildId);
+  const { data: channelsData, isLoading: channelsLoading } =
+    useGuildChannels(guildId);
+  const {
+    data: panelsData,
+    isLoading: panelsLoading,
+    error: panelsError,
+  } = usePanels(guildId);
+  const deletePanelMutation = useDeletePanel(guildId);
+  const sendPanelMutation = useSendPanel(guildId);
 
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-
-        // Fetch all data in parallel for better performance
-        const [guildResponse, channelsResponse, panelsResponse] =
-          await Promise.all([
-            fetch(`/api/dashboard/guild/${guildId}`),
-            fetch(`/api/dashboard/guild/${guildId}/channels`),
-            fetch(`/api/dashboard/guild/${guildId}/panels`),
-          ]);
-
-        if (!guildResponse.ok) {
-          throw new Error("Failed to fetch guild data");
-        }
-
-        const [guild, channelsData, panelsData] = await Promise.all([
-          guildResponse.json(),
-          channelsResponse.ok ? channelsResponse.json() : [],
-          panelsResponse.ok ? panelsResponse.json() : { panels: [] },
-        ]);
-
-        setGuildData(guild);
-        setChannels(channelsData);
-        setPanels(panelsData.panels || []);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        setError(
-          error instanceof Error ? error.message : "Failed to load data"
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [guildId]);
+  // Extract data from React Query
+  const panels = useMemo(() => panelsData || [], [panelsData]);
+  const channels = useMemo(() => channelsData || [], [channelsData]);
+  const loading = guildLoading || channelsLoading || panelsLoading;
+  const error = guildError || panelsError;
 
   // Helper function to get channel name from channel ID
   const getChannelName = useCallback(
@@ -144,16 +127,7 @@ export default function PanelsPage() {
         onConfirm: async () => {
           setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
           try {
-            const response = await fetch(
-              `/api/dashboard/guild/${guildId}/panels/${panelId}`,
-              { method: "DELETE" }
-            );
-
-            if (!response.ok) {
-              throw new Error("Failed to delete panel");
-            }
-
-            setPanels((prev) => prev.filter((p) => p._id !== panelId));
+            await deletePanelMutation.mutateAsync(panelId);
             toast.success("Panel deleted successfully");
           } catch (error) {
             console.error("Error deleting panel:", error);
@@ -162,7 +136,7 @@ export default function PanelsPage() {
         },
       });
     },
-    [guildId, toast]
+    [deletePanelMutation, toast]
   );
 
   const handleSendPanel = useCallback(
@@ -174,16 +148,7 @@ export default function PanelsPage() {
         onConfirm: async () => {
           setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
           try {
-            const response = await fetch(
-              `/api/dashboard/guild/${guildId}/panels/${panelId}/send`,
-              { method: "POST" }
-            );
-
-            if (!response.ok) {
-              const error = await response.json();
-              throw new Error(error.error || "Failed to send panel");
-            }
-
+            await sendPanelMutation.mutateAsync(panelId);
             toast.success("Panel sent successfully!");
           } catch (error) {
             console.error("Error sending panel:", error);
@@ -194,7 +159,7 @@ export default function PanelsPage() {
         },
       });
     },
-    [guildId, toast]
+    [sendPanelMutation, toast]
   );
 
   const styles = useMemo(
@@ -238,7 +203,7 @@ export default function PanelsPage() {
         fontSize: "1.75rem",
         fontWeight: "600",
         letterSpacing: "-0.02em",
-        background: isDark
+        backgroundImage: isDark
           ? "linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%)"
           : "linear-gradient(135deg, #000 0%, rgba(0,0,0,0.7) 100%)",
         WebkitBackgroundClip: "text",
@@ -322,7 +287,7 @@ export default function PanelsPage() {
     [isDark]
   );
 
-  if (loading || !guildData) {
+  if (loading || panelsLoading || !guildData) {
     return (
       <div
         style={{
@@ -349,7 +314,7 @@ export default function PanelsPage() {
     );
   }
 
-  if (error) {
+  if (error || panelsError) {
     return (
       <div
         style={{
@@ -361,7 +326,9 @@ export default function PanelsPage() {
           gap: "1rem",
         }}
       >
-        <p style={{ color: "red" }}>Error: {error}</p>
+        <p style={{ color: "red" }}>
+          Error: {(error as Error)?.message || "Failed to load data"}
+        </p>
         <button
           onClick={() => router.push("/dashboard")}
           style={{

@@ -7,6 +7,12 @@ import GuildSidebar from "@/components/guild-sidebar";
 import EmojiPicker from "@/components/emoji-picker";
 import { ToastContainer } from "@/components/ui/toast";
 import { useToast } from "@/hooks/useToast";
+import {
+  useGuildData,
+  useGuildEmojis,
+  usePanel,
+  useUpdatePanel,
+} from "@/hooks/useGuildQueries";
 
 type CustomEmoji = {
   emojiId: string;
@@ -37,13 +43,8 @@ export default function EditPanelPage() {
   const { resolvedTheme } = useTheme();
   const { toasts, success, error, removeToast } = useToast();
   const [mounted, setMounted] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [guildName, setGuildName] = useState("Server Name");
-  const [customEmojis, setCustomEmojis] = useState<CustomEmoji[]>([]);
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [channels, setChannels] = useState<Channel[]>([]);
 
   // Form state (pre-filled with existing data)
   const [mentionOnOpen, setMentionOnOpen] = useState<string[]>([]);
@@ -77,76 +78,50 @@ export default function EditPanelPage() {
   const guildId = params?.guildId as string;
   const panelId = params?.panelId as string;
 
-  // Fetch guild data (roles, categories, channels, emojis) AND panel data
+  // Use React Query hooks - data is cached and instantly available!
+  const { data: guildData, isLoading: guildDataLoading } =
+    useGuildData(guildId);
+  const { data: emojisData, isLoading: emojisLoading } =
+    useGuildEmojis(guildId);
+  const { data: panelData, isLoading: panelLoading } = usePanel(panelId);
+  const updatePanelMutation = useUpdatePanel(guildId, panelId);
+
+  // Extract data from React Query
+  const roles = useMemo(() => guildData?.roles || [], [guildData]);
+  const categories = useMemo(() => guildData?.categories || [], [guildData]);
+  const channels = useMemo(() => guildData?.channels || [], [guildData]);
+  const customEmojis = useMemo(() => emojisData || [], [emojisData]);
+
+  const loading = guildDataLoading || emojisLoading || panelLoading;
+
+  // Populate form with panel data when it's loaded
   useEffect(() => {
-    if (!guildId || !panelId) return;
+    if (!panelData) return;
 
-    const fetchData = async () => {
-      try {
-        setLoading(true);
+    setMentionOnOpen(panelData.mentionOnOpen || []);
+    setTicketCategory(panelData.ticketCategory || "");
+    setPanelTitle(panelData.title || "");
+    setPanelContent(panelData.content || "");
+    setPanelColor(panelData.color || "#00ff00");
+    setPanelChannel(panelData.channel || "");
+    setButtonColor(panelData.btnColor || "blue");
+    setButtonText(panelData.btnText || "");
+    setEmojiValue(panelData.btnEmoji || "");
+    setLargeImageUrl(panelData.largeImgUrl || "");
+    setSmallImageUrl(panelData.smallImgUrl || "");
 
-        // Fetch guild data and panel data in parallel
-        const [dataResponse, emojisResponse, panelResponse] = await Promise.all(
-          [
-            fetch(`/api/dashboard/guild/${guildId}/data`),
-            fetch(`/api/dashboard/guild/${guildId}/emojis`),
-            fetch(`/api/dashboard/guild/${guildId}/panels/${panelId}`),
-          ]
-        );
-
-        // Parse JSON in parallel
-        const [guildData, emojisData, panelData] = await Promise.all([
-          dataResponse.ok
-            ? dataResponse.json()
-            : { roles: [], categories: [], channels: [] },
-          emojisResponse.ok ? emojisResponse.json() : [],
-          panelResponse.ok ? panelResponse.json() : null,
-        ]);
-
-        // Update guild data state
-        setRoles(guildData.roles || []);
-        setCategories(guildData.categories || []);
-        setChannels(guildData.channels || []);
-        setCustomEmojis(emojisData);
-
-        // Populate form with panel data
-        if (panelData?.panel) {
-          const panel = panelData.panel;
-
-          setMentionOnOpen(panel.mentionOnOpen || []);
-          setTicketCategory(panel.ticketCategory || "");
-          setPanelTitle(panel.title || "");
-          setPanelContent(panel.content || "");
-          setPanelColor(panel.color || "#00ff00");
-          setPanelChannel(panel.channel || "");
-          setButtonColor(panel.btnColor || "blue");
-          setButtonText(panel.btnText || "");
-          setEmojiValue(panel.btnEmoji || "");
-          setLargeImageUrl(panel.largeImgUrl || "");
-          setSmallImageUrl(panel.smallImgUrl || "");
-
-          // Welcome embed data
-          if (panel.welcomeEmbed) {
-            setWelcomeEmbedColor(panel.welcomeEmbed.color || "#00ff00");
-            setWelcomeTitle(panel.welcomeEmbed.title || "");
-            setWelcomeDescription(panel.welcomeEmbed.description || "");
-            setWelcomeTitleUrl(panel.welcomeEmbed.titleImgUrl || "");
-            setWelcomeLargeImage(panel.welcomeEmbed.largeImgUrl || "");
-            setWelcomeSmallImage(panel.welcomeEmbed.smallImgUrl || "");
-            setWelcomeFooter(panel.welcomeEmbed.footerText || "");
-            setWelcomeFooterIcon(panel.welcomeEmbed.footerImgUrl || "");
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching data:", err);
-        error("Failed to load panel data");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [guildId, panelId]);
+    // Welcome embed data
+    if (panelData.welcomeEmbed) {
+      setWelcomeEmbedColor(panelData.welcomeEmbed.color || "#00ff00");
+      setWelcomeTitle(panelData.welcomeEmbed.title || "");
+      setWelcomeDescription(panelData.welcomeEmbed.description || "");
+      setWelcomeTitleUrl(panelData.welcomeEmbed.titleImgUrl || "");
+      setWelcomeLargeImage(panelData.welcomeEmbed.largeImgUrl || "");
+      setWelcomeSmallImage(panelData.welcomeEmbed.smallImgUrl || "");
+      setWelcomeFooter(panelData.welcomeEmbed.footerText || "");
+      setWelcomeFooterIcon(panelData.welcomeEmbed.footerImgUrl || "");
+    }
+  }, [panelData]);
 
   const styles = useMemo(
     () => ({
@@ -372,21 +347,8 @@ export default function EditPanelPage() {
         },
       };
 
-      const response = await fetch(
-        `/api/dashboard/guild/${guildId}/panels/${panelId}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(panelData),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to update panel");
-      }
+      // Use React Query mutation - automatically invalidates cache
+      await updatePanelMutation.mutateAsync(panelData);
 
       // Success - show toast and redirect
       success("Panel updated successfully!");

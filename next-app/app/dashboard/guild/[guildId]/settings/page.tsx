@@ -5,6 +5,8 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { useTheme } from "next-themes";
 import GuildSidebar from "@/components/guild-sidebar";
 import { Spinner } from "@/components/ui/spinner";
+import { useGuildInfo, useGuildChannels } from "@/hooks/useGuildQueries";
+import { useQueryClient } from "@tanstack/react-query";
 
 type GuildData = {
   serverId: string;
@@ -46,10 +48,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [guildData, setGuildData] = useState<GuildData | null>(null);
-  const [channels, setChannels] = useState<Channel[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -71,74 +70,64 @@ export default function SettingsPage() {
 
   const guildId = useMemo(() => params?.guildId as string, [params?.guildId]);
 
+  // Use React Query hooks - data is cached!
+  const queryClient = useQueryClient();
+  const {
+    data: guildData,
+    isLoading: guildLoading,
+    error: guildError,
+  } = useGuildInfo(guildId);
+  const { data: channelsData, isLoading: channelsLoading } =
+    useGuildChannels(guildId);
+
+  const channels = useMemo(() => channelsData || [], [channelsData]);
+  const loading = guildLoading || channelsLoading;
+
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // Load form state from guild data when it arrives
   useEffect(() => {
-    if (!guildId) return;
+    if (!guildData) return;
 
-    const fetchGuildData = async () => {
-      try {
-        setLoading(true);
+    const guild = guildData as GuildData;
 
-        // Fetch guild data
-        const guildResponse = await fetch(`/api/dashboard/guild/${guildId}`);
-        if (!guildResponse.ok) {
-          const errorData = await guildResponse.json();
-          throw new Error(errorData.error || "Failed to fetch guild data");
-        }
-        const guild = (await guildResponse.json()) as GuildData;
-        setGuildData(guild);
+    // Load form state from guild data
+    setTicketNameStyle(guild.ticketConfig.ticketNameStyle);
+    setTranscriptChannel(guild.ticketConfig.ticketTranscript || "");
+    setMaxTickets(guild.ticketConfig.maxTicketsPerUser.toString());
+    setAttachFiles(guild.ticketConfig.ticketPermissions.attachments);
+    setEmbedLinks(guild.ticketConfig.ticketPermissions.links);
+    setAddReactions(guild.ticketConfig.ticketPermissions.reactions);
+    setAutoCloseEnabled(guild.ticketConfig.autoClose.enabled);
+    setCloseOnLeave(guild.ticketConfig.autoClose.closeWhenUserLeaves);
+    setNoResponseDays(
+      guild.ticketConfig.autoClose.sinceOpenWithoutResponse.Days.toString()
+    );
+    setNoResponseHours(
+      guild.ticketConfig.autoClose.sinceOpenWithoutResponse.Hours.toString()
+    );
+    setNoResponseMinutes(
+      guild.ticketConfig.autoClose.sinceOpenWithoutResponse.Minutes.toString()
+    );
+    setLastMessageDays(
+      guild.ticketConfig.autoClose.sinceLastResponse.Days.toString()
+    );
+    setLastMessageHours(
+      guild.ticketConfig.autoClose.sinceLastResponse.Hours.toString()
+    );
+    setLastMessageMinutes(
+      guild.ticketConfig.autoClose.sinceLastResponse.Minutes.toString()
+    );
+  }, [guildData]);
 
-        // Load form state from guild data
-        setTicketNameStyle(guild.ticketConfig.ticketNameStyle);
-        setTranscriptChannel(guild.ticketConfig.ticketTranscript || "");
-        setMaxTickets(guild.ticketConfig.maxTicketsPerUser.toString());
-        setAttachFiles(guild.ticketConfig.ticketPermissions.attachments);
-        setEmbedLinks(guild.ticketConfig.ticketPermissions.links);
-        setAddReactions(guild.ticketConfig.ticketPermissions.reactions);
-        setAutoCloseEnabled(guild.ticketConfig.autoClose.enabled);
-        setCloseOnLeave(guild.ticketConfig.autoClose.closeWhenUserLeaves);
-        setNoResponseDays(
-          guild.ticketConfig.autoClose.sinceOpenWithoutResponse.Days.toString()
-        );
-        setNoResponseHours(
-          guild.ticketConfig.autoClose.sinceOpenWithoutResponse.Hours.toString()
-        );
-        setNoResponseMinutes(
-          guild.ticketConfig.autoClose.sinceOpenWithoutResponse.Minutes.toString()
-        );
-        setLastMessageDays(
-          guild.ticketConfig.autoClose.sinceLastResponse.Days.toString()
-        );
-        setLastMessageHours(
-          guild.ticketConfig.autoClose.sinceLastResponse.Hours.toString()
-        );
-        setLastMessageMinutes(
-          guild.ticketConfig.autoClose.sinceLastResponse.Minutes.toString()
-        );
-
-        // Fetch channels
-        const channelsResponse = await fetch(
-          `/api/dashboard/guild/${guildId}/channels`
-        );
-        if (channelsResponse.ok) {
-          const channelsData = await channelsResponse.json();
-          setChannels(channelsData);
-        }
-      } catch (error) {
-        console.error("Error fetching guild data:", error);
-        setError(
-          error instanceof Error ? error.message : "Failed to load guild data"
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchGuildData();
-  }, [guildId]);
+  // Handle guild error
+  useEffect(() => {
+    if (guildError) {
+      setError((guildError as Error)?.message || "Failed to load guild data");
+    }
+  }, [guildError]);
 
   const isDark = mounted ? resolvedTheme === "dark" : false;
 
@@ -322,10 +311,8 @@ export default function SettingsPage() {
       const data = await response.json();
       setSuccessMessage("Settings saved successfully!");
 
-      // Update local guild data
-      if (data.server) {
-        setGuildData(data.server);
-      }
+      // Invalidate guild data cache to refetch updated settings
+      queryClient.invalidateQueries({ queryKey: ["guild-info", guildId] });
 
       // Clear success message after 3 seconds
       setTimeout(() => {

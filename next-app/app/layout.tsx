@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { NextAuthProvider } from "@/components/providers/session-provider";
+import { QueryProvider } from "@/components/providers/query-provider";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { AuthProvider } from "@/context/AuthContext";
@@ -29,16 +30,18 @@ export default async function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body>
         <NextAuthProvider session={session}>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <AuthProvider>
-              <LayoutShell>{children}</LayoutShell>
-            </AuthProvider>
-          </ThemeProvider>
+          <QueryProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <AuthProvider>
+                <LayoutShell>{children}</LayoutShell>
+              </AuthProvider>
+            </ThemeProvider>
+          </QueryProvider>
         </NextAuthProvider>
       </body>
     </html>

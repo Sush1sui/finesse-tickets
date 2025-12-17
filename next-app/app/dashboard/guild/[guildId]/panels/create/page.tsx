@@ -7,6 +7,11 @@ import GuildSidebar from "@/components/guild-sidebar";
 import EmojiPicker from "@/components/emoji-picker";
 import { ToastContainer } from "@/components/ui/toast";
 import { useToast } from "@/hooks/useToast";
+import {
+  useGuildData,
+  useGuildEmojis,
+  useCreatePanel,
+} from "@/hooks/useGuildQueries";
 
 type CustomEmoji = {
   emojiId: string;
@@ -37,13 +42,8 @@ export default function CreatePanelPage() {
   const { resolvedTheme } = useTheme();
   const { toasts, success, error, removeToast } = useToast();
   const [mounted, setMounted] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [guildName, setGuildName] = useState("Server Name");
-  const [customEmojis, setCustomEmojis] = useState<CustomEmoji[]>([]);
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [channels, setChannels] = useState<Channel[]>([]);
 
   // Form state
   const [mentionOnOpen, setMentionOnOpen] = useState<string[]>([]);
@@ -76,42 +76,20 @@ export default function CreatePanelPage() {
   const isDark = mounted ? resolvedTheme === "dark" : false;
   const guildId = params?.guildId as string;
 
-  // Fetch guild data (roles, categories, channels, emojis)
-  useEffect(() => {
-    if (!guildId) return;
+  // Use React Query hooks - data is cached and shared across pages!
+  const { data: guildData, isLoading: guildDataLoading } =
+    useGuildData(guildId);
+  const { data: emojisData, isLoading: emojisLoading } =
+    useGuildEmojis(guildId);
+  const createPanelMutation = useCreatePanel(guildId);
 
-    const fetchGuildData = async () => {
-      try {
-        setLoading(true);
+  // Extract data from React Query
+  const roles = useMemo(() => guildData?.roles || [], [guildData]);
+  const categories = useMemo(() => guildData?.categories || [], [guildData]);
+  const channels = useMemo(() => guildData?.channels || [], [guildData]);
+  const customEmojis = useMemo(() => emojisData || [], [emojisData]);
 
-        // Fetch combined data (roles, categories, channels) in a single request
-        const [dataResponse, emojisResponse] = await Promise.all([
-          fetch(`/api/dashboard/guild/${guildId}/data`),
-          fetch(`/api/dashboard/guild/${guildId}/emojis`),
-        ]);
-
-        // Parse JSON in parallel
-        const [guildData, emojisData] = await Promise.all([
-          dataResponse.ok
-            ? dataResponse.json()
-            : { roles: [], categories: [], channels: [] },
-          emojisResponse.ok ? emojisResponse.json() : [],
-        ]);
-
-        // Update state all at once
-        setRoles(guildData.roles || []);
-        setCategories(guildData.categories || []);
-        setChannels(guildData.channels || []);
-        setCustomEmojis(emojisData);
-      } catch (error) {
-        console.error("Error fetching guild data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchGuildData();
-  }, [guildId]);
+  const loading = guildDataLoading || emojisLoading;
 
   const styles = useMemo(
     () => ({
@@ -337,18 +315,8 @@ export default function CreatePanelPage() {
         },
       };
 
-      const response = await fetch(`/api/dashboard/guild/${guildId}/panels`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(panelData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create panel");
-      }
+      // Use React Query mutation - automatically invalidates cache
+      await createPanelMutation.mutateAsync(panelData);
 
       // Success - show toast and redirect
       success("Panel created successfully!");
