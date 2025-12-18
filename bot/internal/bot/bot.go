@@ -10,6 +10,7 @@ import (
 
 	"github.com/Sush1sui/fns-tickets/internal/bot/deploy"
 	"github.com/Sush1sui/fns-tickets/internal/config"
+	"github.com/Sush1sui/fns-tickets/internal/repository"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -37,6 +38,12 @@ func setSession(s *discordgo.Session) {
 }
 
 func StartBot() {
+    // Initialize database connection
+    if err := repository.InitDB(); err != nil {
+        log.Fatal("Failed to initialize database: " + err.Error())
+    }
+    defer repository.CloseDB()
+
     s, err := discordgo.New("Bot " + config.GlobalConfig.BotToken)
     if err != nil {
         log.Fatal("error creating Discord session, " + err.Error())
@@ -60,8 +67,7 @@ func StartBot() {
             Status: "idle",
             Activities: []*discordgo.Activity{
                 {
-                    Name: "Finesse!",
-                    Type: discordgo.ActivityTypeListening,
+                    Name: "Do it with Finesse!",
                 },
             },
         })
@@ -74,6 +80,9 @@ func StartBot() {
 
     deploy.DeployCommands(s)
     deploy.DeployEvents(s)
+
+    // Start auto-close background worker
+    go StartAutoCloseWorker(s)
 
     fmt.Println("Bot is now running")
 

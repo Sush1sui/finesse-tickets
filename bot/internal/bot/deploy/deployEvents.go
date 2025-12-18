@@ -9,6 +9,8 @@ import (
 
 var EventHandlers = []any{
 	events.HandleButtonInteraction,
+	events.HandleMessageCreate,
+	events.HandleGuildMemberRemove,
 }
 
 func DeployEvents(s *discordgo.Session) {

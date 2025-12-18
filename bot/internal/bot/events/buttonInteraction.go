@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/Sush1sui/fns-tickets/internal/config"
+	"github.com/Sush1sui/fns-tickets/internal/repository"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -65,6 +66,35 @@ func handleOpenTicket(s *discordgo.Session, i *discordgo.InteractionCreate, pane
 		return
 	}
 
+	// Fetch guild configuration
+	guildConfig, err := repository.GetGuildConfig(i.GuildID)
+	if err != nil {
+		log.Printf("Error fetching guild config: %v", err)
+		s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+			Content: strPtr("Failed to fetch server configuration. Please try again later."),
+		})
+		return
+	}
+
+	// Check max tickets per user
+	if guildConfig.TicketConfig.MaxTicketsPerUser > 0 {
+		activeTickets, err := repository.GetUserActiveTicketCount(i.GuildID, i.Member.User.ID)
+		if err != nil {
+			log.Printf("Error checking user ticket count: %v", err)
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: strPtr("Failed to verify ticket limit. Please try again later."),
+			})
+			return
+		}
+
+		if activeTickets >= guildConfig.TicketConfig.MaxTicketsPerUser {
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: strPtr(fmt.Sprintf("You have reached the maximum number of open tickets (%d). Please close an existing ticket before opening a new one.", guildConfig.TicketConfig.MaxTicketsPerUser)),
+			})
+			return
+		}
+	}
+
 	// Fetch panel data from Next.js API
 	nextAppURL := config.GlobalConfig.NextAppURL
 	resp, err := http.Get(fmt.Sprintf("%s/api/panels/%s", nextAppURL, panelID))
@@ -103,6 +133,19 @@ func handleOpenTicket(s *discordgo.Session, i *discordgo.InteractionCreate, pane
 		parentID = *panelData.TicketCategory
 	}
 
+	// Build user permissions based on ticket permissions config
+	var userPerms int64 = discordgo.PermissionViewChannel | discordgo.PermissionSendMessages | discordgo.PermissionReadMessageHistory
+	
+	if guildConfig.TicketConfig.TicketPermissions.Attachments {
+		userPerms |= discordgo.PermissionAttachFiles
+	}
+	if guildConfig.TicketConfig.TicketPermissions.Links {
+		userPerms |= discordgo.PermissionEmbedLinks
+	}
+	if guildConfig.TicketConfig.TicketPermissions.Reactions {
+		userPerms |= discordgo.PermissionAddReactions
+	}
+
 	channel, err := s.GuildChannelCreateComplex(i.GuildID, discordgo.GuildChannelCreateData{
 		Name:     channelName,
 		Type:     discordgo.ChannelTypeGuildText,
@@ -116,7 +159,7 @@ func handleOpenTicket(s *discordgo.Session, i *discordgo.InteractionCreate, pane
 			{
 				ID:    i.Member.User.ID,
 				Type:  discordgo.PermissionOverwriteTypeMember,
-				Allow: discordgo.PermissionViewChannel | discordgo.PermissionSendMessages | discordgo.PermissionReadMessageHistory,
+				Allow: userPerms,
 			},
 		},
 	})
@@ -127,6 +170,18 @@ func handleOpenTicket(s *discordgo.Session, i *discordgo.InteractionCreate, pane
 			Content: strPtr("Failed to create ticket channel. Please try again later."),
 		})
 		return
+	}
+
+	// Save ticket to database
+	ticket := &repository.Ticket{
+		GuildID:   i.GuildID,
+		ChannelID: channel.ID,
+		UserID:    i.Member.User.ID,
+		PanelID:   panelID,
+	}
+	if err := repository.CreateTicket(ticket); err != nil {
+		log.Printf("Error saving ticket to database: %v", err)
+		// Continue anyway, ticket channel is created
 	}
 
 	// Send welcome message
@@ -193,13 +248,14 @@ func sendWelcomeMessage(s *discordgo.Session, channelID string, user *discordgo.
 	}
 
 	// Build mentions string
-	mentions := ""
+	var mentions *string
 	if len(panelData.MentionOnOpen) > 0 {
 		mentionStrs := make([]string, len(panelData.MentionOnOpen))
 		for i, roleID := range panelData.MentionOnOpen {
 			mentionStrs[i] = fmt.Sprintf("<@&%s>", roleID)
 		}
-		mentions = strings.Join(mentionStrs, " ")
+		mentionStr := strings.Join(mentionStrs, " ")
+		mentions = &mentionStr
 	}
 
 	// Create close button
@@ -212,16 +268,23 @@ func sendWelcomeMessage(s *discordgo.Session, channelID string, user *discordgo.
 		},
 	}
 
-	// Send message
-	_, err := s.ChannelMessageSendComplex(channelID, &discordgo.MessageSend{
-		Content: mentions,
-		Embeds:  []*discordgo.MessageEmbed{embed},
+	// Build message send
+	messageSend := &discordgo.MessageSend{
+		Embeds: []*discordgo.MessageEmbed{embed},
 		Components: []discordgo.MessageComponent{
 			discordgo.ActionsRow{
 				Components: []discordgo.MessageComponent{closeButton},
 			},
 		},
-	})
+	}
+	
+	// Only add content if there are mentions
+	if mentions != nil {
+		messageSend.Content = *mentions
+	}
+
+	// Send message
+	_, err := s.ChannelMessageSendComplex(channelID, messageSend)
 
 	if err != nil {
 		log.Printf("Error sending welcome message: %v", err)
@@ -240,6 +303,12 @@ func handleCloseTicket(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if err != nil {
 		log.Printf("Error responding to close interaction: %v", err)
 		return
+	}
+
+	// Mark ticket as closed in database
+	if err := repository.CloseTicket(i.ChannelID); err != nil {
+		log.Printf("Error closing ticket in database: %v", err)
+		// Continue anyway
 	}
 
 	// Delete the channel
