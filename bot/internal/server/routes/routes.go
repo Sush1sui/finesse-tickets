@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/NYTimes/gziphandler"
 	"github.com/Sush1sui/fns-tickets/internal/server/handlers"
 )
 
@@ -30,7 +31,8 @@ func NewRouter() http.Handler {
 		}
 	})
 
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	// Wrap with gzip compression
+	return gziphandler.GzipHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mux.ServeHTTP(w, r)
-	})
+	}))
 }

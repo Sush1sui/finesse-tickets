@@ -43,28 +43,27 @@ func HandleGuildMemberRemove(s *discordgo.Session, m *discordgo.GuildMemberRemov
 		return
 	}
 
-	// Get all active tickets for this user
-	tickets, err := repository.GetInactiveTickets()
+	// Get active tickets for this specific user in this guild
+	tickets, err := repository.GetUserActiveTickets(m.GuildID, m.User.ID)
 	if err != nil {
-		log.Printf("Error fetching tickets: %v", err)
+		log.Printf("Error fetching user tickets: %v", err)
 		return
 	}
 
+	// Close all tickets for the user who left
 	for _, ticket := range tickets {
-		if ticket.GuildID == m.GuildID && ticket.UserID == m.User.ID && !ticket.Closed {
-			// Close the ticket
-			if err := repository.CloseTicket(ticket.ChannelID); err != nil {
-				log.Printf("Error closing ticket in database: %v", err)
-				continue
-			}
+		// Close the ticket in database
+		if err := repository.CloseTicket(ticket.ChannelID); err != nil {
+			log.Printf("Error closing ticket in database: %v", err)
+			continue
+		}
 
-			// Delete the channel
-			_, err := s.ChannelDelete(ticket.ChannelID)
-			if err != nil {
-				log.Printf("Error deleting ticket channel: %v", err)
-			} else {
-				log.Printf("Auto-closed ticket %s due to user leaving", ticket.ChannelID)
-			}
+		// Delete the channel
+		_, err := s.ChannelDelete(ticket.ChannelID)
+		if err != nil {
+			log.Printf("Error deleting ticket channel: %v", err)
+		} else {
+			log.Printf("Auto-closed ticket %s due to user leaving", ticket.ChannelID)
 		}
 	}
 }

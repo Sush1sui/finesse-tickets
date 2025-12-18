@@ -261,3 +261,28 @@ export function useSendPanel(guildId: string) {
     },
   });
 }
+
+/**
+ * Fetch and cache permitted servers list
+ */
+interface PermittedServer {
+  id: string;
+  name: string;
+  icon: string | null;
+}
+
+async function fetchPermittedServers() {
+  const response = await fetch("/api/dashboard/permitted-servers");
+  if (!response.ok) throw new Error("Failed to fetch permitted servers");
+  const data = await response.json();
+  return data.servers as PermittedServer[];
+}
+
+export function usePermittedServers() {
+  return useQuery({
+    queryKey: ["permitted-servers"],
+    queryFn: fetchPermittedServers,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
+}

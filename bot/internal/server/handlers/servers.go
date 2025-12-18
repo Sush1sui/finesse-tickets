@@ -73,15 +73,14 @@ func GetAllServersHandler(w http.ResponseWriter, r *http.Request) {
         reqSet[id] = struct{}{}
     }
 
-    // iterate bot's cached guilds (discordgo.Guild)
+    // Use State.Guild lookup instead of iterating all guilds (O(1) vs O(n))
     out := make([]serverInfo, 0, len(req.GuildIds))
-    for _, g := range s.State.Guilds {
-        if g == nil {
-            continue
+    for guildID := range reqSet {
+        g, err := s.State.Guild(guildID)
+        if err != nil || g == nil {
+            continue // Bot not in this guild
         }
-        if _, ok := reqSet[g.ID]; !ok {
-            continue
-        }
+        
         icon := ""
         if g.Icon != "" {
             icon = g.Icon

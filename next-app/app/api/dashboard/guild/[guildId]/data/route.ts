@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { rateLimit } from "@/lib/rateLimit";
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ guildId: string }> }
 ) {
+  const rateLimitResponse = rateLimit(req);
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     // Check authentication
     const session = await getServerSession(authOptions);

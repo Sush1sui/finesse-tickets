@@ -4,11 +4,16 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Panel from "@/models/Panel";
 import { verifyGuildAccess } from "@/lib/discord";
+import { rateLimit } from "@/lib/rateLimit";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ guildId: string }> }
 ) {
+  // Apply rate limiting
+  const rateLimitResponse = rateLimit(request);
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {

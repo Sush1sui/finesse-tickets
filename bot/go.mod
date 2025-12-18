@@ -5,6 +5,7 @@ go 1.24.5
 require github.com/bwmarrin/discordgo v0.29.0
 
 require (
+	github.com/NYTimes/gziphandler v1.1.1 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect

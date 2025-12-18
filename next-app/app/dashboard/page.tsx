@@ -1,30 +1,23 @@
 "use client";
 
 import { useAuth } from "@/context/AuthContext";
-import { useCallback, useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { getDiscordGuildIconUrl, truncateName } from "@/lib/utils";
 import ServerCard from "@/components/server-card";
 import { Spinner } from "@/components/ui/spinner";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-
-type ServersType = {
-  id: string;
-  name: string;
-  icon?: string | null;
-  owner?: boolean;
-  permissions?: string;
-}[];
+import { usePermittedServers } from "@/hooks/useGuildQueries";
 
 export default function Dashboard() {
   const { user, authLoading } = useAuth();
-  const [fetching, setFetching] = useState(false);
-  const [servers, setServers] = useState<ServersType>([]);
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
-  const hasFetched = useRef(false);
+
+  // Use React Query hook for permitted servers
+  const { data: servers = [], isLoading: fetching } = usePermittedServers();
 
   // Wait for component to mount to avoid hydration mismatch
   useEffect(() => {
@@ -32,44 +25,6 @@ export default function Dashboard() {
   }, []);
 
   const isDark = mounted ? resolvedTheme === "dark" : false;
-
-  const fetchPermittedServers = useCallback(async () => {
-    setFetching(true);
-    setServers([]);
-    try {
-      const res = await fetch("/api/dashboard/permitted-servers", {
-        method: "GET",
-        headers: { Accept: "application/json" },
-        credentials: "include",
-      });
-
-      const text = await res.text();
-      const contentType = res.headers.get("content-type") || "";
-
-      if (!res.ok) {
-        console.error("Failed to fetch permitted servers:", res.status, text);
-        return;
-      }
-      if (!contentType.includes("application/json")) {
-        console.error("Expected JSON but got:", contentType, text);
-        return;
-      }
-
-      const data = JSON.parse(text);
-      setServers(data.permittedServers || data.servers || []);
-    } catch (error) {
-      console.error("Error fetching permitted servers:", error);
-    } finally {
-      setFetching(false);
-    }
-  }, []); // Remove 'user' from dependencies since it's not used in the function
-
-  useEffect(() => {
-    if (user && !hasFetched.current) {
-      hasFetched.current = true;
-      fetchPermittedServers();
-    }
-  }, [user, fetchPermittedServers]);
 
   // Redirect to home if not authenticated after loading
   useEffect(() => {

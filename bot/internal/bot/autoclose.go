@@ -9,14 +9,29 @@ import (
 )
 
 // StartAutoCloseWorker starts a background worker that checks for inactive tickets
-func StartAutoCloseWorker(s *discordgo.Session) {
+// Returns a stop function for graceful shutdown
+func StartAutoCloseWorker(s *discordgo.Session) func() {
 	ticker := time.NewTicker(5 * time.Minute) // Check every 5 minutes
-	defer ticker.Stop()
+	done := make(chan struct{})
 
 	log.Println("Auto-close worker started")
 
-	for range ticker.C {
-		checkAndCloseInactiveTickets(s)
+	go func() {
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				checkAndCloseInactiveTickets(s)
+			case <-done:
+				log.Println("Auto-close worker stopped")
+				return
+			}
+		}
+	}()
+
+	// Return stop function
+	return func() {
+		close(done)
 	}
 }
 
@@ -29,12 +44,20 @@ func checkAndCloseInactiveTickets(s *discordgo.Session) {
 
 	now := time.Now()
 
+	// Cache guild configs to avoid N+1 queries
+	guildConfigCache := make(map[string]*repository.GuildConfig)
+
 	for _, ticket := range tickets {
-		// Get guild configuration
-		guildConfig, err := repository.GetGuildConfig(ticket.GuildID)
-		if err != nil {
-			log.Printf("Error fetching guild config for %s: %v", ticket.GuildID, err)
-			continue
+		// Get guild configuration (cached)
+		guildConfig, exists := guildConfigCache[ticket.GuildID]
+		if !exists {
+			config, err := repository.GetGuildConfig(ticket.GuildID)
+			if err != nil {
+				log.Printf("Error fetching guild config for %s: %v", ticket.GuildID, err)
+				continue
+			}
+			guildConfig = config
+			guildConfigCache[ticket.GuildID] = config
 		}
 
 		// Skip if auto-close is not enabled
@@ -72,8 +95,11 @@ func checkAndCloseInactiveTickets(s *discordgo.Session) {
 		}
 
 		if shouldClose {
-			// Send closing message
-			_, err := s.ChannelMessageSend(ticket.ChannelID, "🔒 This ticket is being automatically closed due to "+reason+".")
+			// Create rate limit handler
+			rateLimitHandler := NewRateLimitHandler(s)
+
+			// Send closing message with retry
+			_, err := rateLimitHandler.ChannelMessageSendWithRetry(ticket.ChannelID, "🔒 This ticket is being automatically closed due to "+reason+".")
 			if err != nil {
 				log.Printf("Error sending close message: %v", err)
 			}
@@ -87,8 +113,8 @@ func checkAndCloseInactiveTickets(s *discordgo.Session) {
 				continue
 			}
 
-			// Delete the channel
-			_, err = s.ChannelDelete(ticket.ChannelID)
+			// Delete the channel with retry
+			_, err = rateLimitHandler.ChannelDeleteWithRetry(ticket.ChannelID)
 			if err != nil {
 				log.Printf("Error deleting ticket channel %s: %v", ticket.ChannelID, err)
 			} else {

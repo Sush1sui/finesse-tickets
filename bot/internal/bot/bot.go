@@ -82,7 +82,7 @@ func StartBot() {
     deploy.DeployEvents(s)
 
     // Start auto-close background worker
-    go StartAutoCloseWorker(s)
+    stopAutoClose := StartAutoCloseWorker(s)
 
     fmt.Println("Bot is now running")
 
@@ -90,4 +90,7 @@ func StartBot() {
     signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
     <-sc
     fmt.Println("Shutting down bot gracefully...")
+    
+    // Stop auto-close worker
+    stopAutoClose()
 }

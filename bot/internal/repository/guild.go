@@ -70,8 +70,16 @@ func InitDB() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	// Configure connection pool (optimized for 500MB RAM limit)
+	clientOptions := options.Client().
+		ApplyURI(mongoURI).
+		SetMaxPoolSize(20).            // Max 20 connections (low RAM)
+		SetMinPoolSize(2).             // Keep 2 warm connections (low RAM)
+		SetMaxConnIdleTime(30 * time.Second). // Close idle connections after 30s
+		SetTimeout(10 * time.Second)   // Default operation timeout
+
 	var err error
-	client, err = mongo.Connect(options.Client().ApplyURI(mongoURI))
+	client, err = mongo.Connect(clientOptions)
 	if err != nil {
 		return fmt.Errorf("failed to connect to MongoDB: %w", err)
 	}
@@ -82,6 +90,13 @@ func InitDB() error {
 
 	database = client.Database("fns-tickets")
 	log.Println("Successfully connected to MongoDB")
+	
+	// Create indexes for performance
+	if err := EnsureIndexes(); err != nil {
+		log.Printf("Warning: Failed to create indexes: %v", err)
+		// Don't fail startup, but log the issue
+	}
+	
 	return nil
 }
 
@@ -206,14 +221,23 @@ func UpdateTicketLastMessage(channelID string) error {
 }
 
 // GetInactiveTickets returns tickets that haven't had activity for the specified duration
+// Uses pagination to avoid loading all tickets into memory
 func GetInactiveTickets() ([]Ticket, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	collection := database.Collection("tickets")
 	
+	// Only fetch tickets older than 1 hour to reduce load
+	oneHourAgo := time.Now().Add(-1 * time.Hour)
+	
 	var tickets []Ticket
-	cursor, err := collection.Find(ctx, bson.M{"closed": false})
+	findOptions := options.Find().SetLimit(1000) // Process max 1000 tickets per cycle
+	
+	cursor, err := collection.Find(ctx, bson.M{
+		"closed": false,
+		"lastMessageAt": bson.M{"$lt": oneHourAgo},
+	}, findOptions)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch tickets: %w", err)
 	}
