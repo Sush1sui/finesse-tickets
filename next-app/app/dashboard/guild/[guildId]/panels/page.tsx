@@ -3,17 +3,25 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useTheme } from "next-themes";
+import { useQueryClient } from "@tanstack/react-query";
 import GuildSidebar from "@/components/guild-sidebar";
 import { Spinner } from "@/components/ui/spinner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/hooks/useToast";
+import { ToastContainer } from "@/components/ui/toast";
 import {
   usePanels,
   useDeletePanel,
   useSendPanel,
   useGuildInfo,
   useGuildChannels,
+  useMultiPanel,
 } from "@/hooks/useGuildQueries";
+
+type MultiPanel = {
+  channel: string | null;
+  panels: string[];
+};
 
 type Panel = {
   _id: string;
@@ -40,6 +48,7 @@ export default function PanelsPage() {
   const router = useRouter();
   const { resolvedTheme } = useTheme();
   const toast = useToast();
+  const queryClient = useQueryClient();
   const [mounted, setMounted] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
@@ -70,6 +79,11 @@ export default function PanelsPage() {
   } = usePanels(guildId);
   const deletePanelMutation = useDeletePanel(guildId);
   const sendPanelMutation = useSendPanel(guildId);
+  const {
+    data: multiPanel,
+    isLoading: multiPanelLoading,
+    error: multiPanelError,
+  } = useMultiPanel(guildId);
 
   // Extract data from React Query
   const panels = useMemo(() => panelsData || [], [panelsData]);
@@ -92,23 +106,84 @@ export default function PanelsPage() {
     return text.substring(0, maxLength) + "...";
   };
 
-  const regularPanels = useMemo(
-    () => panels.filter((p) => !p.btnText.includes("Multi")),
-    [panels]
-  );
-
-  const multiPanels = useMemo(
-    () => panels.filter((p) => p.btnText.includes("Multi")),
-    [panels]
-  );
+  const regularPanels = panels;
 
   const handleNewPanel = useCallback(() => {
     router.push(`/dashboard/guild/${guildId}/panels/create`);
   }, [guildId, router]);
 
   const handleNewMultiPanel = useCallback(() => {
-    router.push(`/dashboard/guild/${guildId}/panels/create-multi`);
+    router.push(`/dashboard/guild/${guildId}/panels/multi-create`);
   }, [guildId, router]);
+
+  const handleEditMultiPanel = useCallback(() => {
+    router.push(`/dashboard/guild/${guildId}/panels/multi-edit`);
+  }, [guildId, router]);
+
+  const handleSendMultiPanel = useCallback(async () => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Send Multi-Panel",
+      message: "Are you sure you want to send this multi-panel to Discord?",
+      onConfirm: async () => {
+        setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+        try {
+          const response = await fetch(
+            `/api/dashboard/guild/${guildId}/multi-panel/send`,
+            {
+              method: "POST",
+            }
+          );
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to send multi-panel");
+          }
+
+          toast.success("Multi-panel sent successfully!");
+        } catch (error) {
+          console.error("Error sending multi-panel:", error);
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : "Failed to send multi-panel"
+          );
+        }
+      },
+    });
+  }, [guildId, toast]);
+
+  const handleDeleteMultiPanel = useCallback(async () => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Delete Multi-Panel",
+      message:
+        "Are you sure you want to delete this multi-panel? This action cannot be undone.",
+      onConfirm: async () => {
+        setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+        try {
+          const response = await fetch(
+            `/api/dashboard/guild/${guildId}/multi-panel`,
+            {
+              method: "DELETE",
+            }
+          );
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to delete multi-panel");
+          }
+
+          // Invalidate multi-panel query to refetch
+          queryClient.invalidateQueries({ queryKey: ["multi-panel", guildId] });
+          toast.success("Multi-panel deleted successfully");
+        } catch (error) {
+          console.error("Error deleting multi-panel:", error);
+          toast.error("Failed to delete multi-panel");
+        }
+      },
+    });
+  }, [guildId, toast, queryClient]);
 
   const handleEditPanel = useCallback(
     (panelId: string) => {
@@ -318,23 +393,81 @@ export default function PanelsPage() {
     return (
       <div
         style={{
-          minHeight: "60vh",
+          minHeight: "100vh",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          gap: "1rem",
+          gap: "2rem",
+          padding: "2rem",
+          textAlign: "center",
         }}
       >
-        <p style={{ color: "red" }}>
-          Error: {(error as Error)?.message || "Failed to load data"}
-        </p>
+        <div
+          style={{
+            fontSize: "8rem",
+            fontWeight: "bold",
+            background: isDark
+              ? "linear-gradient(135deg, #5865F2 0%, #4752C4 100%)"
+              : "linear-gradient(135deg, #5865F2 0%, #4752C4 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+            lineHeight: 1,
+          }}
+        >
+          404
+        </div>
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
+          <h1
+            style={{
+              fontSize: "2rem",
+              fontWeight: "600",
+              color: isDark ? "#fff" : "#000",
+              margin: 0,
+            }}
+          >
+            Server Not Found
+          </h1>
+          <p
+            style={{
+              fontSize: "1rem",
+              color: isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)",
+              maxWidth: "500px",
+              margin: 0,
+            }}
+          >
+            The server you&apos;re looking for doesn&apos;t exist or you
+            don&apos;t have access to it.
+          </p>
+        </div>
         <button
           onClick={() => router.push("/dashboard")}
           style={{
-            padding: "0.5rem 1rem",
-            borderRadius: "6px",
+            padding: "0.875rem 2rem",
+            borderRadius: "10px",
+            border: "none",
+            background: isDark
+              ? "linear-gradient(135deg, #5865F2 0%, #4752C4 100%)"
+              : "linear-gradient(135deg, #5865F2 0%, #4752C4 100%)",
+            color: "#fff",
+            fontSize: "1rem",
+            fontWeight: "600",
             cursor: "pointer",
+            transition: "all 0.2s ease",
+            boxShadow: "0 4px 12px rgba(88, 101, 242, 0.3)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(-2px)";
+            e.currentTarget.style.boxShadow =
+              "0 6px 16px rgba(88, 101, 242, 0.4)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow =
+              "0 4px 12px rgba(88, 101, 242, 0.3)";
           }}
         >
           Back to Dashboard
@@ -454,7 +587,7 @@ export default function PanelsPage() {
                 </tr>
               </thead>
               <tbody>
-                {multiPanels.length === 0 ? (
+                {!multiPanel || !multiPanel.channel ? (
                   <tr>
                     <td
                       colSpan={3}
@@ -468,42 +601,45 @@ export default function PanelsPage() {
                     </td>
                   </tr>
                 ) : (
-                  multiPanels.map((panel) => (
-                    <tr key={panel._id}>
-                      <td
-                        style={{ ...styles.td, ...styles.truncate }}
-                        title={panel.title}
+                  <tr>
+                    <td
+                      style={{ ...styles.td, ...styles.truncate }}
+                      title={`Multi-Panel (${multiPanel.panels.length} panels)`}
+                    >
+                      Multi-Panel ({multiPanel.panels.length} panels)
+                    </td>
+                    <td
+                      style={{ ...styles.td, ...styles.truncate }}
+                      title={getChannelName(multiPanel.channel)}
+                    >
+                      #{truncateText(getChannelName(multiPanel.channel), 20)}
+                    </td>
+                    <td style={styles.td}>
+                      <div
+                        style={styles.actionButtons}
+                        className="button-group"
                       >
-                        {truncateText(panel.title)}
-                      </td>
-                      <td
-                        style={{ ...styles.td, ...styles.truncate }}
-                        title={getChannelName(panel.channel)}
-                      >
-                        #{truncateText(getChannelName(panel.channel), 20)}
-                      </td>
-                      <td style={styles.td}>
-                        <div
-                          style={styles.actionButtons}
-                          className="button-group"
+                        <button
+                          style={styles.actionButton}
+                          onClick={handleEditMultiPanel}
                         >
-                          <button style={styles.actionButton}>ADDON</button>
-                          <button
-                            style={styles.actionButton}
-                            onClick={() => handleSendPanel(panel._id)}
-                          >
-                            SEND
-                          </button>
-                          <button
-                            style={styles.actionButton}
-                            onClick={() => handleDeletePanel(panel._id)}
-                          >
-                            DELETE
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                          EDIT
+                        </button>
+                        <button
+                          style={styles.actionButton}
+                          onClick={handleSendMultiPanel}
+                        >
+                          SEND
+                        </button>
+                        <button
+                          style={styles.actionButton}
+                          onClick={handleDeleteMultiPanel}
+                        >
+                          DELETE
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </table>
@@ -524,25 +660,7 @@ export default function PanelsPage() {
         isDark={isDark}
       />
 
-      {toast.toasts.map((t) => (
-        <div
-          key={t.id}
-          style={{
-            position: "fixed",
-            top: "1rem",
-            right: "1rem",
-            background: t.type === "success" ? "#10B981" : "#EF4444",
-            color: "#fff",
-            padding: "1rem 1.5rem",
-            borderRadius: "8px",
-            boxShadow: "0 10px 30px rgba(0, 0, 0, 0.3)",
-            zIndex: 10000,
-            animation: "slideIn 0.3s ease-out",
-          }}
-        >
-          {t.message}
-        </div>
-      ))}
+      <ToastContainer toasts={toast.toasts} onRemove={toast.removeToast} />
     </div>
   );
 }

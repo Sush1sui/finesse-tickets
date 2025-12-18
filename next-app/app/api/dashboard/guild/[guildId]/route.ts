@@ -127,7 +127,12 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    await dbConnect();
+    try {
+      await dbConnect();
+    } catch (dbError) {
+      console.error("[500 Server Error] Database connection failed:", dbError);
+      return NextResponse.json({ error: "Server not found" }, { status: 404 });
+    }
 
     const { guildId } = await params;
     const body = await request.json();

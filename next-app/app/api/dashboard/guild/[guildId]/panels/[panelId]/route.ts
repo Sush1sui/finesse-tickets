@@ -122,8 +122,8 @@ export async function DELETE(
       return NextResponse.json({ error }, { status: status || 403 });
     }
 
-    // Delete panel
-    const panel = await Panel.findOneAndDelete({
+    // Find panel first to get message details
+    const panel = await Panel.findOne({
       _id: panelId,
       serverId: guildId,
     });
@@ -131,6 +131,31 @@ export async function DELETE(
     if (!panel) {
       return NextResponse.json({ error: "Panel not found" }, { status: 404 });
     }
+
+    // Delete all Discord messages for this panel
+    if (panel.messageIds && panel.messageIds.length > 0) {
+      const botServerUrl =
+        process.env.BOT_SERVER_URL || "http://localhost:8080";
+
+      // Delete all messages in parallel
+      await Promise.allSettled(
+        panel.messageIds.map(({ channelId, messageId }) =>
+          fetch(`${botServerUrl}/api/delete-message`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${process.env.BOT_API_SECRET}`,
+            },
+            body: JSON.stringify({ channelId, messageId }),
+          }).catch((error) => {
+            console.error(`Error deleting message ${messageId}:`, error);
+          })
+        )
+      );
+    }
+
+    // Delete panel from database
+    await Panel.findByIdAndDelete(panelId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

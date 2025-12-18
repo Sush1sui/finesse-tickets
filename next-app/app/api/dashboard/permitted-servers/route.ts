@@ -202,14 +202,8 @@ export async function GET() {
       if (!botRes.ok) {
         const txt = await botRes.text().catch(() => "");
         console.warn("Bot server presence check failed:", botRes.status, txt);
-        return NextResponse.json(
-          {
-            error: "Bot presence check failed",
-            status: botRes.status,
-            details: txt,
-          },
-          { status: 502 }
-        );
+        // Return empty list instead of error - bot may be temporarily offline
+        return NextResponse.json({ permittedServers: [] });
       }
 
       const body = (await botRes.json()) as {
@@ -223,11 +217,9 @@ export async function GET() {
 
       return NextResponse.json({ permittedServers: permittedWhereBotIsIn });
     } catch (err) {
-      console.error("Bot presence check error:", err);
-      return NextResponse.json(
-        { error: "Bot presence check error", details: String(err) },
-        { status: 502 }
-      );
+      console.error("[Bot Offline] Bot presence check error:", err);
+      // Return empty list instead of error - bot may be temporarily offline
+      return NextResponse.json({ permittedServers: [] });
     }
   } catch (error) {
     console.error("Error in permitted-servers route:", error);

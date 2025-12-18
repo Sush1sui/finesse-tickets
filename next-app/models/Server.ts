@@ -36,6 +36,7 @@ export interface IServer extends Document {
       };
       messageEmbedConfig: {
         color: string;
+        title: string | null;
         description: string | null;
         authorName: string | null;
         authorUrl: string | null;
@@ -92,6 +93,7 @@ const ServerSchema = new Schema<IServer>(
         },
         messageEmbedConfig: {
           color: { type: String, default: "#000000" },
+          title: { type: String, default: null },
           description: { type: String, default: null },
           authorName: { type: String, default: null },
           authorUrl: { type: String, default: null },

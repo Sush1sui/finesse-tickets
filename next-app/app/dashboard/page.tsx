@@ -17,7 +17,11 @@ export default function Dashboard() {
   const router = useRouter();
 
   // Use React Query hook for permitted servers
-  const { data: servers = [], isLoading: fetching } = usePermittedServers();
+  const {
+    data: servers = [],
+    isLoading: fetching,
+    error,
+  } = usePermittedServers();
 
   // Wait for component to mount to avoid hydration mismatch
   useEffect(() => {
@@ -73,6 +77,92 @@ export default function Dashboard() {
       </div>
     );
 
+  if (error) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "2rem",
+          padding: "2rem",
+          textAlign: "center",
+        }}
+      >
+        <div
+          style={{
+            fontSize: "8rem",
+            fontWeight: "bold",
+            background: isDark
+              ? "linear-gradient(135deg, #5865F2 0%, #4752C4 100%)"
+              : "linear-gradient(135deg, #5865F2 0%, #4752C4 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+            lineHeight: 1,
+          }}
+        >
+          404
+        </div>
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
+          <h1
+            style={{
+              fontSize: "2rem",
+              fontWeight: "600",
+              color: isDark ? "#fff" : "#000",
+              margin: 0,
+            }}
+          >
+            Unable to Load Servers
+          </h1>
+          <p
+            style={{
+              fontSize: "1rem",
+              color: isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)",
+              maxWidth: "500px",
+              margin: 0,
+            }}
+          >
+            We couldn&apos;t connect to the server. Please try again later.
+          </p>
+        </div>
+        <button
+          onClick={() => router.push("/")}
+          style={{
+            padding: "0.875rem 2rem",
+            borderRadius: "10px",
+            border: "none",
+            background: isDark
+              ? "linear-gradient(135deg, #5865F2 0%, #4752C4 100%)"
+              : "linear-gradient(135deg, #5865F2 0%, #4752C4 100%)",
+            color: "#fff",
+            fontSize: "1rem",
+            fontWeight: "600",
+            cursor: "pointer",
+            transition: "all 0.2s ease",
+            boxShadow: "0 4px 12px rgba(88, 101, 242, 0.3)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(-2px)";
+            e.currentTarget.style.boxShadow =
+              "0 6px 16px rgba(88, 101, 242, 0.4)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow =
+              "0 4px 12px rgba(88, 101, 242, 0.3)";
+          }}
+        >
+          Back to Home
+        </button>
+      </div>
+    );
+  }
+
   if (!user)
     return (
       <div style={{ padding: "1.5rem", color: isDark ? "#fff" : "#000" }}>
@@ -104,42 +194,92 @@ export default function Dashboard() {
         </h1>
       </div>
 
-      <div>
+      {servers.length === 0 && !fetching ? (
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
-            gap: "2rem",
-            justifyItems: "center",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "4rem 2rem",
+            textAlign: "center",
+            gap: "1.5rem",
           }}
         >
-          {display.map((s) => (
-            <ServerCard
-              key={s.id}
-              href={`/dashboard/guild/${s.id}`}
-              title={truncateName(s.name)}
-              icon={
-                s.icon ? (
-                  <Image
-                    src={getDiscordGuildIconUrl(s.id, s.icon)!}
-                    width={120}
-                    height={120}
-                    alt={`${s.name} icon`}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div
-                    className="w-full h-full flex items-center justify-center text-2xl"
-                    style={{ color: isDark ? "#fff" : "#000" }}
-                  >
-                    {s.name.charAt(0).toUpperCase()}
-                  </div>
-                )
-              }
-            />
-          ))}
+          <div
+            style={{
+              fontSize: "4rem",
+              opacity: 0.5,
+            }}
+          >
+            🤖
+          </div>
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+          >
+            <h2
+              style={{
+                fontSize: "1.5rem",
+                fontWeight: 600,
+                color: isDark ? "#fff" : "#000",
+                margin: 0,
+              }}
+            >
+              No Servers Available
+            </h2>
+            <p
+              style={{
+                fontSize: "1rem",
+                color: isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)",
+                maxWidth: "500px",
+                margin: 0,
+              }}
+            >
+              The bot might be offline or you don&apos;t have any servers where
+              the bot is present.
+              <br />
+              Please make sure the bot is running and invited to your server.
+            </p>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
+              gap: "2rem",
+              justifyItems: "center",
+            }}
+          >
+            {display.map((s) => (
+              <ServerCard
+                key={s.id}
+                href={`/dashboard/guild/${s.id}`}
+                title={truncateName(s.name)}
+                icon={
+                  s.icon ? (
+                    <Image
+                      src={getDiscordGuildIconUrl(s.id, s.icon)!}
+                      width={120}
+                      height={120}
+                      alt={`${s.name} icon`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div
+                      className="w-full h-full flex items-center justify-center text-2xl"
+                      style={{ color: isDark ? "#fff" : "#000" }}
+                    >
+                      {s.name.charAt(0).toUpperCase()}
+                    </div>
+                  )
+                }
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

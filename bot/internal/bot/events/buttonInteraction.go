@@ -31,13 +31,23 @@ type WelcomeEmbedData struct {
 	FooterImgUrl *string `json:"footerImgUrl"`
 }
 
-// HandleButtonInteraction handles ticket panel button clicks
+// HandleButtonInteraction handles ticket panel button clicks and select menus
 func HandleButtonInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if i.Type != discordgo.InteractionMessageComponent {
 		return
 	}
 
-	customID := i.MessageComponentData().CustomID
+	data := i.MessageComponentData()
+	customID := data.CustomID
+	
+	// Check if it's a select menu for multi-panel
+	if customID == "select_panel" {
+		if len(data.Values) > 0 {
+			panelID := data.Values[0]
+			handleOpenTicket(s, i, panelID)
+		}
+		return
+	}
 	
 	// Check if it's a ticket open button
 	if strings.HasPrefix(customID, "open_ticket_") {

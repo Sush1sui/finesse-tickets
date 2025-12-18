@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/Sush1sui/fns-tickets/internal/bot"
 	"github.com/Sush1sui/fns-tickets/internal/config"
@@ -100,8 +101,23 @@ func SendPanelHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.BtnEmoji != nil && *req.BtnEmoji != "" {
-		button.Emoji = &discordgo.ComponentEmoji{
-			Name: *req.BtnEmoji,
+		emojiStr := *req.BtnEmoji
+		// Check if it's a custom emoji format: <:name:id> or <a:name:id>
+		if len(emojiStr) > 2 && emojiStr[0] == '<' && emojiStr[len(emojiStr)-1] == '>' {
+			// Parse custom emoji
+			parts := strings.Split(emojiStr[1:len(emojiStr)-1], ":")
+			if len(parts) >= 3 {
+				button.Emoji = &discordgo.ComponentEmoji{
+					Name:     parts[1],
+					ID:       parts[2],
+					Animated: parts[0] == "a",
+				}
+			}
+		} else {
+			// Unicode emoji
+			button.Emoji = &discordgo.ComponentEmoji{
+				Name: emojiStr,
+			}
 		}
 	}
 

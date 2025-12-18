@@ -115,6 +115,9 @@ export function useGuildData(guildId: string) {
     queryKey: ["guild-data", guildId],
     queryFn: () => fetchGuildData(guildId),
     enabled: !!guildId,
+    staleTime: 0, // Always fetch fresh
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -126,6 +129,9 @@ export function useGuildEmojis(guildId: string) {
     queryKey: ["guild-emojis", guildId],
     queryFn: () => fetchGuildEmojis(guildId),
     enabled: !!guildId,
+    staleTime: 0, // Always fetch fresh
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -148,6 +154,9 @@ export function useGuildChannels(guildId: string) {
     queryKey: ["guild-channels", guildId],
     queryFn: () => fetchGuildChannels(guildId),
     enabled: !!guildId,
+    staleTime: 0, // Always fetch fresh
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -228,9 +237,12 @@ export function useDeletePanel(guildId: string) {
 
   return useMutation({
     mutationFn: async (panelId: string) => {
-      const response = await fetch(`/api/panels/${panelId}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `/api/dashboard/guild/${guildId}/panels/${panelId}`,
+        {
+          method: "DELETE",
+        }
+      );
       if (!response.ok) throw new Error("Failed to delete panel");
       return response.json();
     },
@@ -249,9 +261,12 @@ export function useSendPanel(guildId: string) {
 
   return useMutation({
     mutationFn: async (panelId: string) => {
-      const response = await fetch(`/api/panels/${panelId}/send`, {
-        method: "POST",
-      });
+      const response = await fetch(
+        `/api/dashboard/guild/${guildId}/panels/${panelId}/send`,
+        {
+          method: "POST",
+        }
+      );
       if (!response.ok) throw new Error("Failed to send panel");
       return response.json();
     },
@@ -275,7 +290,7 @@ async function fetchPermittedServers() {
   const response = await fetch("/api/dashboard/permitted-servers");
   if (!response.ok) throw new Error("Failed to fetch permitted servers");
   const data = await response.json();
-  return data.servers as PermittedServer[];
+  return (data.permittedServers || []) as PermittedServer[];
 }
 
 export function usePermittedServers() {
@@ -284,5 +299,48 @@ export function usePermittedServers() {
     queryFn: fetchPermittedServers,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
+  });
+}
+
+/**
+ * Fetch and cache multi-panel configuration
+ */
+interface MultiPanel {
+  channel: string | null;
+  panels: string[];
+  dropdownConfig: {
+    use: boolean;
+    placeholder: string | null;
+  };
+  messageEmbedConfig: {
+    color: string;
+    description: string | null;
+    authorName: string | null;
+    authorUrl: string | null;
+    authorImgUrl: string | null;
+    largeImgUrl: string | null;
+    smallImgUrl: string | null;
+    footerText: string | null;
+    footerImgUrl: string | null;
+  };
+}
+
+async function fetchMultiPanel(guildId: string) {
+  const response = await fetch(`/api/dashboard/guild/${guildId}/multi-panel`, {
+    cache: "no-store",
+    headers: {
+      "Cache-Control": "no-cache",
+    },
+  });
+  if (!response.ok) throw new Error("Failed to fetch multi-panel");
+  const data = await response.json();
+  return data.multiPanel as MultiPanel | null;
+}
+
+export function useMultiPanel(guildId: string) {
+  return useQuery({
+    queryKey: ["multi-panel", guildId],
+    queryFn: () => fetchMultiPanel(guildId),
+    enabled: !!guildId,
   });
 }

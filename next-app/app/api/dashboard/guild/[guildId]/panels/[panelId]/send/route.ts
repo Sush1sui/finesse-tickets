@@ -57,6 +57,13 @@ export async function POST(
 
     const result = await response.json();
 
+    // Add message ID to panel's messageIds array
+    await Panel.findByIdAndUpdate(panelId, {
+      $push: {
+        messageIds: { channelId: panel.channel, messageId: result.messageId },
+      },
+    });
+
     return NextResponse.json({
       success: true,
       messageId: result.messageId,

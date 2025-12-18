@@ -25,6 +25,7 @@ export interface IPanel extends Document {
   largeImgUrl: string | null;
   smallImgUrl: string | null;
   welcomeEmbed: WelcomeEmbed | null;
+  messageIds: { channelId: string; messageId: string }[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -47,6 +48,10 @@ const PanelSchema = new Schema<IPanel>(
     btnEmoji: { type: String, default: null },
     largeImgUrl: { type: String, default: null },
     smallImgUrl: { type: String, default: null },
+    messageIds: {
+      type: [{ channelId: String, messageId: String }],
+      default: [],
+    },
     welcomeEmbed: {
       type: {
         color: { type: String, required: true },
