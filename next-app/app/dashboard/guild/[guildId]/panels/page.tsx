@@ -21,6 +21,10 @@ import {
 type MultiPanel = {
   channel: string | null;
   panels: string[];
+  messageEmbedConfig: {
+    title: string;
+    description: string;
+  };
 };
 
 type Panel = {
@@ -56,6 +60,12 @@ export default function PanelsPage() {
     message: string;
     onConfirm: () => void;
   }>({ isOpen: false, title: "", message: "", onConfirm: () => {} });
+
+  // Loading states for each action
+  const [sendingPanelId, setSendingPanelId] = useState<string | null>(null);
+  const [deletingPanelId, setDeletingPanelId] = useState<string | null>(null);
+  const [sendingMultiPanel, setSendingMultiPanel] = useState(false);
+  const [deletingMultiPanel, setDeletingMultiPanel] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -127,6 +137,7 @@ export default function PanelsPage() {
       message: "Are you sure you want to send this multi-panel to Discord?",
       onConfirm: async () => {
         setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+        setSendingMultiPanel(true);
         try {
           const response = await fetch(
             `/api/dashboard/guild/${guildId}/multi-panel/send`,
@@ -148,6 +159,8 @@ export default function PanelsPage() {
               ? error.message
               : "Failed to send multi-panel"
           );
+        } finally {
+          setSendingMultiPanel(false);
         }
       },
     });
@@ -161,6 +174,7 @@ export default function PanelsPage() {
         "Are you sure you want to delete this multi-panel? This action cannot be undone.",
       onConfirm: async () => {
         setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+        setDeletingMultiPanel(true);
         try {
           const response = await fetch(
             `/api/dashboard/guild/${guildId}/multi-panel`,
@@ -180,6 +194,8 @@ export default function PanelsPage() {
         } catch (error) {
           console.error("Error deleting multi-panel:", error);
           toast.error("Failed to delete multi-panel");
+        } finally {
+          setDeletingMultiPanel(false);
         }
       },
     });
@@ -201,12 +217,15 @@ export default function PanelsPage() {
           "Are you sure you want to delete this panel? This action cannot be undone.",
         onConfirm: async () => {
           setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+          setDeletingPanelId(panelId);
           try {
             await deletePanelMutation.mutateAsync(panelId);
             toast.success("Panel deleted successfully");
           } catch (error) {
             console.error("Error deleting panel:", error);
             toast.error("Failed to delete panel");
+          } finally {
+            setDeletingPanelId(null);
           }
         },
       });
@@ -222,6 +241,7 @@ export default function PanelsPage() {
         message: "Are you sure you want to send this panel to Discord?",
         onConfirm: async () => {
           setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+          setSendingPanelId(panelId);
           try {
             await sendPanelMutation.mutateAsync(panelId);
             toast.success("Panel sent successfully!");
@@ -230,6 +250,8 @@ export default function PanelsPage() {
             toast.error(
               error instanceof Error ? error.message : "Failed to send panel"
             );
+          } finally {
+            setSendingPanelId(null);
           }
         },
       });
@@ -315,7 +337,6 @@ export default function PanelsPage() {
         padding: "1rem",
         fontSize: "0.75rem",
         fontWeight: "600",
-        textTransform: "uppercase",
         letterSpacing: "0.05em",
         opacity: 0.7,
         borderBottom: isDark
@@ -539,22 +560,98 @@ export default function PanelsPage() {
                       <td style={styles.td}>
                         <div style={styles.actionButtons}>
                           <button
-                            style={styles.actionButton}
+                            style={{
+                              ...styles.actionButton,
+                              opacity:
+                                sendingPanelId ||
+                                deletingPanelId ||
+                                sendingMultiPanel ||
+                                deletingMultiPanel
+                                  ? 0.5
+                                  : 1,
+                              cursor:
+                                sendingPanelId ||
+                                deletingPanelId ||
+                                sendingMultiPanel ||
+                                deletingMultiPanel
+                                  ? "not-allowed"
+                                  : "pointer",
+                            }}
                             onClick={() => handleEditPanel(panel._id)}
+                            disabled={
+                              !!(
+                                sendingPanelId ||
+                                deletingPanelId ||
+                                sendingMultiPanel ||
+                                deletingMultiPanel
+                              )
+                            }
                           >
                             EDIT
                           </button>
                           <button
-                            style={styles.actionButton}
+                            style={{
+                              ...styles.actionButton,
+                              opacity:
+                                sendingPanelId ||
+                                deletingPanelId ||
+                                sendingMultiPanel ||
+                                deletingMultiPanel
+                                  ? 0.5
+                                  : 1,
+                              cursor:
+                                sendingPanelId ||
+                                deletingPanelId ||
+                                sendingMultiPanel ||
+                                deletingMultiPanel
+                                  ? "not-allowed"
+                                  : "pointer",
+                            }}
                             onClick={() => handleSendPanel(panel._id)}
+                            disabled={
+                              !!(
+                                sendingPanelId ||
+                                deletingPanelId ||
+                                sendingMultiPanel ||
+                                deletingMultiPanel
+                              )
+                            }
                           >
-                            SEND
+                            {sendingPanelId === panel._id
+                              ? "SENDING..."
+                              : "SEND"}
                           </button>
                           <button
-                            style={styles.actionButton}
+                            style={{
+                              ...styles.actionButton,
+                              opacity:
+                                sendingPanelId ||
+                                deletingPanelId ||
+                                sendingMultiPanel ||
+                                deletingMultiPanel
+                                  ? 0.5
+                                  : 1,
+                              cursor:
+                                sendingPanelId ||
+                                deletingPanelId ||
+                                sendingMultiPanel ||
+                                deletingMultiPanel
+                                  ? "not-allowed"
+                                  : "pointer",
+                            }}
                             onClick={() => handleDeletePanel(panel._id)}
+                            disabled={
+                              !!(
+                                sendingPanelId ||
+                                deletingPanelId ||
+                                sendingMultiPanel ||
+                                deletingMultiPanel
+                              )
+                            }
                           >
-                            DELETE
+                            {deletingPanelId === panel._id
+                              ? "DELETING..."
+                              : "DELETE"}
                           </button>
                         </div>
                       </td>
@@ -604,9 +701,15 @@ export default function PanelsPage() {
                   <tr>
                     <td
                       style={{ ...styles.td, ...styles.truncate }}
-                      title={`Multi-Panel (${multiPanel.panels.length} panels)`}
+                      title={
+                        multiPanel?.messageEmbedConfig?.title ||
+                        `Multi-Panel (${multiPanel.panels.length} panels)`
+                      }
                     >
-                      Multi-Panel ({multiPanel.panels.length} panels)
+                      {truncateText(
+                        multiPanel?.messageEmbedConfig?.title ||
+                          `Multi-Panel (${multiPanel.panels.length} panels)`
+                      )}
                     </td>
                     <td
                       style={{ ...styles.td, ...styles.truncate }}
@@ -620,22 +723,94 @@ export default function PanelsPage() {
                         className="button-group"
                       >
                         <button
-                          style={styles.actionButton}
+                          style={{
+                            ...styles.actionButton,
+                            opacity:
+                              sendingPanelId ||
+                              deletingPanelId ||
+                              sendingMultiPanel ||
+                              deletingMultiPanel
+                                ? 0.5
+                                : 1,
+                            cursor:
+                              sendingPanelId ||
+                              deletingPanelId ||
+                              sendingMultiPanel ||
+                              deletingMultiPanel
+                                ? "not-allowed"
+                                : "pointer",
+                          }}
                           onClick={handleEditMultiPanel}
+                          disabled={
+                            !!(
+                              sendingPanelId ||
+                              deletingPanelId ||
+                              sendingMultiPanel ||
+                              deletingMultiPanel
+                            )
+                          }
                         >
                           EDIT
                         </button>
                         <button
-                          style={styles.actionButton}
+                          style={{
+                            ...styles.actionButton,
+                            opacity:
+                              sendingPanelId ||
+                              deletingPanelId ||
+                              sendingMultiPanel ||
+                              deletingMultiPanel
+                                ? 0.5
+                                : 1,
+                            cursor:
+                              sendingPanelId ||
+                              deletingPanelId ||
+                              sendingMultiPanel ||
+                              deletingMultiPanel
+                                ? "not-allowed"
+                                : "pointer",
+                          }}
                           onClick={handleSendMultiPanel}
+                          disabled={
+                            !!(
+                              sendingPanelId ||
+                              deletingPanelId ||
+                              sendingMultiPanel ||
+                              deletingMultiPanel
+                            )
+                          }
                         >
-                          SEND
+                          {sendingMultiPanel ? "SENDING..." : "SEND"}
                         </button>
                         <button
-                          style={styles.actionButton}
+                          style={{
+                            ...styles.actionButton,
+                            opacity:
+                              sendingPanelId ||
+                              deletingPanelId ||
+                              sendingMultiPanel ||
+                              deletingMultiPanel
+                                ? 0.5
+                                : 1,
+                            cursor:
+                              sendingPanelId ||
+                              deletingPanelId ||
+                              sendingMultiPanel ||
+                              deletingMultiPanel
+                                ? "not-allowed"
+                                : "pointer",
+                          }}
                           onClick={handleDeleteMultiPanel}
+                          disabled={
+                            !!(
+                              sendingPanelId ||
+                              deletingPanelId ||
+                              sendingMultiPanel ||
+                              deletingMultiPanel
+                            )
+                          }
                         >
-                          DELETE
+                          {deletingMultiPanel ? "DELETING..." : "DELETE"}
                         </button>
                       </div>
                     </td>

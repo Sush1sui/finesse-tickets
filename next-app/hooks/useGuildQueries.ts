@@ -314,7 +314,8 @@ interface MultiPanel {
   };
   messageEmbedConfig: {
     color: string;
-    description: string | null;
+    title: string;
+    description: string;
     authorName: string | null;
     authorUrl: string | null;
     authorImgUrl: string | null;

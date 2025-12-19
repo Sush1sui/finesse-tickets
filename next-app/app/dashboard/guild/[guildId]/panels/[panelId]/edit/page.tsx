@@ -363,8 +363,8 @@ export default function EditPanelPage() {
     }
   };
 
-  // Show loading spinner while fetching data
-  if (loading) {
+  // Show loading spinner while fetching data or theme not mounted
+  if (loading || !mounted) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 p-8">
         <h2
@@ -572,7 +572,10 @@ export default function EditPanelPage() {
               <textarea
                 value={panelContent}
                 onChange={(e) => setPanelContent(e.target.value)}
-                style={styles.textarea}
+                style={{
+                  ...styles.textarea,
+                  colorScheme: isDark ? "dark" : "light",
+                }}
                 placeholder="By clicking a button, a ticket will be opened for you..."
               />
             </div>
@@ -694,7 +697,7 @@ export default function EditPanelPage() {
                   value={welcomeTitle}
                   onChange={(e) => setWelcomeTitle(e.target.value)}
                   style={styles.input}
-                  placeholder="TICKET CATEGORY 1"
+                  placeholder="Please wait here while a staff member assists you."
                 />
               </div>
             </div>
@@ -708,8 +711,9 @@ export default function EditPanelPage() {
                   ...styles.input,
                   minHeight: "100px",
                   resize: "vertical",
+                  colorScheme: isDark ? "dark" : "light",
                 }}
-                placeholder="Welcome message description..."
+                placeholder="Enter your description here..."
               />
             </div>
 
