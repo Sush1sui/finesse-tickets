@@ -28,6 +28,8 @@ func NewRouter() http.Handler {
 			handlers.GetGuildRolesHandler(w, r)
 		} else if strings.HasSuffix(r.URL.Path, "/categories") {
 			handlers.GetGuildCategoriesHandler(w, r)
+		} else if strings.HasSuffix(r.URL.Path, "/members") {
+			handlers.GetGuildMembersHandler(w, r)
 		} else {
 			http.NotFound(w, r)
 		}

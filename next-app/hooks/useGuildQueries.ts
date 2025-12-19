@@ -345,3 +345,32 @@ export function useMultiPanel(guildId: string) {
     enabled: !!guildId,
   });
 }
+
+/**
+ * Fetch and cache guild members
+ */
+interface GuildMember {
+  userId: string;
+  username: string;
+  discriminator: string;
+  displayName: string;
+  avatar: string;
+  bot: boolean;
+}
+
+async function fetchGuildMembers(guildId: string) {
+  const response = await fetch(`/api/dashboard/guild/${guildId}/members`);
+  if (!response.ok) throw new Error("Failed to fetch guild members");
+  return (await response.json()) as GuildMember[];
+}
+
+export function useGuildMembers(guildId: string) {
+  return useQuery({
+    queryKey: ["guild-members", guildId],
+    queryFn: () => fetchGuildMembers(guildId),
+    enabled: !!guildId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+  });
+}

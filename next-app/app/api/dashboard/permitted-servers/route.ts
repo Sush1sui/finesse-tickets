@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/middleware";
 import dbConnect from "@/lib/db";
 import User from "@/models/User";
+import Server from "@/models/Server";
 import { decryptText, encryptText } from "@/lib/encryption";
 
 const DISCORD_API = "https://discord.com/api/v10";
@@ -188,6 +189,74 @@ export async function GET() {
       return (perms & MODERATOR_MASK) !== BigInt(0);
     });
 
+    // Also check database for staff authorization
+    try {
+      await dbConnect();
+      const servers = await Server.find({
+        serverId: { $in: guilds.map((g) => g.id) },
+        $or: [
+          { "ticketConfig.staffs.users": user.id },
+          { "ticketConfig.staffs.roles": { $exists: true, $ne: [] } },
+        ],
+      }).select("serverId ticketConfig.staffs");
+
+      // For guilds with staff roles, need to check if user has any of those roles
+      const additionalPermittedGuildIds = new Set<string>();
+
+      for (const server of servers) {
+        // If user is directly authorized
+        if (server.ticketConfig?.staffs?.users?.includes(user.id)) {
+          additionalPermittedGuildIds.add(server.serverId);
+          continue;
+        }
+
+        // Check if user has any of the authorized roles
+        const authorizedRoles = server.ticketConfig?.staffs?.roles || [];
+        if (authorizedRoles.length > 0) {
+          try {
+            // Fetch user's member data from bot server to get their roles
+            const memberRes = await fetch(
+              `${BOT_SERVER_URL}/api/guilds/${server.serverId}/member/${user.discordId}`,
+              {
+                headers: {
+                  "X-API-Key": process.env.BOT_API_KEY || "",
+                },
+              }
+            );
+
+            if (memberRes.ok) {
+              const member = (await memberRes.json()) as { roles?: string[] };
+              const userRoles = member.roles || [];
+
+              // Check if user has any authorized role
+              if (
+                authorizedRoles.some((roleId) => userRoles.includes(roleId))
+              ) {
+                additionalPermittedGuildIds.add(server.serverId);
+              }
+            }
+          } catch (err) {
+            console.warn(
+              `Failed to check roles for guild ${server.serverId}:`,
+              err
+            );
+          }
+        }
+      }
+
+      // Combine moderator-permitted guilds with staff-authorized guilds
+      const allPermittedIds = new Set([
+        ...permitted.map((g) => g.id),
+        ...additionalPermittedGuildIds,
+      ]);
+
+      var allPermitted = guilds.filter((g) => allPermittedIds.has(g.id));
+    } catch (err) {
+      console.error("Error checking staff authorization:", err);
+      // If staff check fails, just use moderator-permitted guilds
+      var allPermitted = permitted;
+    }
+
     // Check which guilds the bot is in
     try {
       const botRes = await fetch(`${BOT_SERVER_URL}/api/servers`, {
@@ -196,7 +265,7 @@ export async function GET() {
           "Content-Type": "application/json",
           "X-API-Key": process.env.BOT_API_KEY || "",
         },
-        body: JSON.stringify({ guildIds: permitted.map((g) => g.id) }),
+        body: JSON.stringify({ guildIds: allPermitted.map((g) => g.id) }),
       });
 
       if (!botRes.ok) {
@@ -211,7 +280,7 @@ export async function GET() {
       };
 
       const presentServers = new Set(body.servers?.map((s) => s.id) ?? []);
-      const permittedWhereBotIsIn = permitted.filter((g) =>
+      const permittedWhereBotIsIn = allPermitted.filter((g) =>
         presentServers.has(g.id)
       );
 
