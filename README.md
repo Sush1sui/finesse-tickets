@@ -1364,7 +1364,7 @@ Built with these amazing open-source projects:
 
 ### Dashboard
 
-![Dashboard Home](docs/screenshots/home_ss.jpg)
+![Dashboard Home](docs/screenshots/dashboard_ss.jpg)
 _Server selection and overview_
 
 ### Panel Creator
