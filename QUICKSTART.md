@@ -125,8 +125,11 @@ DISCORD_CLIENT_SECRET=AbCdEfGhIjKlMnOpQrStUvWxYz123456
 NEXTAUTH_SECRET=xyz789abc456def123ghi789jkl012mno345pqr678stu901
 NEXTAUTH_URL=http://localhost:3000
 
-# Must match bot's BOT_API_KEY
-BOT_API_URL=http://localhost:7694
+# Encryption key for Discord tokens (generate with: openssl rand -hex 32)
+ENCRYPTION_KEY=f29516df89938c1abafb5106c3bde581be6ba5b969fc8ee9c43f5382c35e56df
+
+# Bot Server Communication (must match bot's BOT_API_KEY)
+BOT_SERVER_URL=http://localhost:7694
 BOT_API_KEY=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6
 ```
 

@@ -452,22 +452,26 @@ DISCORD_CLIENT_SECRET=your_discord_client_secret_here
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=your_secure_random_secret_here
 
-# Bot API Configuration
-BOT_API_URL=http://localhost:7694
+# Encryption (for storing Discord tokens)
+ENCRYPTION_KEY=your_64_char_hex_encryption_key_here
+
+# Bot Server Communication
+BOT_SERVER_URL=http://localhost:7694
 BOT_API_KEY=same_api_key_as_bot_env
 ```
 
 #### Frontend Environment Variable Details
 
-| Variable                | Description                                                                | Example                                            |
-| ----------------------- | -------------------------------------------------------------------------- | -------------------------------------------------- |
-| `MONGODB_URI`           | MongoDB connection string (must match bot's database)                      | `mongodb+srv://user:pass@cluster.mongodb.net/test` |
-| `DISCORD_CLIENT_ID`     | Discord OAuth client ID (same as `APP_ID` in bot)                          | `1234567890123456789`                              |
-| `DISCORD_CLIENT_SECRET` | Discord OAuth client secret                                                | `AbCdEf123456...`                                  |
-| `NEXTAUTH_URL`          | Full URL of your dashboard                                                 | `http://localhost:3000`                            |
-| `NEXTAUTH_SECRET`       | Random secret for JWT encryption (generate with `openssl rand -base64 32`) | `xyz789abc456...`                                  |
-| `BOT_API_URL`           | URL where bot HTTP server is running                                       | `http://localhost:7694`                            |
-| `BOT_API_KEY`           | Must match the bot's `BOT_API_KEY`                                         | `a1b2c3d4e5f6...`                                  |
+| Variable                | Description                                                                               | Example                                            |
+| ----------------------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `MONGODB_URI`           | MongoDB connection string (must match bot's database)                                     | `mongodb+srv://user:pass@cluster.mongodb.net/test` |
+| `DISCORD_CLIENT_ID`     | Discord OAuth client ID (same as `APP_ID` in bot)                                         | `1234567890123456789`                              |
+| `DISCORD_CLIENT_SECRET` | Discord OAuth client secret                                                               | `AbCdEf123456...`                                  |
+| `NEXTAUTH_URL`          | Full URL of your dashboard                                                                | `http://localhost:3000`                            |
+| `NEXTAUTH_SECRET`       | Random secret for JWT encryption (generate with `openssl rand -base64 32`)                | `xyz789abc456...`                                  |
+| `ENCRYPTION_KEY`        | 64-character hex key for encrypting Discord tokens (generate with `openssl rand -hex 32`) | `f29516df89938c1a...`                              |
+| `BOT_SERVER_URL`        | URL where bot HTTP server is running                                                      | `http://localhost:7694`                            |
+| `BOT_API_KEY`           | Must match the bot's `BOT_API_KEY`                                                        | `a1b2c3d4e5f6...`                                  |
 
 > **⚠️ Security Warning**: Never commit `.env` or `.env.local` files to version control. They're already in `.gitignore`.
 
@@ -1184,7 +1188,7 @@ npm start
 - [ ] Configure MongoDB Atlas IP whitelist
 - [ ] Update Discord OAuth redirect URLs
 - [ ] Set `NEXTAUTH_URL` to production URL
-- [ ] Set `BOT_API_URL` to production bot URL
+- [ ] Set `BOT_SERVER_URL` to production bot URL
 - [ ] Enable MongoDB Atlas monitoring
 - [ ] Set up error tracking (optional)
 - [ ] Configure domain name (optional)
@@ -1320,9 +1324,10 @@ Built with these amazing open-source projects:
 
 #### Dashboard can't connect to bot
 
-- Verify `BOT_API_URL` is correct
+- Verify `BOT_SERVER_URL` is correct
 - Check `BOT_API_KEY` matches in both .env files
 - Ensure bot HTTP server is running on correct port
+- Confirm `ENCRYPTION_KEY` is set in dashboard .env.local
 
 #### Database connection errors
 

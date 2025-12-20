@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - React key optimization for transcript messages
 - Database indexes for optimized transcript queries
 - Code review report identifying 30+ issues and optimization opportunities
+- Guild icon display across all dashboard pages with animated GIF support
+- User mention in ticket welcome message (always mentions ticket opener)
+- Duplicate message prevention in transcript database
+- GitHub documentation link in footer
+- Early stage project notice on home page with Discord server link
 
 ### Fixed
 
@@ -26,12 +31,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - UI displaying "Ticket #" instead of "Ticket ID" in transcript list
 - Search functionality for ticket IDs in transcript viewer
 - Duplicate React key error in transcript message list
+- Multi-panel API authentication (changed from BOT_API_SECRET to BOT_API_KEY)
+- Panel send and delete API authentication (now uses consistent BOT_API_KEY)
+- Multi-panel category assignment (now correctly parses API response wrapper)
+- Guild icon not displaying on page refresh (added proper URL construction)
+- Duplicate transcript messages (added deduplication in AddMessageToTranscript)
 
 ### Changed
 
 - Updated transcript list UI to show ticketId instead of ticketNumber
 - Improved transcript API to query by ticketId field
 - Enhanced guild configuration retrieval with debug logging
+- Renamed `BOT_API_URL` to `BOT_SERVER_URL` for consistency
+- Removed `BOT_API_SECRET` in favor of unified `BOT_API_KEY`
+- Welcome message now always mentions ticket opener along with staff roles
+
+### Removed
+
+- Per-panel transcript toggle (`enableTranscripts` field) - now controlled only by guild settings
+- Unused `BOT_API_SECRET` environment variable from dashboard
 
 ## [1.0.0] - 2025-12-20
 
