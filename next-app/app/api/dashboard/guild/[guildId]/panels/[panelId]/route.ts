@@ -144,7 +144,7 @@ export async function DELETE(
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${process.env.BOT_API_SECRET}`,
+              Authorization: `Bearer ${process.env.BOT_API_KEY}`,
             },
             body: JSON.stringify({ channelId, messageId }),
           }).catch((error) => {

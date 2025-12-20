@@ -33,7 +33,7 @@ export async function POST(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.BOT_API_SECRET}`,
+        Authorization: `Bearer ${process.env.BOT_API_KEY}`,
       },
       body: JSON.stringify({
         panelId: String(panel._id),

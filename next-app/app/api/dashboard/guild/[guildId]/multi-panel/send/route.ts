@@ -7,7 +7,7 @@ import Panel from "@/models/Panel";
 import { verifyGuildAccess } from "@/lib/discord";
 
 const BOT_SERVER_URL = process.env.BOT_SERVER_URL || "http://localhost:8080";
-const BOT_API_SECRET = process.env.BOT_API_SECRET;
+const BOT_API_KEY = process.env.BOT_API_KEY;
 
 export async function POST(
   req: NextRequest,
@@ -78,7 +78,7 @@ export async function POST(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${BOT_API_SECRET}`,
+        Authorization: `Bearer ${BOT_API_KEY}`,
       },
       body: JSON.stringify({
         guildId,
