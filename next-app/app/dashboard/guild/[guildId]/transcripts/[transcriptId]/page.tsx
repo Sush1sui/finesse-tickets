@@ -79,6 +79,25 @@ export default function TranscriptViewerPage() {
     [params?.transcriptId]
   );
 
+  // Fetch guild name
+  useEffect(() => {
+    const fetchGuildData = async () => {
+      try {
+        const response = await fetch(`/api/dashboard/guild/${guildId}/data`);
+        if (response.ok) {
+          const data = await response.json();
+          setGuildName(data.name || "Server Name");
+        }
+      } catch (error) {
+        console.error("Error fetching guild data:", error);
+      }
+    };
+
+    if (guildId) {
+      fetchGuildData();
+    }
+  }, [guildId]);
+
   useEffect(() => {
     const fetchTranscript = async () => {
       setLoading(true);

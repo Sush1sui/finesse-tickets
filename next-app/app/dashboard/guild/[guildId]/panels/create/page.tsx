@@ -92,6 +92,13 @@ export default function CreatePanelPage() {
   const channels = useMemo(() => guildData?.channels || [], [guildData]);
   const customEmojis = useMemo(() => emojisData || [], [emojisData]);
 
+  // Update guild name when guildData loads
+  useEffect(() => {
+    if (guildData?.guild?.name) {
+      setGuildName(guildData.guild.name);
+    }
+  }, [guildData]);
+
   const loading = guildDataLoading || emojisLoading;
 
   const styles = useMemo(

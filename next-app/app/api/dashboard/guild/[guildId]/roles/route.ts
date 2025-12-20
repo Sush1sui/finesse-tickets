@@ -14,7 +14,8 @@ export async function GET(
 
     const { guildId } = await params;
 
-    const BOT_SERVER_URL = process.env.BOT_SERVER_URL || "http://localhost:3002";
+    const BOT_SERVER_URL =
+      process.env.BOT_SERVER_URL || "http://localhost:3002";
 
     // Forward request to bot server
     const botServerUrl = `${BOT_SERVER_URL}/api/guilds/${guildId}/roles`;
