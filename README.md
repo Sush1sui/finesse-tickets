@@ -1364,22 +1364,22 @@ Built with these amazing open-source projects:
 
 ### Dashboard
 
-![Dashboard Home](docs/screenshots/dashboard-home.png)
+![Dashboard Home](docs/screenshots/home_ss.jpg)
 _Server selection and overview_
 
 ### Panel Creator
 
-![Panel Creator](docs/screenshots/panel-creator.png)
+![Panel Creator](docs/screenshots/panel_create_ss.jpg)
 _Intuitive panel creation with live preview_
 
 ### Transcript Viewer
 
-![Transcript Viewer](docs/screenshots/transcript-viewer.png)
+![Transcript Viewer](docs/screenshots/transcripts_ss.jpg)
 _Browse and search all ticket conversations_
 
 ### Discord Integration
 
-![Discord Panel](docs/screenshots/discord-panel.png)
+![Discord Panel](docs/screenshots/discord_panel_ss.jpg)
 _Beautiful ticket panels in Discord_
 
 > **Note**: Screenshots available in `docs/screenshots/` directory.
