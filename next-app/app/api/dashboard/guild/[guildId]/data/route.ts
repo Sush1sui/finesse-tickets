@@ -19,9 +19,11 @@ export async function GET(
 
     const { guildId } = await params;
 
+    const BOT_SERVER_URL = process.env.BOT_SERVER_URL || "http://localhost:3002";
+
     // Forward request to bot server
     const botResponse = await fetch(
-      `http://localhost:3002/api/guilds/${guildId}/data`,
+      `${BOT_SERVER_URL}/api/guilds/${guildId}/data`,
       {
         method: "GET",
         headers: {

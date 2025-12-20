@@ -14,8 +14,10 @@ export async function GET(
 
     const { guildId } = await params;
 
+    const BOT_SERVER_URL = process.env.BOT_SERVER_URL || "http://localhost:3002";
+
     // Forward request to bot server
-    const botServerUrl = `http://localhost:3002/api/guilds/${guildId}/categories`;
+    const botServerUrl = `${BOT_SERVER_URL}/api/guilds/${guildId}/categories`;
     const response = await fetch(botServerUrl, {
       headers: {
         "X-API-Key": process.env.BOT_API_KEY || "",
