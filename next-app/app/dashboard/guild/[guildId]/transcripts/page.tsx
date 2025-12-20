@@ -69,7 +69,7 @@ export default function TranscriptsPage() {
         const response = await fetch(`/api/dashboard/guild/${guildId}/data`);
         if (response.ok) {
           const data = await response.json();
-          setGuildName(data.name || "Server Name");
+          setGuildName(data.guild?.name || "Server Name");
         }
       } catch (error) {
         console.error("Error fetching guild data:", error);

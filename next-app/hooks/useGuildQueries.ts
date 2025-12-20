@@ -62,6 +62,11 @@ async function fetchGuildData(guildId: string) {
   const response = await fetch(`/api/dashboard/guild/${guildId}/data`);
   if (!response.ok) throw new Error("Failed to fetch guild data");
   return response.json() as Promise<{
+    guild: {
+      id: string;
+      name: string;
+      icon: string;
+    };
     roles: Role[];
     categories: Category[];
     channels: Channel[];

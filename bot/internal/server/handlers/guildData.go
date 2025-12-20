@@ -10,7 +10,14 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+type GuildInfo struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Icon string `json:"icon"`
+}
+
 type GuildDataResponse struct {
+	Guild      GuildInfo  `json:"guild"`
 	Roles      []Role     `json:"roles"`
 	Categories []Category `json:"categories"`
 	Channels   []Channel  `json:"channels"`
@@ -89,6 +96,11 @@ func GetGuildDataHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Build response
 	response := GuildDataResponse{
+		Guild: GuildInfo{
+			ID:   guild.ID,
+			Name: guild.Name,
+			Icon: guild.Icon,
+		},
 		Roles:      roleList,
 		Categories: categoryList,
 		Channels:   channelList,
