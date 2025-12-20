@@ -281,9 +281,29 @@ export default function TranscriptsPage() {
     [isDark]
   );
 
+  if (loading || !mounted) {
+    return (
+      <div
+        style={{
+          ...styles.container,
+          justifyContent: "center",
+          alignItems: "center",
+          flexDirection: "column",
+        }}
+      >
+        Fetching Transcripts
+        <Spinner />
+      </div>
+    );
+  }
+
   return (
     <div style={styles.container} className="guild-layout">
-      <GuildSidebar guildId={guildId} guildName={guildName} />
+      <GuildSidebar
+        guildId={guildId}
+        guildName={guildName}
+        guildIcon={guildIcon}
+      />
 
       <main style={styles.main}>
         {/* Filter Section */}
@@ -342,113 +362,96 @@ export default function TranscriptsPage() {
           <h1 style={styles.title} className="page-title">
             Transcripts
           </h1>
-
-          {loading ? (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                padding: "3rem",
-              }}
-            >
-              <Spinner />
-            </div>
-          ) : (
-            <>
-              <div className="table-container">
-                <table style={styles.table}>
-                  <thead>
-                    <tr>
-                      <th style={styles.th}>Ticket ID</th>
-                      <th style={styles.th}>Username</th>
-                      <th style={styles.th}>Messages</th>
-                      <th style={styles.th}>Closed At</th>
-                      <th style={styles.th}>Closed By</th>
-                      <th style={styles.th}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {transcripts.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={6}
-                          style={{ ...styles.td, textAlign: "center" }}
+          <div className="table-container">
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>Ticket ID</th>
+                  <th style={styles.th}>Username</th>
+                  <th style={styles.th}>Messages</th>
+                  <th style={styles.th}>Closed At</th>
+                  <th style={styles.th}>Closed By</th>
+                  <th style={styles.th}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transcripts.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      style={{ ...styles.td, textAlign: "center" }}
+                    >
+                      No transcripts found
+                    </td>
+                  </tr>
+                ) : (
+                  transcripts.map((transcript) => (
+                    <tr key={transcript._id}>
+                      <td style={styles.td}>{transcript.ticketId}</td>
+                      <td style={styles.td}>{transcript.username}</td>
+                      <td style={styles.td}>
+                        {transcript.metadata.totalMessages}
+                      </td>
+                      <td style={styles.td}>
+                        {new Date(
+                          transcript.metadata.ticketClosedAt
+                        ).toLocaleDateString()}
+                      </td>
+                      <td style={styles.td}>
+                        {transcript.metadata.closedBy.username}
+                      </td>
+                      <td style={styles.td}>
+                        <button
+                          style={styles.viewButton}
+                          onClick={() => handleViewTranscript(transcript._id)}
                         >
-                          No transcripts found
-                        </td>
-                      </tr>
-                    ) : (
-                      transcripts.map((transcript) => (
-                        <tr key={transcript._id}>
-                          <td style={styles.td}>{transcript.ticketId}</td>
-                          <td style={styles.td}>{transcript.username}</td>
-                          <td style={styles.td}>
-                            {transcript.metadata.totalMessages}
-                          </td>
-                          <td style={styles.td}>
-                            {new Date(
-                              transcript.metadata.ticketClosedAt
-                            ).toLocaleDateString()}
-                          </td>
-                          <td style={styles.td}>
-                            {transcript.metadata.closedBy.username}
-                          </td>
-                          <td style={styles.td}>
-                            <button
-                              style={styles.viewButton}
-                              onClick={() =>
-                                handleViewTranscript(transcript._id)
-                              }
-                            >
-                              View
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
 
-              {/* Pagination */}
-              {pagination.pages > 1 && (
-                <div style={styles.pagination}>
-                  <button
-                    style={{
-                      ...styles.paginationButton,
-                      opacity: pagination.page === 1 ? 0.5 : 1,
-                    }}
-                    onClick={() =>
-                      setPagination({
-                        ...pagination,
-                        page: pagination.page - 1,
-                      })
-                    }
-                    disabled={pagination.page === 1}
-                  >
-                    Previous
-                  </button>
-                  <span style={styles.paginationInfo}>
-                    Page {pagination.page} of {pagination.pages}
-                  </span>
-                  <button
-                    style={{
-                      ...styles.paginationButton,
-                      opacity: pagination.page === pagination.pages ? 0.5 : 1,
-                    }}
-                    onClick={() =>
-                      setPagination({
-                        ...pagination,
-                        page: pagination.page + 1,
-                      })
-                    }
-                    disabled={pagination.page === pagination.pages}
-                  >
-                    Next
-                  </button>
-                </div>
-              )}
-            </>
+          {/* Pagination */}
+          {pagination.pages > 1 && (
+            <div style={styles.pagination}>
+              <button
+                style={{
+                  ...styles.paginationButton,
+                  opacity: pagination.page === 1 ? 0.5 : 1,
+                }}
+                onClick={() =>
+                  setPagination({
+                    ...pagination,
+                    page: pagination.page - 1,
+                  })
+                }
+                disabled={pagination.page === 1}
+              >
+                Previous
+              </button>
+              <span style={styles.paginationInfo}>
+                Page {pagination.page} of {pagination.pages}
+              </span>
+              <button
+                style={{
+                  ...styles.paginationButton,
+                  opacity: pagination.page === pagination.pages ? 0.5 : 1,
+                }}
+                onClick={() =>
+                  setPagination({
+                    ...pagination,
+                    page: pagination.page + 1,
+                  })
+                }
+                disabled={pagination.page === pagination.pages}
+              >
+                Next
+              </button>
+            </div>
           )}
         </div>
       </main>

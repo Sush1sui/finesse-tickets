@@ -349,6 +349,7 @@ export default function CreateMultiPanelPage() {
         <GuildSidebar
           guildId={guildId}
           guildName={guildInfo?.name || "Server"}
+          guildIcon={guildInfo?.icon || undefined}
         />
         <div style={styles.main}>
           <div style={styles.card}>

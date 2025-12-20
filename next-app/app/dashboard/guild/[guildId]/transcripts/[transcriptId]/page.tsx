@@ -351,7 +351,11 @@ export default function TranscriptViewerPage() {
 
   return (
     <div style={styles.container} className="guild-layout">
-      <GuildSidebar guildId={guildId} guildName={guildName} />
+      <GuildSidebar
+        guildId={guildId}
+        guildName={guildName}
+        guildIcon={guildIcon}
+      />
 
       <main style={styles.main}>
         <div style={styles.header}>
