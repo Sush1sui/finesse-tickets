@@ -67,6 +67,7 @@ export default function TranscriptViewerPage() {
   const [loading, setLoading] = useState(true);
   const [transcript, setTranscript] = useState<Transcript | null>(null);
   const [guildName, setGuildName] = useState("Server Name");
+  const [guildIcon, setGuildIcon] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     setMounted(true);
@@ -86,7 +87,13 @@ export default function TranscriptViewerPage() {
         const response = await fetch(`/api/dashboard/guild/${guildId}/data`);
         if (response.ok) {
           const data = await response.json();
-          setGuildName(data.name || "Server Name");
+          setGuildName(data.guild?.name || "Server Name");
+          if (data.guild?.icon) {
+            const ext = data.guild.icon.startsWith("a_") ? "gif" : "png";
+            setGuildIcon(
+              `https://cdn.discordapp.com/icons/${data.guild.id}/${data.guild.icon}.${ext}`
+            );
+          }
         }
       } catch (error) {
         console.error("Error fetching guild data:", error);
@@ -305,7 +312,11 @@ export default function TranscriptViewerPage() {
   if (loading) {
     return (
       <div style={styles.container}>
-        <GuildSidebar guildId={guildId} guildName={guildName} />
+        <GuildSidebar
+          guildId={guildId}
+          guildName={guildName}
+          guildIcon={guildIcon}
+        />
         <main style={styles.main}>
           <div
             style={{
@@ -324,7 +335,11 @@ export default function TranscriptViewerPage() {
   if (!transcript) {
     return (
       <div style={styles.container}>
-        <GuildSidebar guildId={guildId} guildName={guildName} />
+        <GuildSidebar
+          guildId={guildId}
+          guildName={guildName}
+          guildIcon={guildIcon}
+        />
         <main style={styles.main}>
           <div style={{ textAlign: "center", padding: "3rem" }}>
             <h2>Transcript not found</h2>

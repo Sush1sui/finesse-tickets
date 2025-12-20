@@ -44,6 +44,7 @@ export default function CreatePanelPage() {
   const [mounted, setMounted] = useState(false);
   const [creating, setCreating] = useState(false);
   const [guildName, setGuildName] = useState("Server Name");
+  const [guildIcon, setGuildIcon] = useState<string | undefined>(undefined);
 
   // Form state
   const [mentionOnOpen, setMentionOnOpen] = useState<string[]>([]);
@@ -69,9 +70,6 @@ export default function CreatePanelPage() {
   const [welcomeFooter, setWelcomeFooter] = useState("");
   const [welcomeFooterIcon, setWelcomeFooterIcon] = useState("");
 
-  // Transcript
-  const [enableTranscripts, setEnableTranscripts] = useState(false);
-
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -92,10 +90,16 @@ export default function CreatePanelPage() {
   const channels = useMemo(() => guildData?.channels || [], [guildData]);
   const customEmojis = useMemo(() => emojisData || [], [emojisData]);
 
-  // Update guild name when guildData loads
+  // Update guild name and icon when guildData loads
   useEffect(() => {
     if (guildData?.guild?.name) {
       setGuildName(guildData.guild.name);
+      if (guildData.guild.icon) {
+        const ext = guildData.guild.icon.startsWith("a_") ? "gif" : "png";
+        setGuildIcon(
+          `https://cdn.discordapp.com/icons/${guildData.guild.id}/${guildData.guild.icon}.${ext}`
+        );
+      }
     }
   }, [guildData]);
 
@@ -311,7 +315,6 @@ export default function CreatePanelPage() {
         // Ticket config
         mentionOnOpen: mentionOnOpen,
         ticketCategory: ticketCategory || null,
-        enableTranscripts: enableTranscripts,
 
         // Welcome embed config
         welcomeEmbed: {
@@ -372,7 +375,11 @@ export default function CreatePanelPage() {
   return (
     <div style={styles.container} className="guild-layout">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <GuildSidebar guildId={guildId} guildName={guildName} />
+      <GuildSidebar
+        guildId={guildId}
+        guildName={guildName}
+        guildIcon={guildIcon}
+      />
 
       <main style={styles.main}>
         <div style={styles.card} className="panel-card">
@@ -531,22 +538,6 @@ export default function CreatePanelPage() {
                 ))}
               </select>
             </div>
-          </div>
-
-          {/* Transcript Toggle */}
-          <div style={{ marginBottom: "1.5rem" }}>
-            <label style={styles.checkboxGroup}>
-              <input
-                type="checkbox"
-                checked={enableTranscripts}
-                onChange={(e) => setEnableTranscripts(e.target.checked)}
-                style={{ width: "18px", height: "18px", cursor: "pointer" }}
-              />
-              <span style={{ fontWeight: 500 }}>
-                📝 Enable transcripts for this panel (saves full ticket
-                conversation history)
-              </span>
-            </label>
           </div>
 
           {/* Second Row */}

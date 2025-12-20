@@ -38,6 +38,7 @@ export default function TranscriptsPage() {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [guildName, setGuildName] = useState("Server Name");
+  const [guildIcon, setGuildIcon] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
 
   // Filter state
@@ -70,6 +71,12 @@ export default function TranscriptsPage() {
         if (response.ok) {
           const data = await response.json();
           setGuildName(data.guild?.name || "Server Name");
+          if (data.guild?.icon) {
+            const ext = data.guild.icon.startsWith("a_") ? "gif" : "png";
+            setGuildIcon(
+              `https://cdn.discordapp.com/icons/${data.guild.id}/${data.guild.icon}.${ext}`
+            );
+          }
         }
       } catch (error) {
         console.error("Error fetching guild data:", error);

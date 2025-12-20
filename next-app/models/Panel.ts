@@ -26,7 +26,6 @@ export interface IPanel extends Document {
   smallImgUrl: string | null;
   welcomeEmbed: WelcomeEmbed | null;
   messageIds: { channelId: string; messageId: string }[];
-  enableTranscripts: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -66,7 +65,6 @@ const PanelSchema = new Schema<IPanel>(
       },
       default: null,
     },
-    enableTranscripts: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

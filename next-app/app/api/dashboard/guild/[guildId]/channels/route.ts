@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { rateLimit } from "@/lib/rateLimit";
 
-const BOT_API_URL = process.env.BOT_API_URL || "http://localhost:3002";
+const BOT_SERVER_URL = process.env.BOT_SERVER_URL || "http://localhost:3002";
 const BOT_API_KEY = process.env.BOT_API_KEY;
 
 export async function GET(
@@ -23,7 +23,7 @@ export async function GET(
 
     // Fetch channels from bot server
     const response = await fetch(
-      `${BOT_API_URL}/api/guilds/${guildId}/channels`,
+      `${BOT_SERVER_URL}/api/guilds/${guildId}/channels`,
       {
         headers: {
           "X-API-Key": BOT_API_KEY || "",
