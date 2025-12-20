@@ -93,8 +93,11 @@ const ServerSchema = new Schema<IServer>(
         },
         messageEmbedConfig: {
           color: { type: String, default: "#000000" },
-          title: { type: String, required: true },
-          description: { type: String, required: true },
+          title: { type: String, default: "Select a Panel" },
+          description: {
+            type: String,
+            default: "Choose a panel to open a ticket",
+          },
           authorName: { type: String, default: null },
           authorUrl: { type: String, default: null },
           authorImgUrl: { type: String, default: null },

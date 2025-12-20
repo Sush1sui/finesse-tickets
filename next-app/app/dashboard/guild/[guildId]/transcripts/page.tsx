@@ -1,23 +1,44 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useTheme } from "next-themes";
 import GuildSidebar from "@/components/guild-sidebar";
+import { Spinner } from "@/components/ui/spinner";
 
 type Transcript = {
-  id: string;
+  _id: string;
   ticketId: string;
-  panel: string;
+  ticketNumber: number;
+  panelId: string;
   username: string;
+  userId: string;
   createdAt: string;
+  metadata: {
+    ticketOpenedAt: string;
+    ticketClosedAt: string;
+    totalMessages: number;
+    totalAttachments: number;
+    closedBy: {
+      username: string;
+    };
+  };
+};
+
+type Pagination = {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
 };
 
 export default function TranscriptsPage() {
   const params = useParams();
+  const router = useRouter();
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [guildName, setGuildName] = useState("Server Name");
+  const [loading, setLoading] = useState(true);
 
   // Filter state
   const [ticketIdFilter, setTicketIdFilter] = useState("");
@@ -25,16 +46,14 @@ export default function TranscriptsPage() {
   const [userIdFilter, setUserIdFilter] = useState("");
   const [panelFilter, setPanelFilter] = useState("");
 
-  // Mock data
-  const [transcripts] = useState<Transcript[]>([
-    {
-      id: "1",
-      ticketId: "0",
-      panel: "Panel Name",
-      username: "Sush1sui",
-      createdAt: "2025-11-03",
-    },
-  ]);
+  // Data state
+  const [transcripts, setTranscripts] = useState<Transcript[]>([]);
+  const [pagination, setPagination] = useState<Pagination>({
+    page: 1,
+    limit: 20,
+    total: 0,
+    pages: 0,
+  });
 
   useEffect(() => {
     setMounted(true);
@@ -43,15 +62,55 @@ export default function TranscriptsPage() {
   const isDark = mounted ? resolvedTheme === "dark" : false;
   const guildId = useMemo(() => params?.guildId as string, [params?.guildId]);
 
+  const fetchTranscripts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const queryParams = new URLSearchParams();
+      if (ticketIdFilter) queryParams.set("ticketId", ticketIdFilter);
+      if (usernameFilter) queryParams.set("username", usernameFilter);
+      if (userIdFilter) queryParams.set("userId", userIdFilter);
+      if (panelFilter) queryParams.set("panelId", panelFilter);
+      queryParams.set("page", pagination.page.toString());
+      queryParams.set("limit", pagination.limit.toString());
+
+      const response = await fetch(
+        `/api/dashboard/guild/${guildId}/transcripts?${queryParams.toString()}`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setTranscripts(data.transcripts);
+        setPagination(data.pagination);
+      }
+    } catch (error) {
+      console.error("Error fetching transcripts:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [
+    guildId,
+    ticketIdFilter,
+    usernameFilter,
+    userIdFilter,
+    panelFilter,
+    pagination.page,
+    pagination.limit,
+  ]);
+
+  useEffect(() => {
+    if (guildId) {
+      fetchTranscripts();
+    }
+  }, [guildId]);
+
   const handleSearch = useCallback(() => {
-    // TODO: Implement search functionality
-    console.log("Searching with filters:", {
-      ticketIdFilter,
-      usernameFilter,
-      userIdFilter,
-      panelFilter,
-    });
-  }, [ticketIdFilter, usernameFilter, userIdFilter, panelFilter]);
+    setPagination({ ...pagination, page: 1 });
+    fetchTranscripts();
+  }, [fetchTranscripts, pagination]);
+
+  const handleViewTranscript = (transcriptId: string) => {
+    router.push(`/dashboard/guild/${guildId}/transcripts/${transcriptId}`);
+  };
 
   const styles = useMemo(
     () => ({
@@ -170,6 +229,28 @@ export default function TranscriptsPage() {
         fontSize: "0.75rem",
         cursor: "pointer",
       } as React.CSSProperties,
+      pagination: {
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        gap: "1rem",
+        marginTop: "2rem",
+      } as React.CSSProperties,
+      paginationButton: {
+        padding: "0.5rem 1rem",
+        borderRadius: "6px",
+        border: isDark
+          ? "1px solid rgba(255,255,255,0.2)"
+          : "1px solid rgba(0,0,0,0.2)",
+        background: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)",
+        color: isDark ? "#fff" : "#000",
+        cursor: "pointer",
+        fontSize: "0.875rem",
+      } as React.CSSProperties,
+      paginationInfo: {
+        fontSize: "0.875rem",
+        opacity: 0.8,
+      } as React.CSSProperties,
     }),
     [isDark]
   );
@@ -216,20 +297,17 @@ export default function TranscriptsPage() {
           </div>
 
           <div style={styles.filterGroup}>
-            <label style={styles.label}>PANEL</label>
-            <select
+            <label style={styles.label}>PANEL ID</label>
+            <input
+              type="text"
               value={panelFilter}
               onChange={(e) => setPanelFilter(e.target.value)}
-              style={styles.select}
-            >
-              <option value="">All</option>
-              <option value="panel1">Panel 1</option>
-              <option value="panel2">Panel 2</option>
-            </select>
+              style={styles.input}
+            />
           </div>
 
           <button style={styles.searchButton} onClick={handleSearch}>
-            🔍
+            🔍 Search
           </button>
         </div>
 
@@ -239,30 +317,113 @@ export default function TranscriptsPage() {
             Transcripts
           </h1>
 
-          <div className="table-container">
-            <table style={styles.table}>
-              <thead>
-                <tr>
-                  <th style={styles.th}>Ticket ID</th>
-                  <th style={styles.th}>Panel</th>
-                  <th style={styles.th}>Username</th>
-                  <th style={styles.th}>Transcripts</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transcripts.map((transcript) => (
-                  <tr key={transcript.id}>
-                    <td style={styles.td}>{transcript.ticketId}</td>
-                    <td style={styles.td}>{transcript.panel}</td>
-                    <td style={styles.td}>{transcript.username}</td>
-                    <td style={styles.td}>
-                      <button style={styles.viewButton}>view</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {loading ? (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                padding: "3rem",
+              }}
+            >
+              <Spinner />
+            </div>
+          ) : (
+            <>
+              <div className="table-container">
+                <table style={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={styles.th}>Ticket ID</th>
+                      <th style={styles.th}>Username</th>
+                      <th style={styles.th}>Messages</th>
+                      <th style={styles.th}>Closed At</th>
+                      <th style={styles.th}>Closed By</th>
+                      <th style={styles.th}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {transcripts.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={6}
+                          style={{ ...styles.td, textAlign: "center" }}
+                        >
+                          No transcripts found
+                        </td>
+                      </tr>
+                    ) : (
+                      transcripts.map((transcript) => (
+                        <tr key={transcript._id}>
+                          <td style={styles.td}>{transcript.ticketId}</td>
+                          <td style={styles.td}>{transcript.username}</td>
+                          <td style={styles.td}>
+                            {transcript.metadata.totalMessages}
+                          </td>
+                          <td style={styles.td}>
+                            {new Date(
+                              transcript.metadata.ticketClosedAt
+                            ).toLocaleDateString()}
+                          </td>
+                          <td style={styles.td}>
+                            {transcript.metadata.closedBy.username}
+                          </td>
+                          <td style={styles.td}>
+                            <button
+                              style={styles.viewButton}
+                              onClick={() =>
+                                handleViewTranscript(transcript._id)
+                              }
+                            >
+                              View
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              {pagination.pages > 1 && (
+                <div style={styles.pagination}>
+                  <button
+                    style={{
+                      ...styles.paginationButton,
+                      opacity: pagination.page === 1 ? 0.5 : 1,
+                    }}
+                    onClick={() =>
+                      setPagination({
+                        ...pagination,
+                        page: pagination.page - 1,
+                      })
+                    }
+                    disabled={pagination.page === 1}
+                  >
+                    Previous
+                  </button>
+                  <span style={styles.paginationInfo}>
+                    Page {pagination.page} of {pagination.pages}
+                  </span>
+                  <button
+                    style={{
+                      ...styles.paginationButton,
+                      opacity: pagination.page === pagination.pages ? 0.5 : 1,
+                    }}
+                    onClick={() =>
+                      setPagination({
+                        ...pagination,
+                        page: pagination.page + 1,
+                      })
+                    }
+                    disabled={pagination.page === pagination.pages}
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </main>
     </div>

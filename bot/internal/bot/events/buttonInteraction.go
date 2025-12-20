@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/Sush1sui/fns-tickets/internal/config"
 	"github.com/Sush1sui/fns-tickets/internal/repository"
@@ -194,6 +195,53 @@ func handleOpenTicket(s *discordgo.Session, i *discordgo.InteractionCreate, pane
 		// Continue anyway, ticket channel is created
 	}
 
+	// Check if server has transcript channel configured and create transcript
+	guildConfig, err = repository.GetGuildConfig(i.GuildID)
+	if err != nil {
+		log.Printf("Error fetching guild config for transcript check: %v", err)
+	} else {
+		log.Printf("Guild config fetched: %+v", guildConfig)
+		if guildConfig != nil {
+			if guildConfig.TicketConfig.TicketTranscript != nil {
+				log.Printf("TicketTranscript value: '%s'", *guildConfig.TicketConfig.TicketTranscript)
+			} else {
+				log.Printf("TicketTranscript is nil")
+			}
+		}
+		if guildConfig != nil && guildConfig.TicketConfig.TicketTranscript != nil && *guildConfig.TicketConfig.TicketTranscript != "" {
+			log.Printf("Server has transcript channel configured: %s, creating transcript for ticket %s", *guildConfig.TicketConfig.TicketTranscript, ticket.ID.Hex())
+			// Create transcript for this ticket
+			transcript := &repository.Transcript{
+				TicketID:     ticket.ID.Hex(),
+				GuildID:      ticket.GuildID,
+				ChannelID:    ticket.ChannelID,
+				PanelID:      ticket.PanelID,
+				UserID:       ticket.UserID,
+				Username:     i.Member.User.Username,
+				TicketNumber: 0, // You might want to implement a counter
+				Messages:     []repository.TranscriptMessage{},
+				Metadata: repository.TranscriptMetadata{
+					TicketOpenedAt:   ticket.CreatedAt,
+					TicketClosedAt:   ticket.CreatedAt, // Will be updated on close
+					ClosedBy:         repository.TranscriptClosedBy{},
+					TotalMessages:    0,
+					TotalAttachments: 0,
+					TotalEmbeds:      0,
+					Participants:     []repository.TranscriptParticipant{},
+				},
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+			if err := repository.CreateTranscript(transcript); err != nil {
+				log.Printf("Error creating transcript: %v", err)
+			} else {
+				log.Printf("Successfully created transcript for ticket %s", ticket.ID.Hex())
+			}
+		} else {
+			log.Printf("Server has no transcript channel configured, skipping transcript creation")
+		}
+	}
+
 	// Send welcome message
 	sendWelcomeMessage(s, channel.ID, i.Member.User, panelData)
 
@@ -315,6 +363,119 @@ func handleCloseTicket(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
+	// Get guild config for transcript channel
+	guildConfig, err := repository.GetGuildConfig(i.GuildID)
+	if err != nil {
+		log.Printf("Error fetching guild config: %v", err)
+	}
+
+	// Get ticket information
+	ticket, err := repository.GetTicketByChannel(i.ChannelID)
+	if err != nil {
+		log.Printf("Error fetching ticket: %v", err)
+	}
+
+	// Check if transcript exists and needs to be finalized
+	if ticket != nil {
+		log.Printf("Processing transcript for ticket %s", ticket.ID.Hex())
+		
+		transcript, err := repository.GetTranscript(ticket.ID.Hex())
+		if err != nil {
+			log.Printf("Error checking transcript: %v", err)
+		}
+		
+		if transcript == nil {
+			log.Printf("No transcript found for ticket %s", ticket.ID.Hex())
+		} else {
+			log.Printf("Found transcript with %d messages", len(transcript.Messages))
+			
+			// Fetch all messages from the channel to ensure complete transcript
+			messages, err := s.ChannelMessages(i.ChannelID, 100, "", "", "")
+			if err != nil {
+				log.Printf("Error fetching channel messages: %v", err)
+			} else {
+				log.Printf("Fetched %d messages from Discord channel", len(messages))
+				// Add any missing messages to transcript (in reverse order)
+				for j := len(messages) - 1; j >= 0; j-- {
+					transcriptMsg := convertDiscordMessageToTranscript(messages[j])
+					// Try to add, ignore errors if message already exists
+					repository.AddMessageToTranscript(ticket.ID.Hex(), transcriptMsg)
+				}
+				
+				// Re-fetch transcript to get updated message list
+				transcript, err = repository.GetTranscript(ticket.ID.Hex())
+				if err != nil {
+					log.Printf("Error re-fetching transcript: %v", err)
+				}
+			}
+
+			// Update transcript metadata with closing information
+			closedBy := repository.TranscriptClosedBy{
+				ID:       i.Member.User.ID,
+				Username: i.Member.User.Username,
+			}
+
+			// Calculate final metadata - process even if no messages yet
+			participantMap := make(map[string]*repository.TranscriptParticipant)
+			totalAttachments := 0
+			totalEmbeds := 0
+
+			for _, msg := range transcript.Messages {
+				if _, exists := participantMap[msg.Author.ID]; !exists {
+					participantMap[msg.Author.ID] = &repository.TranscriptParticipant{
+						ID:           msg.Author.ID,
+						Username:     msg.Author.Username,
+						MessageCount: 0,
+					}
+				}
+				participantMap[msg.Author.ID].MessageCount++
+				totalAttachments += len(msg.Attachments)
+				totalEmbeds += len(msg.Embeds)
+			}
+
+			participants := make([]repository.TranscriptParticipant, 0, len(participantMap))
+			for _, p := range participantMap {
+				participants = append(participants, *p)
+			}
+
+			metadata := repository.TranscriptMetadata{
+				TicketOpenedAt:   ticket.CreatedAt,
+				TicketClosedAt:   time.Now(),
+				ClosedBy:         closedBy,
+				TotalMessages:    len(transcript.Messages),
+				TotalAttachments: totalAttachments,
+				TotalEmbeds:      totalEmbeds,
+				Participants:     participants,
+			}
+
+			log.Printf("Updating transcript metadata: %d messages, %d participants", metadata.TotalMessages, len(metadata.Participants))
+
+			if err := repository.UpdateTranscriptMetadata(ticket.ID.Hex(), metadata); err != nil {
+				log.Printf("Error updating transcript metadata: %v", err)
+			} else {
+				log.Printf("Successfully saved transcript %s to database", ticket.ID.Hex())
+
+				// Send transcript to configured channel if enabled
+			if guildConfig != nil && guildConfig.TicketConfig.TicketTranscript != nil && *guildConfig.TicketConfig.TicketTranscript != "" {
+				log.Printf("Sending transcript to channel %s", *guildConfig.TicketConfig.TicketTranscript)
+				if err := sendTranscriptToChannel(s, *guildConfig.TicketConfig.TicketTranscript, ticket, transcript, metadata); err != nil {
+						log.Printf("Error sending transcript to channel: %v", err)
+					} else {
+						log.Printf("Transcript sent successfully to channel")
+					}
+				} else {
+					if guildConfig == nil {
+						log.Printf("Guild config is nil, cannot send transcript")
+				} else if guildConfig.TicketConfig.TicketTranscript == nil || *guildConfig.TicketConfig.TicketTranscript == "" {
+						log.Printf("No transcript channel configured for this server")
+					}
+				}
+			}
+		}
+	} else {
+		log.Printf("Ticket is nil, cannot process transcript")
+	}
+
 	// Mark ticket as closed in database
 	if err := repository.CloseTicket(i.ChannelID); err != nil {
 		log.Printf("Error closing ticket in database: %v", err)
@@ -346,4 +507,113 @@ func parseColor(colorStr string) int {
 
 func strPtr(s string) *string {
 	return &s
+}
+
+func sendTranscriptToChannel(s *discordgo.Session, channelID string, ticket *repository.Ticket, transcript *repository.Transcript, metadata repository.TranscriptMetadata) error {
+	// Get user info
+	user, err := s.User(ticket.UserID)
+	if err != nil {
+		return fmt.Errorf("failed to fetch user: %w", err)
+	}
+
+	// Format duration
+	duration := metadata.TicketClosedAt.Sub(metadata.TicketOpenedAt)
+	hours := int(duration.Hours())
+	minutes := int(duration.Minutes()) % 60
+
+	durationStr := fmt.Sprintf("%dh %dm", hours, minutes)
+	if hours == 0 {
+		durationStr = fmt.Sprintf("%dm", minutes)
+	}
+
+	// Format participants list
+	participantsList := ""
+	for i, p := range metadata.Participants {
+		if i > 0 {
+			participantsList += ", "
+		}
+		participantsList += fmt.Sprintf("<@%s>", p.ID)
+	}
+
+	// Get closed by user
+	closedByUser, _ := s.User(metadata.ClosedBy.ID)
+	closedByName := metadata.ClosedBy.Username
+	if closedByUser != nil {
+		closedByName = closedByUser.Username
+	}
+
+	// Create embed
+	embed := &discordgo.MessageEmbed{
+		Title:       fmt.Sprintf("Ticket Transcript - %s", user.Username),
+		Description: fmt.Sprintf("Ticket for <@%s> has been closed.", ticket.UserID),
+		Color:       0x5865F2,
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name:   "Ticket ID",
+				Value:  ticket.ID.Hex(),
+				Inline: true,
+			},
+			{
+				Name:   "Opened At",
+				Value:  fmt.Sprintf("<t:%d:F>", metadata.TicketOpenedAt.Unix()),
+				Inline: true,
+			},
+			{
+				Name:   "Closed At",
+				Value:  fmt.Sprintf("<t:%d:F>", metadata.TicketClosedAt.Unix()),
+				Inline: true,
+			},
+			{
+				Name:   "Duration",
+				Value:  durationStr,
+				Inline: true,
+			},
+			{
+				Name:   "Closed By",
+				Value:  fmt.Sprintf("%s (<@%s>)", closedByName, metadata.ClosedBy.ID),
+				Inline: true,
+			},
+			{
+				Name:   "Total Messages",
+				Value:  fmt.Sprintf("%d", metadata.TotalMessages),
+				Inline: true,
+			},
+			{
+				Name:   "Total Attachments",
+				Value:  fmt.Sprintf("%d", metadata.TotalAttachments),
+				Inline: true,
+			},
+			{
+				Name:   "Total Embeds",
+				Value:  fmt.Sprintf("%d", metadata.TotalEmbeds),
+				Inline: true,
+			},
+			{
+				Name:   "Participants",
+				Value:  fmt.Sprintf("%d", len(metadata.Participants)),
+				Inline: true,
+			},
+		},
+		Footer: &discordgo.MessageEmbedFooter{
+			Text: "View full transcript on the dashboard",
+		},
+		Timestamp: metadata.TicketClosedAt.Format(time.RFC3339),
+	}
+
+	if len(participantsList) > 0 && len(participantsList) < 1024 {
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+			Name:   "All Participants",
+			Value:  participantsList,
+			Inline: false,
+		})
+	}
+
+	// Send embed to transcript channel
+	_, err = s.ChannelMessageSendEmbed(channelID, embed)
+	if err != nil {
+		return fmt.Errorf("failed to send transcript embed: %w", err)
+	}
+
+	log.Printf("Successfully sent transcript for ticket %s to channel %s", ticket.ID.Hex(), channelID)
+	return nil
 }

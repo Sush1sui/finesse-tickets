@@ -44,6 +44,7 @@ interface Panel {
   category?: string | null;
   ticketChannel?: string | null;
   supportRole?: string | null;
+  enableTranscripts?: boolean;
   welcomeEmbed: {
     color: string;
     title: string | null;

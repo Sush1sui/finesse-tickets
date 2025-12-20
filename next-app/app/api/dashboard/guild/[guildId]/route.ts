@@ -153,6 +153,16 @@ export async function PATCH(
       return NextResponse.json({ error: "Server not found" }, { status: 404 });
     }
 
+    // Ensure multiPanels has default values if not set (for existing servers)
+    if (!server.ticketConfig.multiPanels.messageEmbedConfig.title) {
+      server.ticketConfig.multiPanels.messageEmbedConfig.title =
+        "Select a Panel";
+    }
+    if (!server.ticketConfig.multiPanels.messageEmbedConfig.description) {
+      server.ticketConfig.multiPanels.messageEmbedConfig.description =
+        "Choose a panel to open a ticket";
+    }
+
     // Update ticket config with proper nested object merging
     if (body.ticketConfig) {
       // Merge each nested object properly

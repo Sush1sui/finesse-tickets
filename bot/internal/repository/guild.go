@@ -24,7 +24,7 @@ type GuildConfig struct {
 type TicketConfig struct {
 	TicketNameStyle      string              `bson:"ticketNameStyle"`
 	MaxTicketsPerUser    int                 `bson:"maxTicketsPerUser"`
-	TicketTranscript     string              `bson:"ticketTranscript"`
+	TicketTranscript     *string             `bson:"ticketTranscript"`
 	TicketPermissions    TicketPermissions   `bson:"ticketPermissions"`
 	AutoClose            AutoClose           `bson:"autoClose"`
 }
@@ -88,7 +88,7 @@ func InitDB() error {
 		return fmt.Errorf("failed to ping MongoDB: %w", err)
 	}
 
-	database = client.Database("fns-tickets")
+	database = client.Database("test")
 	log.Println("Successfully connected to MongoDB")
 	
 	// Create indexes for performance
@@ -112,15 +112,33 @@ func CloseDB() error {
 
 // GetGuildConfig fetches guild configuration from MongoDB
 func GetGuildConfig(guildID string) (*GuildConfig, error) {
+	log.Printf("DEBUG: GetGuildConfig called for guildID: %s", guildID)
+	log.Printf("DEBUG: Database name: %s", database.Name())
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	collection := database.Collection("servers")
+	log.Printf("DEBUG: Collection name: %s", collection.Name())
 	
-	var config GuildConfig
-	err := collection.FindOne(ctx, bson.M{"serverId": guildID}).Decode(&config)
+	// Count total documents in collection
+	count, _ := collection.CountDocuments(ctx, bson.M{})
+	log.Printf("DEBUG: Total documents in servers collection: %d", count)
+	
+	// List all serverIds in collection
+	cursor, err := collection.Find(ctx, bson.M{}, options.Find().SetProjection(bson.M{"serverId": 1}).SetLimit(10))
+	if err == nil {
+		var results []bson.M
+		cursor.All(ctx, &results)
+		log.Printf("DEBUG: Sample serverIds in collection: %+v", results)
+	}
+	
+	// First, let's see what raw data we get
+	var rawResult bson.M
+	err = collection.FindOne(ctx, bson.M{"serverId": guildID}).Decode(&rawResult)
 	if err != nil {
+		log.Printf("DEBUG: Error fetching from MongoDB: %v", err)
 		if err == mongo.ErrNoDocuments {
+			log.Printf("DEBUG: No document found, returning default config")
 			// Return default config if guild not found
 			return &GuildConfig{
 				GuildID: guildID,
@@ -141,6 +159,27 @@ func GetGuildConfig(guildID string) (*GuildConfig, error) {
 		}
 		return nil, fmt.Errorf("failed to fetch guild config: %w", err)
 	}
+
+	log.Printf("DEBUG: Successfully fetched raw result from MongoDB")
+	// Log raw result to debug
+	if ticketConfig, ok := rawResult["ticketConfig"].(bson.M); ok {
+		log.Printf("DEBUG: Raw ticketConfig from DB: %+v", ticketConfig)
+		if transcript, ok := ticketConfig["ticketTranscript"]; ok {
+			log.Printf("DEBUG: ticketTranscript value: %v (type: %T)", transcript, transcript)
+		} else {
+			log.Printf("DEBUG: ticketTranscript field not found in ticketConfig")
+		}
+	} else {
+		log.Printf("DEBUG: ticketConfig not found or not a map")
+	}
+
+	// Now decode into struct
+	var config GuildConfig
+	err = collection.FindOne(ctx, bson.M{"serverId": guildID}).Decode(&config)
+	if err != nil {
+		log.Printf("DEBUG: Error decoding into struct: %v", err)
+	}
+	log.Printf("DEBUG: Decoded config: %+v", config)
 
 	return &config, nil
 }
@@ -174,9 +213,14 @@ func CreateTicket(ticket *Ticket) error {
 	ticket.LastMessageAt = time.Now()
 	ticket.Closed = false
 
-	_, err := collection.InsertOne(ctx, ticket)
+	result, err := collection.InsertOne(ctx, ticket)
 	if err != nil {
 		return fmt.Errorf("failed to create ticket: %w", err)
+	}
+
+	// Update ticket ID with the inserted ID
+	if oid, ok := result.InsertedID.(bson.ObjectID); ok {
+		ticket.ID = oid
 	}
 
 	return nil

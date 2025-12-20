@@ -70,6 +70,9 @@ export default function EditPanelPage() {
   const [welcomeFooter, setWelcomeFooter] = useState("");
   const [welcomeFooterIcon, setWelcomeFooterIcon] = useState("");
 
+  // Transcript
+  const [enableTranscripts, setEnableTranscripts] = useState(false);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -109,6 +112,7 @@ export default function EditPanelPage() {
     setEmojiValue(panelData.btnEmoji || "");
     setLargeImageUrl(panelData.largeImgUrl || "");
     setSmallImageUrl(panelData.smallImgUrl || "");
+    setEnableTranscripts(panelData.enableTranscripts || false);
 
     // Welcome embed data
     if (panelData.welcomeEmbed) {
@@ -333,6 +337,7 @@ export default function EditPanelPage() {
         // Ticket config
         mentionOnOpen: mentionOnOpen,
         ticketCategory: ticketCategory || null,
+        enableTranscripts: enableTranscripts,
 
         // Welcome embed config
         welcomeEmbed: {
@@ -552,6 +557,22 @@ export default function EditPanelPage() {
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Transcript Toggle */}
+          <div style={{ marginBottom: "1.5rem" }}>
+            <label style={styles.checkboxGroup}>
+              <input
+                type="checkbox"
+                checked={enableTranscripts}
+                onChange={(e) => setEnableTranscripts(e.target.checked)}
+                style={{ width: "18px", height: "18px", cursor: "pointer" }}
+              />
+              <span style={{ fontWeight: 500 }}>
+                📝 Enable transcripts for this panel (saves full ticket
+                conversation history)
+              </span>
+            </label>
           </div>
 
           {/* Second Row */}
