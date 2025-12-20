@@ -154,9 +154,13 @@ func AddMessageToTranscript(ticketID string, message TranscriptMessage) error {
 
 	collection := database.Collection("transcripts")
 	
+	// Use $addToSet to prevent duplicate messages with the same ID
 	_, err := collection.UpdateOne(
 		ctx,
-		bson.M{"ticketId": ticketID},
+		bson.M{
+			"ticketId": ticketID,
+			"messages.id": bson.M{"$ne": message.ID}, // Only add if message ID doesn't exist
+		},
 		bson.M{
 			"$push": bson.M{"messages": message},
 			"$set":  bson.M{"updatedAt": time.Now()},
