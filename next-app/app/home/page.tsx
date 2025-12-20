@@ -82,9 +82,9 @@ export default memo(function HomeRoot() {
           >
             Finesse Discord server
           </a>
-          . If you'd like to use this ticket bot for your server, please open a
-          ticket on our Discord to contact the Finesse team. For documentation
-          and updates, visit our{" "}
+          . If you&apos;d like to use this ticket bot for your server, please
+          open a ticket on our Discord to contact the Finesse team. For
+          documentation and updates, visit our{" "}
           <a
             href="https://github.com/Sush1sui/finesse-tickets"
             target="_blank"
