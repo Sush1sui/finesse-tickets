@@ -94,8 +94,8 @@ export default function CreatePanelPage() {
 
   // Update guild name when guildData loads
   useEffect(() => {
-    if (guildData?.guild?.name) {
-      setGuildName(guildData.guild.name);
+    if (guildData && 'name' in guildData) {
+      setGuildName(guildData.name as string);
     }
   }, [guildData]);
 

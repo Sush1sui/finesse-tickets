@@ -37,6 +37,15 @@ type Channel = {
   channelName: string;
 };
 
+type GuildData = {
+  roles: Role[];
+  categories: Category[];
+  channels: Channel[];
+  guild?: {
+    name: string;
+  };
+};
+
 export default function EditPanelPage() {
   const params = useParams();
   const router = useRouter();
@@ -82,8 +91,9 @@ export default function EditPanelPage() {
   const panelId = params?.panelId as string;
 
   // Use React Query hooks - data is cached and instantly available!
-  const { data: guildData, isLoading: guildDataLoading } =
-    useGuildData(guildId);
+  const { data: guildData, isLoading: guildDataLoading } = useGuildData(
+    guildId
+  ) as { data: GuildData | undefined; isLoading: boolean };
   const { data: emojisData, isLoading: emojisLoading } =
     useGuildEmojis(guildId);
   const { data: panelData, isLoading: panelLoading } = usePanel(panelId);
