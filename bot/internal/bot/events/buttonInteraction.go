@@ -126,14 +126,18 @@ func handleOpenTicket(s *discordgo.Session, i *discordgo.InteractionCreate, pane
 		return
 	}
 
-	var panelData PanelData
-	if err := json.NewDecoder(resp.Body).Decode(&panelData); err != nil {
+	var response struct {
+		Panel PanelData `json:"panel"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		log.Printf("Error decoding panel data: %v", err)
 		s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 			Content: strPtr("Error processing panel data. Please try again later."),
 		})
 		return
 	}
+
+	panelData := response.Panel
 
 	// Create ticket channel
 	channelName := fmt.Sprintf("ticket-%s", i.Member.User.Username)
@@ -306,15 +310,13 @@ func sendWelcomeMessage(s *discordgo.Session, channelID string, user *discordgo.
 	}
 
 	// Build mentions string
-	var mentions *string
+	mentions := []string{user.Mention()} // Always mention the user who opened the ticket
 	if len(panelData.MentionOnOpen) > 0 {
-		mentionStrs := make([]string, len(panelData.MentionOnOpen))
-		for i, roleID := range panelData.MentionOnOpen {
-			mentionStrs[i] = fmt.Sprintf("<@&%s>", roleID)
+		for _, roleID := range panelData.MentionOnOpen {
+			mentions = append(mentions, fmt.Sprintf("<@&%s>", roleID))
 		}
-		mentionStr := strings.Join(mentionStrs, " ")
-		mentions = &mentionStr
 	}
+	mentionStr := strings.Join(mentions, " ")
 
 	// Create close button
 	closeButton := discordgo.Button{
@@ -328,17 +330,13 @@ func sendWelcomeMessage(s *discordgo.Session, channelID string, user *discordgo.
 
 	// Build message send
 	messageSend := &discordgo.MessageSend{
+		Content: mentionStr,
 		Embeds: []*discordgo.MessageEmbed{embed},
 		Components: []discordgo.MessageComponent{
 			discordgo.ActionsRow{
 				Components: []discordgo.MessageComponent{closeButton},
 			},
 		},
-	}
-	
-	// Only add content if there are mentions
-	if mentions != nil {
-		messageSend.Content = *mentions
 	}
 
 	// Send message
