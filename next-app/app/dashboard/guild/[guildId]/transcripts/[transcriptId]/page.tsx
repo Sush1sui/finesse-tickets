@@ -368,7 +368,7 @@ export default function TranscriptViewerPage() {
             ← Back
           </button>
           <h1 style={styles.title}>
-            Ticket #{transcript.ticketNumber} - {transcript.username}
+            Ticket {transcript._id} - {transcript.username}
           </h1>
         </div>
 
