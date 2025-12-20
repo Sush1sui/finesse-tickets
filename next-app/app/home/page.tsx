@@ -48,6 +48,61 @@ export default memo(function HomeRoot() {
 
       <div
         style={{
+          maxWidth: 640,
+          margin: "0 auto 32px",
+          padding: 16,
+          borderRadius: 12,
+          background: isDark
+            ? "rgba(88,101,242,0.08)"
+            : "rgba(88,101,242,0.06)",
+          border: isDark
+            ? "1px solid rgba(88,101,242,0.2)"
+            : "1px solid rgba(88,101,242,0.15)",
+        }}
+      >
+        <p
+          style={{
+            fontSize: 14,
+            color: mutedColor,
+            margin: 0,
+            lineHeight: 1.6,
+          }}
+        >
+          ⚠️ <strong>Early Stage Project:</strong> This bot is currently in
+          active development and is exclusively available on the{" "}
+          <a
+            href="https://discord.gg/dvUsZ9Gj2m"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              color: isDark ? "#5865F2" : "#4752C4",
+              textDecoration: "none",
+              fontWeight: 600,
+            }}
+          >
+            Finesse Discord server
+          </a>
+          . If you'd like to use this ticket bot for your server, please open a
+          ticket on our Discord to contact the Finesse team. For documentation
+          and updates, visit our{" "}
+          <a
+            href="https://github.com/Sush1sui/finesse-tickets"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              color: isDark ? "#5865F2" : "#4752C4",
+              textDecoration: "none",
+              fontWeight: 600,
+            }}
+          >
+            GitHub repository
+          </a>
+          .
+        </p>
+      </div>
+
+      <div
+        style={{
           display: "grid",
           gridTemplateColumns: "1fr",
           gap: 16,

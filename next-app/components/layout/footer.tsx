@@ -41,6 +41,12 @@ export default function Footer() {
         color: isDark ? "rgba(230,238,248,0.65)" : "rgba(15,23,32,0.45)",
         fontSize: 13,
       } as React.CSSProperties,
+      link: {
+        color: isDark ? "rgba(88,101,242,0.85)" : "rgba(88,101,242,0.75)",
+        textDecoration: "none",
+        marginLeft: 8,
+        transition: "opacity 0.2s",
+      } as React.CSSProperties,
     }),
     [isDark]
   );
@@ -53,7 +59,19 @@ export default function Footer() {
       transition={{ duration: 0.24 }}
     >
       <div style={footerStyles.container}>
-        <p style={footerStyles.text}>© 2025 Do it with Finesse!</p>
+        <p style={footerStyles.text}>
+          © 2025 Do it with Finesse! |
+          <a
+            href="https://github.com/Sush1sui/finesse-tickets"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ ...footerStyles.link, marginLeft: 3 }}
+            onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.7")}
+            onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+          >
+            Documentation
+          </a>
+        </p>
       </div>
     </motion.footer>
   );
