@@ -22,7 +22,7 @@ export async function GET(
     return NextResponse.json({
       panel: {
         _id: String(panel._id),
-        guild: panel.guild,
+        guild: panel.serverId,
         channel: panel.channel,
         title: panel.title,
         content: panel.content,
@@ -80,7 +80,7 @@ export async function PATCH(
     }
 
     // Sanitize body: prevent changing serverId or _id
-    const update = { ...body } as any;
+    const update = { ...body };
     delete update.serverId;
     delete update._id;
 

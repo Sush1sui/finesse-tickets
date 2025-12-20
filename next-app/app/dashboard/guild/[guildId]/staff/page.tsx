@@ -86,7 +86,7 @@ export default function StaffPage() {
   const hasAdminPermissions = useMemo(() => {
     if (!permittedData?.permittedServers || !guildId) return false;
     const guild = permittedData.permittedServers.find(
-      (g: any) => g.id === guildId
+      (g: { id: string; permissions?: string }) => g.id === guildId
     );
     if (!guild?.permissions) return false;
     const perms = BigInt(guild.permissions);

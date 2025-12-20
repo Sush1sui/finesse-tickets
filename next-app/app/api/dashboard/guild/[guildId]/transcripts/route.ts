@@ -31,7 +31,8 @@ export async function GET(
     await dbConnect();
 
     // Build query
-    const query: any = { guildId };
+    const query: Record<string, string | { $regex: string; $options: string }> =
+      { guildId };
 
     if (userId) {
       query.userId = userId;

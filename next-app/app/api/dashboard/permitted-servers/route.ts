@@ -190,6 +190,7 @@ export async function GET() {
     });
 
     // Also check database for staff authorization
+    let finalPermitted = permitted; // Default to moderator-permitted guilds
     try {
       await dbConnect();
       const servers = await Server.find({
@@ -250,11 +251,10 @@ export async function GET() {
         ...additionalPermittedGuildIds,
       ]);
 
-      var allPermitted = guilds.filter((g) => allPermittedIds.has(g.id));
+      finalPermitted = guilds.filter((g) => allPermittedIds.has(g.id));
     } catch (err) {
       console.error("Error checking staff authorization:", err);
-      // If staff check fails, just use moderator-permitted guilds
-      var allPermitted = permitted;
+      // If staff check fails, use default (moderator-permitted guilds)
     }
 
     // Check which guilds the bot is in
@@ -265,7 +265,7 @@ export async function GET() {
           "Content-Type": "application/json",
           "X-API-Key": process.env.BOT_API_KEY || "",
         },
-        body: JSON.stringify({ guildIds: allPermitted.map((g) => g.id) }),
+        body: JSON.stringify({ guildIds: finalPermitted.map((g) => g.id) }),
       });
 
       if (!botRes.ok) {
@@ -280,7 +280,7 @@ export async function GET() {
       };
 
       const presentServers = new Set(body.servers?.map((s) => s.id) ?? []);
-      const permittedWhereBotIsIn = allPermitted.filter((g) =>
+      const permittedWhereBotIsIn = permitted.filter((g) =>
         presentServers.has(g.id)
       );
 

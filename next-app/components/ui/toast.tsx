@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 type ToastType = "success" | "error" | "info";
 
@@ -15,6 +15,14 @@ export function Toast({ message, type, duration = 5000, onClose }: ToastProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
 
+  const handleClose = useCallback(() => {
+    setIsExiting(true);
+    setTimeout(() => {
+      setIsVisible(false);
+      onClose();
+    }, 300);
+  }, [onClose]);
+
   useEffect(() => {
     // Trigger entrance animation
     setTimeout(() => setIsVisible(true), 10);
@@ -26,14 +34,6 @@ export function Toast({ message, type, duration = 5000, onClose }: ToastProps) {
 
     return () => clearTimeout(timer);
   }, [duration, handleClose]);
-
-  function handleClose() {
-    setIsExiting(true);
-    setTimeout(() => {
-      setIsVisible(false);
-      onClose();
-    }, 300);
-  }
 
   const colors = {
     success: {

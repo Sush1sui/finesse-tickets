@@ -20,8 +20,17 @@ type TranscriptMessage = {
   author: TranscriptAuthor;
   content: string | null;
   timestamp: string;
-  embeds?: any[];
-  attachments?: any[];
+  embeds?: {
+    title?: string;
+    description?: string;
+    [key: string]: unknown;
+  }[];
+  attachments?: {
+    id: string;
+    url: string;
+    filename: string;
+    contentType?: string;
+  }[];
   edited: boolean;
   reactions?: { emoji: string; count: number }[];
 };
@@ -436,7 +445,7 @@ export default function TranscriptViewerPage() {
                   )}
                   {message.attachments && message.attachments.length > 0 && (
                     <div>
-                      {message.attachments.map((att: any) => (
+                      {message.attachments.map((att) => (
                         <div key={att.id} style={styles.attachment}>
                           📎{" "}
                           <a
