@@ -22,8 +22,6 @@ func DeployCommands(s *discordgo.Session) {
 			err := s.ApplicationCommandDelete(s.State.User.ID, "", cmd.ID)
 			if err != nil {
 				log.Printf("Failed to delete command %s: %v", cmd.Name, err)
-			} else {
-				log.Printf("Deleted command %s", cmd.Name)
 			}
 		}
 	}
@@ -43,8 +41,6 @@ func DeployCommands(s *discordgo.Session) {
 		if handler, ok := CommandHandlers[i.ApplicationCommandData().Name]; ok {
 			handler(s, i)
 		} else {
-			fmt.Printf("Unknown command: %s\n", i.ApplicationCommandData().Name)
-			fmt.Printf("Available commands: %v\n", CommandHandlers)
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
@@ -54,6 +50,4 @@ func DeployCommands(s *discordgo.Session) {
 			})
 		}
 	})
-
-	log.Println("Commands deployed successfully.")
 }

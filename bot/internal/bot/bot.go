@@ -1,7 +1,6 @@
 package bot
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -84,12 +83,9 @@ func StartBot() {
     // Start auto-close background worker
     stopAutoClose := StartAutoCloseWorker(s)
 
-    fmt.Println("Bot is now running")
-
     sc := make(chan os.Signal, 1)
     signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
     <-sc
-    fmt.Println("Shutting down bot gracefully...")
     
     // Stop auto-close worker
     stopAutoClose()

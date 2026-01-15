@@ -8,6 +8,10 @@ import EmojiPicker from "@/components/emoji-picker";
 import { ToastContainer } from "@/components/ui/toast";
 import { useToast } from "@/hooks/useToast";
 import {
+  SearchableSelect,
+  SearchableSelectOption,
+} from "@/components/ui/searchable-select";
+import {
   useGuildData,
   useGuildEmojis,
   usePanel,
@@ -104,6 +108,29 @@ export default function EditPanelPage() {
   const categories = useMemo(() => guildData?.categories || [], [guildData]);
   const channels = useMemo(() => guildData?.channels || [], [guildData]);
   const customEmojis = useMemo(() => emojisData || [], [emojisData]);
+
+  // Create options arrays for SearchableSelect
+  const roleOptions = useMemo<SearchableSelectOption[]>(
+    () =>
+      roles.map((role) => ({ value: role.roleId, label: `@${role.roleName}` })),
+    [roles]
+  );
+  const categoryOptions = useMemo<SearchableSelectOption[]>(
+    () =>
+      categories.map((cat) => ({
+        value: cat.categoryId,
+        label: cat.categoryName,
+      })),
+    [categories]
+  );
+  const channelOptions = useMemo<SearchableSelectOption[]>(
+    () =>
+      channels.map((ch) => ({
+        value: ch.channelId,
+        label: `#${ch.channelName}`,
+      })),
+    [channels]
+  );
 
   // Update guild name and icon when guildData loads
   useEffect(() => {
@@ -534,53 +561,32 @@ export default function EditPanelPage() {
               )}
 
               {/* Dropdown Select */}
-              <select
+              <SearchableSelect
+                options={roleOptions}
                 value=""
-                onChange={(e) => {
-                  const roleId = e.target.value;
-                  if (roleId && !mentionOnOpen.includes(roleId)) {
-                    setMentionOnOpen([...mentionOnOpen, roleId]);
+                onChange={(value) => {
+                  if (value && !mentionOnOpen.includes(value)) {
+                    setMentionOnOpen([...mentionOnOpen, value]);
                   }
                 }}
-                style={{
-                  ...styles.select,
-                  colorScheme: isDark ? "dark" : "light",
-                }}
-              >
-                <option
-                  value=""
-                  style={{ background: isDark ? "#1f1f1f" : "#fff" }}
-                >
-                  {mentionOnOpen.length > 0
+                placeholder={
+                  mentionOnOpen.length > 0
                     ? "Add more roles..."
-                    : "Select roles..."}
-                </option>
-                {roles.map((role) => (
-                  <option
-                    key={role.roleId}
-                    value={role.roleId}
-                    style={{ background: isDark ? "#1f1f1f" : "#fff" }}
-                  >
-                    @{role.roleName}
-                  </option>
-                ))}
-              </select>
+                    : "Select roles..."
+                }
+                isDark={isDark}
+              />
             </div>
 
             <div style={styles.formGroup}>
               <label style={styles.label}>TICKET CATEGORY</label>
-              <select
+              <SearchableSelect
+                options={categoryOptions}
                 value={ticketCategory}
-                onChange={(e) => setTicketCategory(e.target.value)}
-                style={styles.select}
-              >
-                <option value="">CATEGORY...</option>
-                {categories.map((category) => (
-                  <option key={category.categoryId} value={category.categoryId}>
-                    {category.categoryName}
-                  </option>
-                ))}
-              </select>
+                onChange={setTicketCategory}
+                placeholder="CATEGORY..."
+                isDark={isDark}
+              />
             </div>
           </div>
 
@@ -625,18 +631,13 @@ export default function EditPanelPage() {
 
             <div style={styles.formGroup}>
               <label style={styles.label}>PANEL CHANNEL</label>
-              <select
+              <SearchableSelect
+                options={channelOptions}
                 value={panelChannel}
-                onChange={(e) => setPanelChannel(e.target.value)}
-                style={styles.select}
-              >
-                <option value="">ex: create-a-ticket</option>
-                {channels.map((channel) => (
-                  <option key={channel.channelId} value={channel.channelId}>
-                    #{channel.channelName}
-                  </option>
-                ))}
-              </select>
+                onChange={setPanelChannel}
+                placeholder="ex: create-a-ticket"
+                isDark={isDark}
+              />
             </div>
           </div>
 

@@ -21,7 +21,6 @@ func main() {
 
 	addr := fmt.Sprintf(":%s", config.GlobalConfig.Port)
 	router := routes.NewRouter()
-	fmt.Printf("Server is listening on Port: %s\n", config.GlobalConfig.Port)
 
 	go func() {
 		if err := http.ListenAndServe(addr, router); err != nil {
@@ -39,5 +38,4 @@ func main() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	<-sigChan
-	fmt.Println("Shutting down server gracefully...")
 }

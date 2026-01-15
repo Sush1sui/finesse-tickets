@@ -12,15 +12,11 @@ import (
 )
 
 type Config struct {
-	Port string
-	BotToken string
-	AppID string
-	ServerUrl string
+	Port       string
+	BotToken   string
+	ServerUrl  string
 	MongoDBName string
-	CategoryJTCCollectionName string
-	CustomVcCollectionName string
-	FinestRoleId string
-	BotAPIKey string
+	BotAPIKey  string
 	NextAppURL string
 }
 
@@ -34,11 +30,6 @@ func New() (error) {
 	botToken := os.Getenv("BOT_TOKEN")
 	if botToken == "" {
 		return fmt.Errorf("BOT_TOKEN is not set in the environment variables")
-	}
-
-	appID := os.Getenv("APP_ID")
-	if appID == "" {
-		return fmt.Errorf("APP_ID is not set in the environment variables")
 	}
 
 	port := os.Getenv("PORT")
@@ -62,33 +53,32 @@ func New() (error) {
 	}
 
 	GlobalConfig = &Config{
-		Port:     port,
-		BotToken: botToken,
-		AppID:   appID,
-		ServerUrl: os.Getenv("SERVER_URL"),
+		Port:        port,
+		BotToken:    botToken,
+		ServerUrl:   os.Getenv("SERVER_URL"),
 		MongoDBName: mongoDBName,
-		BotAPIKey: botAPIKey,
-		NextAppURL: nextAppURL,
+		BotAPIKey:   botAPIKey,
+		NextAppURL:  nextAppURL,
 	}
+
 	return nil
 }
 
-func MongoConnection() *mongo.Client {
+func NewMongoDBConnection() *mongo.Client {
 	// Use the SetServerAPIOptions() method to set the version of the Stable API on the client
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
 	opts := options.Client().ApplyURI(os.Getenv("MONGODB_URI")).SetServerAPIOptions(serverAPI)
 
 	// Create a new client and connect to the server
-  client, err := mongo.Connect(opts)
-  if err != nil {
-    panic(err)
-  }
+	client, err := mongo.Connect(opts)
+	if err != nil {
+		panic(err)
+	}
 
-  // Send a ping to confirm a successful connection
-  if err := client.Ping(context.TODO(), readpref.Primary()); err != nil {
-    panic(err)
-  }
-  fmt.Println("DB Connected!")
+	// Send a ping to confirm a successful connection
+	if err := client.Ping(context.TODO(), readpref.Primary()); err != nil {
+		panic(err)
+	}
 
 	return client
 }

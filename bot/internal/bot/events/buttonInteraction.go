@@ -204,16 +204,7 @@ func handleOpenTicket(s *discordgo.Session, i *discordgo.InteractionCreate, pane
 	if err != nil {
 		log.Printf("Error fetching guild config for transcript check: %v", err)
 	} else {
-		log.Printf("Guild config fetched: %+v", guildConfig)
-		if guildConfig != nil {
-			if guildConfig.TicketConfig.TicketTranscript != nil {
-				log.Printf("TicketTranscript value: '%s'", *guildConfig.TicketConfig.TicketTranscript)
-			} else {
-				log.Printf("TicketTranscript is nil")
-			}
-		}
 		if guildConfig != nil && guildConfig.TicketConfig.TicketTranscript != nil && *guildConfig.TicketConfig.TicketTranscript != "" {
-			log.Printf("Server has transcript channel configured: %s, creating transcript for ticket %s", *guildConfig.TicketConfig.TicketTranscript, ticket.ID.Hex())
 			// Create transcript for this ticket
 			transcript := &repository.Transcript{
 				TicketID:     ticket.ID.Hex(),
@@ -238,11 +229,7 @@ func handleOpenTicket(s *discordgo.Session, i *discordgo.InteractionCreate, pane
 			}
 			if err := repository.CreateTranscript(transcript); err != nil {
 				log.Printf("Error creating transcript: %v", err)
-			} else {
-				log.Printf("Successfully created transcript for ticket %s", ticket.ID.Hex())
 			}
-		} else {
-			log.Printf("Server has no transcript channel configured, skipping transcript creation")
 		}
 	}
 
@@ -375,24 +362,17 @@ func handleCloseTicket(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	// Check if transcript exists and needs to be finalized
 	if ticket != nil {
-		log.Printf("Processing transcript for ticket %s", ticket.ID.Hex())
-		
 		transcript, err := repository.GetTranscript(ticket.ID.Hex())
 		if err != nil {
 			log.Printf("Error checking transcript: %v", err)
 		}
 		
-		if transcript == nil {
-			log.Printf("No transcript found for ticket %s", ticket.ID.Hex())
-		} else {
-			log.Printf("Found transcript with %d messages", len(transcript.Messages))
-			
+		if transcript != nil {
 			// Fetch all messages from the channel to ensure complete transcript
 			messages, err := s.ChannelMessages(i.ChannelID, 100, "", "", "")
 			if err != nil {
 				log.Printf("Error fetching channel messages: %v", err)
 			} else {
-				log.Printf("Fetched %d messages from Discord channel", len(messages))
 				// Add any missing messages to transcript (in reverse order)
 				for j := len(messages) - 1; j >= 0; j-- {
 					transcriptMsg := convertDiscordMessageToTranscript(messages[j])
@@ -446,32 +426,17 @@ func handleCloseTicket(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				Participants:     participants,
 			}
 
-			log.Printf("Updating transcript metadata: %d messages, %d participants", metadata.TotalMessages, len(metadata.Participants))
-
 			if err := repository.UpdateTranscriptMetadata(ticket.ID.Hex(), metadata); err != nil {
 				log.Printf("Error updating transcript metadata: %v", err)
 			} else {
-				log.Printf("Successfully saved transcript %s to database", ticket.ID.Hex())
-
 				// Send transcript to configured channel if enabled
 			if guildConfig != nil && guildConfig.TicketConfig.TicketTranscript != nil && *guildConfig.TicketConfig.TicketTranscript != "" {
-				log.Printf("Sending transcript to channel %s", *guildConfig.TicketConfig.TicketTranscript)
 				if err := sendTranscriptToChannel(s, *guildConfig.TicketConfig.TicketTranscript, ticket, transcript, metadata); err != nil {
 						log.Printf("Error sending transcript to channel: %v", err)
-					} else {
-						log.Printf("Transcript sent successfully to channel")
-					}
-				} else {
-					if guildConfig == nil {
-						log.Printf("Guild config is nil, cannot send transcript")
-				} else if guildConfig.TicketConfig.TicketTranscript == nil || *guildConfig.TicketConfig.TicketTranscript == "" {
-						log.Printf("No transcript channel configured for this server")
 					}
 				}
 			}
 		}
-	} else {
-		log.Printf("Ticket is nil, cannot process transcript")
 	}
 
 	// Mark ticket as closed in database
@@ -612,6 +577,5 @@ func sendTranscriptToChannel(s *discordgo.Session, channelID string, ticket *rep
 		return fmt.Errorf("failed to send transcript embed: %w", err)
 	}
 
-	log.Printf("Successfully sent transcript for ticket %s to channel %s", ticket.ID.Hex(), channelID)
 	return nil
 }

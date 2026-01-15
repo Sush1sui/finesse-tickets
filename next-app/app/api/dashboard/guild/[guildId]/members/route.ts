@@ -22,7 +22,7 @@ export async function GET(
       `${botServerUrl}/api/guilds/${guildId}/members`,
       {
         headers: {
-          "X-API-Key": process.env.BOT_API_SECRET || "",
+          "X-API-Key": process.env.BOT_API_KEY || "",
         },
       }
     );

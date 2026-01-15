@@ -7,6 +7,10 @@ import GuildSidebar from "@/components/guild-sidebar";
 import { Spinner } from "@/components/ui/spinner";
 import { useGuildInfo, useGuildChannels } from "@/hooks/useGuildQueries";
 import { useQueryClient } from "@tanstack/react-query";
+import {
+  SearchableSelect,
+  SearchableSelectOption,
+} from "@/components/ui/searchable-select";
 
 type GuildData = {
   serverId: string;
@@ -82,6 +86,18 @@ export default function SettingsPage() {
 
   const channels = useMemo(() => channelsData || [], [channelsData]);
   const loading = guildLoading || channelsLoading;
+
+  // Prepare channel options for searchable select
+  const channelOptions: SearchableSelectOption[] = useMemo(
+    () => [
+      { value: "", label: "None" },
+      ...channels.map((channel) => ({
+        value: channel.channelId,
+        label: `#${channel.channelName}`,
+      })),
+    ],
+    [channels]
+  );
 
   useEffect(() => {
     setMounted(true);
@@ -477,18 +493,13 @@ export default function SettingsPage() {
             <div style={styles.formGroup}>
               <div style={{ flex: 1 }}>
                 <h2 style={styles.sectionTitle}>Ticket Transcripts</h2>
-                <select
+                <SearchableSelect
                   value={transcriptChannel}
-                  onChange={(e) => setTranscriptChannel(e.target.value)}
-                  style={styles.select}
-                >
-                  <option value="">None</option>
-                  {channels.map((channel) => (
-                    <option key={channel.channelId} value={channel.channelId}>
-                      #{channel.channelName}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setTranscriptChannel}
+                  options={channelOptions}
+                  placeholder="Select a channel..."
+                  isDark={isDark}
+                />
               </div>
               <div style={{ flex: 1 }}>
                 <h2 style={styles.sectionTitle}>Max tickets per user</h2>

@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -62,8 +61,6 @@ func EnsureIndexes() error {
 		return err
 	}
 
-	log.Println("✓ Created indexes on 'tickets' collection")
-
 	// Servers collection indexes (ensure serverId is indexed)
 	serverIndexes := []mongo.IndexModel{
 		{
@@ -78,8 +75,6 @@ func EnsureIndexes() error {
 	if err != nil {
 		return err
 	}
-
-	log.Println("✓ Created indexes on 'servers' collection")
 
 	return nil
 }

@@ -13,6 +13,10 @@ import {
   useGuildInfo,
 } from "@/hooks/useGuildQueries";
 import { useQuery } from "@tanstack/react-query";
+import {
+  SearchableSelect,
+  SearchableSelectOption,
+} from "@/components/ui/searchable-select";
 
 type Member = {
   userId: string;
@@ -188,6 +192,31 @@ export default function StaffPage() {
     [roles]
   );
 
+  // Prepare options for searchable selects
+  const memberOptions: SearchableSelectOption[] = useMemo(
+    () =>
+      members
+        ?.filter((m) => !m.bot)
+        .map((member) => ({
+          value: member.userId,
+          label: member.displayName,
+          subtitle: `@${member.username}`,
+          avatar: member.avatar
+            ? `https://cdn.discordapp.com/avatars/${member.userId}/${member.avatar}.png?size=64`
+            : undefined,
+        })) || [],
+    [members]
+  );
+
+  const roleOptions: SearchableSelectOption[] = useMemo(
+    () =>
+      roles?.map((role) => ({
+        value: role.roleId,
+        label: `@${role.roleName}`,
+      })) || [],
+    [roles]
+  );
+
   const styles = useMemo(
     () => ({
       container: {
@@ -321,25 +350,15 @@ export default function StaffPage() {
             <div
               style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem" }}
             >
-              <select
+              <SearchableSelect
                 value={selectedMember}
-                onChange={(e) => setSelectedMember(e.target.value)}
-                style={{
-                  ...styles.searchInput,
-                  flex: 1,
-                  cursor: "pointer",
-                  colorScheme: isDark ? "dark" : "light",
-                }}
-              >
-                <option value="">Select a member...</option>
-                {members
-                  ?.filter((m) => !m.bot)
-                  .map((member) => (
-                    <option key={member.userId} value={member.userId}>
-                      {member.displayName} (@{member.username})
-                    </option>
-                  ))}
-              </select>
+                onChange={setSelectedMember}
+                options={memberOptions}
+                placeholder="Select a member..."
+                isDark={isDark}
+                showAvatars={true}
+                style={{ flex: 1 }}
+              />
               <button
                 onClick={handleAddUser}
                 disabled={
@@ -427,23 +446,14 @@ export default function StaffPage() {
             <div
               style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem" }}
             >
-              <select
+              <SearchableSelect
                 value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value)}
-                style={{
-                  ...styles.searchInput,
-                  flex: 1,
-                  cursor: "pointer",
-                  colorScheme: isDark ? "dark" : "light",
-                }}
-              >
-                <option value="">Select a role...</option>
-                {roles?.map((role) => (
-                  <option key={role.roleId} value={role.roleId}>
-                    @{role.roleName}
-                  </option>
-                ))}
-              </select>
+                onChange={setSelectedRole}
+                options={roleOptions}
+                placeholder="Select a role..."
+                isDark={isDark}
+                style={{ flex: 1 }}
+              />
               <button
                 onClick={handleAddRole}
                 disabled={

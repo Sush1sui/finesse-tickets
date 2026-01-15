@@ -14,8 +14,6 @@ func StartAutoCloseWorker(s *discordgo.Session) func() {
 	ticker := time.NewTicker(5 * time.Minute) // Check every 5 minutes
 	done := make(chan struct{})
 
-	log.Println("Auto-close worker started")
-
 	go func() {
 		defer ticker.Stop()
 		for {
@@ -23,7 +21,6 @@ func StartAutoCloseWorker(s *discordgo.Session) func() {
 			case <-ticker.C:
 				checkAndCloseInactiveTickets(s)
 			case <-done:
-				log.Println("Auto-close worker stopped")
 				return
 			}
 		}
@@ -117,8 +114,6 @@ func checkAndCloseInactiveTickets(s *discordgo.Session) {
 			_, err = rateLimitHandler.ChannelDeleteWithRetry(ticket.ChannelID)
 			if err != nil {
 				log.Printf("Error deleting ticket channel %s: %v", ticket.ChannelID, err)
-			} else {
-				log.Printf("Auto-closed ticket %s due to %s", ticket.ChannelID, reason)
 			}
 		}
 	}

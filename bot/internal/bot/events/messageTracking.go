@@ -77,8 +77,6 @@ func HandleGuildMemberRemove(s *discordgo.Session, m *discordgo.GuildMemberRemov
 		_, err := s.ChannelDelete(ticket.ChannelID)
 		if err != nil {
 			log.Printf("Error deleting ticket channel: %v", err)
-		} else {
-			log.Printf("Auto-closed ticket %s due to user leaving", ticket.ChannelID)
 		}
 	}
 }

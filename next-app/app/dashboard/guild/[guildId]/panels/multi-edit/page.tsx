@@ -6,6 +6,10 @@ import { useTheme } from "next-themes";
 import GuildSidebar from "@/components/guild-sidebar";
 import { ToastContainer } from "@/components/ui/toast";
 import { useToast } from "@/hooks/useToast";
+import {
+  SearchableSelect,
+  SearchableSelectOption,
+} from "@/components/ui/searchable-select";
 import { useGuildData, usePanels, useGuildInfo } from "@/hooks/useGuildQueries";
 
 export default function EditMultiPanelPage() {
@@ -21,6 +25,20 @@ export default function EditMultiPanelPage() {
   const { data: panels = [] } = usePanels(guildId);
 
   const channels = guildData?.channels || [];
+
+  // Create options arrays for SearchableSelect
+  const channelOptions = useMemo<SearchableSelectOption[]>(
+    () =>
+      channels.map((ch) => ({
+        value: ch.channelId,
+        label: `#${ch.channelName}`,
+      })),
+    [channels]
+  );
+  const panelOptions = useMemo<SearchableSelectOption[]>(
+    () => panels.map((panel) => ({ value: panel._id, label: panel.title })),
+    [panels]
+  );
 
   useEffect(() => {
     setMounted(true);
@@ -415,21 +433,15 @@ export default function EditMultiPanelPage() {
               <div style={{ ...styles.formRow, marginBottom: "2rem" }}>
                 <div style={styles.formGroup}>
                   <label style={styles.label}>Panel Channel</label>
-                  <select
-                    style={styles.select}
+                  <SearchableSelect
+                    options={channelOptions}
                     value={formData.channel}
-                    onChange={(e) =>
-                      setFormData({ ...formData, channel: e.target.value })
+                    onChange={(value) =>
+                      setFormData({ ...formData, channel: value })
                     }
-                    required
-                  >
-                    <option value="">Select a channel</option>
-                    {channels.map((channel) => (
-                      <option key={channel.channelId} value={channel.channelId}>
-                        # {channel.channelName}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="Select a channel"
+                    isDark={isDark}
+                  />
                 </div>
               </div>
 
@@ -438,19 +450,14 @@ export default function EditMultiPanelPage() {
                 <label style={styles.label}>Panels (Minimum 2)</label>
                 {formData.selectedPanels.map((panelId, index) => (
                   <div key={index} style={styles.panelRow}>
-                    <select
-                      style={{ ...styles.select, flex: 1 }}
+                    <SearchableSelect
+                      options={panelOptions}
                       value={panelId}
-                      onChange={(e) => handlePanelChange(index, e.target.value)}
-                      required
-                    >
-                      <option value="">Select Panel</option>
-                      {panels.map((panel) => (
-                        <option key={panel._id} value={panel._id}>
-                          {panel.title}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(value) => handlePanelChange(index, value)}
+                      placeholder="Select Panel"
+                      isDark={isDark}
+                      style={{ flex: 1 }}
+                    />
                     {formData.selectedPanels.length > 2 && (
                       <button
                         type="button"
