@@ -4,15 +4,42 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/Sush1sui/fns-tickets/internal/bot/commands"
 	"github.com/bwmarrin/discordgo"
 )
 
 var SlashCommands = []*discordgo.ApplicationCommand{
-
+	{
+		Name:        "add",
+		Description: "Add a member to the ticket",
+		Type:        discordgo.ChatApplicationCommand,
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionUser,
+				Name:        "user",
+				Description: "The user to add to the ticket",
+				Required:    true,
+			},
+		},
+	},
+	{
+		Name:        "remove",
+		Description: "Remove a member from the ticket",
+		Type:        discordgo.ChatApplicationCommand,
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionUser,
+				Name:        "user",
+				Description: "The user to remove from the ticket",
+				Required:    true,
+			},
+		},
+	},
 }
 
-var CommandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-
+var CommandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
+	"add": commands.AddMember,
+	"remove": commands.RemoveMember,
 }
 
 func DeployCommands(s *discordgo.Session) {

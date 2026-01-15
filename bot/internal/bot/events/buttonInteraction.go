@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Sush1sui/fns-tickets/internal/common"
 	"github.com/Sush1sui/fns-tickets/internal/config"
 	"github.com/Sush1sui/fns-tickets/internal/repository"
 	"github.com/bwmarrin/discordgo"
@@ -335,6 +336,24 @@ func sendWelcomeMessage(s *discordgo.Session, channelID string, user *discordgo.
 }
 
 func handleCloseTicket(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	// Check if user is authorized to close the ticket (staff/admin only)
+	if i.Member != nil && i.GuildID != "" {
+		if !common.IsStaffMember(s, i.GuildID, i.Member) {
+			// Not authorized - only staff can close tickets
+			err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "❌ You don't have permission to close this ticket. Only staff members can close tickets.",
+					Flags:   discordgo.MessageFlagsEphemeral,
+				},
+			})
+			if err != nil {
+				log.Printf("Error responding to unauthorized close attempt: %v", err)
+			}
+			return
+		}
+	}
+
 	// Respond to interaction
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,

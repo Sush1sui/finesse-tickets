@@ -280,3 +280,8 @@ func GetTicketByChannel(channelID string) (*Ticket, error) {
 
 	return &ticket, nil
 }
+
+// GetDatabase returns the database instance
+func GetDatabase() *mongo.Database {
+	return database
+}
