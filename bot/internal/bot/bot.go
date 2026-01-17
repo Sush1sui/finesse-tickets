@@ -66,7 +66,7 @@ func StartBot() {
             Status: "idle",
             Activities: []*discordgo.Activity{
                 {
-                    Name: "BOT UNDER MAINTENANCE",
+                    Name: "Do it with Finesse!",
                 },
             },
         })
