@@ -27,6 +27,12 @@ type TicketConfig struct {
 	TicketTranscript     *string             `bson:"ticketTranscript"`
 	TicketPermissions    TicketPermissions   `bson:"ticketPermissions"`
 	AutoClose            AutoClose           `bson:"autoClose"`
+	Staffs               Staffs              `bson:"staffs"`
+}
+
+type Staffs struct {
+	Users []string `bson:"users"`
+	Roles []string `bson:"roles"`
 }
 
 type TicketPermissions struct {
@@ -136,6 +142,10 @@ func GetGuildConfig(guildID string) (*GuildConfig, error) {
 						Enabled:             false,
 						CloseWhenUserLeaves: false,
 					},
+                    Staffs: Staffs{
+                        Users: []string{},
+                        Roles: []string{},
+                    },
 				},
 			}, nil
 		}

@@ -162,22 +162,85 @@ func handleOpenTicket(s *discordgo.Session, i *discordgo.InteractionCreate, pane
 		userPerms |= discordgo.PermissionAddReactions
 	}
 
+	// Build permission overwrites: deny @everyone, allow ticket opener, and allow staff roles/users and mention roles
+	added := make(map[string]bool)
+	var overwrites []*discordgo.PermissionOverwrite
+
+	// Deny @everyone
+	overwrites = append(overwrites, &discordgo.PermissionOverwrite{
+		ID:   i.GuildID,
+		Type: discordgo.PermissionOverwriteTypeRole,
+		Deny: discordgo.PermissionViewChannel,
+	})
+	added[i.GuildID] = true
+
+	// Allow the ticket opener
+	overwrites = append(overwrites, &discordgo.PermissionOverwrite{
+		ID:    i.Member.User.ID,
+		Type:  discordgo.PermissionOverwriteTypeMember,
+		Allow: userPerms,
+	})
+	added[i.Member.User.ID] = true
+
+	// Staff permissions: allow viewing and interacting with the ticket
+	var staffPerms int64 = discordgo.PermissionViewChannel | discordgo.PermissionSendMessages | discordgo.PermissionReadMessageHistory | discordgo.PermissionAddReactions | discordgo.PermissionAttachFiles | discordgo.PermissionEmbedLinks
+
+	// Add staff roles from guild config
+	if guildConfig != nil {
+		// Add roles listed under ticketConfig.staffs.roles
+		for _, roleID := range guildConfig.TicketConfig.Staffs.Roles {
+			if roleID == "" {
+				continue
+			}
+			if _, exists := added[roleID]; exists {
+				continue
+			}
+			overwrites = append(overwrites, &discordgo.PermissionOverwrite{
+				ID:    roleID,
+				Type:  discordgo.PermissionOverwriteTypeRole,
+				Allow: staffPerms,
+			})
+			added[roleID] = true
+		}
+
+		// Add individual staff users
+		for _, userID := range guildConfig.TicketConfig.Staffs.Users {
+			if userID == "" || userID == i.Member.User.ID {
+				continue
+			}
+			if _, exists := added[userID]; exists {
+				continue
+			}
+			overwrites = append(overwrites, &discordgo.PermissionOverwrite{
+				ID:    userID,
+				Type:  discordgo.PermissionOverwriteTypeMember,
+				Allow: staffPerms,
+			})
+			added[userID] = true
+		}
+	}
+
+	// Ensure any mentionOnOpen roles can see the channel (so mentions are useful)
+	for _, roleID := range panelData.MentionOnOpen {
+		if roleID == "" {
+			continue
+		}
+		if _, exists := added[roleID]; exists {
+			continue
+		}
+		overwrites = append(overwrites, &discordgo.PermissionOverwrite{
+			ID:    roleID,
+			Type:  discordgo.PermissionOverwriteTypeRole,
+			Allow: staffPerms,
+		})
+		added[roleID] = true
+	}
+
 	channel, err := s.GuildChannelCreateComplex(i.GuildID, discordgo.GuildChannelCreateData{
 		Name:     channelName,
 		Type:     discordgo.ChannelTypeGuildText,
 		ParentID: parentID,
-		PermissionOverwrites: []*discordgo.PermissionOverwrite{
-			{
-				ID:   i.GuildID, // @everyone
-				Type: discordgo.PermissionOverwriteTypeRole,
-				Deny: discordgo.PermissionViewChannel,
-			},
-			{
-				ID:    i.Member.User.ID,
-				Type:  discordgo.PermissionOverwriteTypeMember,
-				Allow: userPerms,
-			},
-		},
+		PermissionOverwrites: overwrites,
 	})
 
 	if err != nil {
