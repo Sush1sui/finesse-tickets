@@ -1,61 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-
-// Types
-interface Role {
-  roleId: string;
-  roleName: string;
-  color?: number;
-}
-
-interface Category {
-  categoryId: string;
-  categoryName: string;
-}
-
-interface Channel {
-  channelId: string;
-  channelName: string;
-  type?: number;
-  parentId?: string | null;
-}
-
-interface Emoji {
-  emojiId: string;
-  emojiName: string;
-  emojiAnimated: boolean;
-  emojiUrl: string;
-  emojiFormat: string;
-}
-
-interface Panel {
-  _id: string;
-  guild: string;
-  channel: string;
-  title: string;
-  content: string | null;
-  color: string;
-  largeImgUrl: string | null;
-  smallImgUrl: string | null;
-  btnText: string;
-  btnColor: string;
-  btnEmoji: string | null;
-  mentionOnOpen?: string[];
-  ticketCategory?: string | null;
-  category?: string | null;
-  ticketChannel?: string | null;
-  supportRole?: string | null;
-  enableTranscripts?: boolean;
-  welcomeEmbed: {
-    color: string;
-    title: string | null;
-    description: string | null;
-    titleImgUrl: string | null;
-    largeImgUrl: string | null;
-    smallImgUrl: string | null;
-    footerText: string | null;
-    footerImgUrl: string | null;
-  };
-}
+import { Channel } from "diagnostics_channel";
+import {
+  Role,
+  Category,
+  Emoji,
+  Panel,
+  PermittedServer,
+  MultiPanel,
+  GuildMember,
+} from "./hookTypes";
 
 // Fetch Functions
 async function fetchGuildData(guildId: string) {
@@ -247,7 +200,7 @@ export function useDeletePanel(guildId: string) {
         `/api/dashboard/guild/${guildId}/panels/${panelId}`,
         {
           method: "DELETE",
-        }
+        },
       );
       if (!response.ok) throw new Error("Failed to delete panel");
       return response.json();
@@ -271,7 +224,7 @@ export function useSendPanel(guildId: string) {
         `/api/dashboard/guild/${guildId}/panels/${panelId}/send`,
         {
           method: "POST",
-        }
+        },
       );
       if (!response.ok) throw new Error("Failed to send panel");
       return response.json();
@@ -281,15 +234,6 @@ export function useSendPanel(guildId: string) {
       queryClient.invalidateQueries({ queryKey: ["panels", guildId] });
     },
   });
-}
-
-/**
- * Fetch and cache permitted servers list
- */
-interface PermittedServer {
-  id: string;
-  name: string;
-  icon: string | null;
 }
 
 async function fetchPermittedServers() {
@@ -311,27 +255,6 @@ export function usePermittedServers() {
 /**
  * Fetch and cache multi-panel configuration
  */
-interface MultiPanel {
-  channel: string | null;
-  panels: string[];
-  dropdownConfig: {
-    use: boolean;
-    placeholder: string | null;
-  };
-  messageEmbedConfig: {
-    color: string;
-    title: string;
-    description: string;
-    authorName: string | null;
-    authorUrl: string | null;
-    authorImgUrl: string | null;
-    largeImgUrl: string | null;
-    smallImgUrl: string | null;
-    footerText: string | null;
-    footerImgUrl: string | null;
-  };
-}
-
 async function fetchMultiPanel(guildId: string) {
   const response = await fetch(`/api/dashboard/guild/${guildId}/multi-panel`, {
     cache: "no-store",
@@ -355,15 +278,6 @@ export function useMultiPanel(guildId: string) {
 /**
  * Fetch and cache guild members
  */
-interface GuildMember {
-  userId: string;
-  username: string;
-  discriminator: string;
-  displayName: string;
-  avatar: string;
-  bot: boolean;
-}
-
 async function fetchGuildMembers(guildId: string) {
   const response = await fetch(`/api/dashboard/guild/${guildId}/members`);
   if (!response.ok) throw new Error("Failed to fetch guild members");

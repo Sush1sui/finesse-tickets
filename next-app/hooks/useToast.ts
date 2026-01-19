@@ -1,13 +1,5 @@
 import { useState, useCallback } from "react";
-
-type ToastType = "success" | "error" | "info";
-
-interface ToastMessage {
-  id: number;
-  message: string;
-  type: ToastType;
-  duration?: number;
-}
+import { ToastMessage, ToastType } from "./hookTypes";
 
 export function useToast() {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -17,28 +9,28 @@ export function useToast() {
       const id = Date.now();
       setToasts((prev) => [...prev, { id, message, type, duration }]);
     },
-    []
+    [],
   );
 
   const success = useCallback(
     (message: string, duration?: number) => {
       showToast(message, "success", duration);
     },
-    [showToast]
+    [showToast],
   );
 
   const error = useCallback(
     (message: string, duration?: number) => {
       showToast(message, "error", duration);
     },
-    [showToast]
+    [showToast],
   );
 
   const info = useCallback(
     (message: string, duration?: number) => {
       showToast(message, "info", duration);
     },
-    [showToast]
+    [showToast],
   );
 
   const removeToast = useCallback((id: number) => {
