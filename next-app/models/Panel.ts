@@ -11,6 +11,11 @@ interface WelcomeEmbed {
   footerImgUrl: string | null;
 }
 
+interface Questions {
+  askQuestions: boolean;
+  questions: { id: string; prompt: string }[];
+}
+
 export interface IPanel extends Document {
   serverId: string;
   channel: string;
@@ -22,6 +27,7 @@ export interface IPanel extends Document {
   btnColor: "blue" | "green" | "red" | "gray";
   btnText: string;
   btnEmoji: string | null;
+  questions: Questions;
   largeImgUrl: string | null;
   smallImgUrl: string | null;
   welcomeEmbed: WelcomeEmbed | null;
@@ -46,6 +52,21 @@ const PanelSchema = new Schema<IPanel>(
     },
     btnText: { type: String, required: true },
     btnEmoji: { type: String, default: null },
+    questions: {
+      type: {
+        askQuestions: { type: Boolean, default: false },
+        questions: {
+          type: [
+            {
+              id: { type: String },
+              prompt: { type: String },
+            },
+          ],
+          default: [],
+        },
+      },
+      default: { askQuestions: false, questions: [] },
+    },
     largeImgUrl: { type: String, default: null },
     smallImgUrl: { type: String, default: null },
     messageIds: {
@@ -66,7 +87,7 @@ const PanelSchema = new Schema<IPanel>(
       default: null,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Delete existing model to force schema refresh
