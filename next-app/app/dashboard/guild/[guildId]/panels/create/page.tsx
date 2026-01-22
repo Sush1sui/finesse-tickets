@@ -89,16 +89,25 @@ export default function CreatePanelPage() {
   const createPanelMutation = useCreatePanel(guildId);
 
   // Extract data from React Query
-  const roles = useMemo(() => guildData?.roles || [], [guildData]);
-  const categories = useMemo(() => guildData?.categories || [], [guildData]);
-  const channels = useMemo(() => guildData?.channels || [], [guildData]);
-  const customEmojis = useMemo(() => emojisData || [], [emojisData]);
+  const roles: Role[] = useMemo(() => guildData?.roles || [], [guildData]);
+  const categories: Category[] = useMemo(
+    () => guildData?.categories || [],
+    [guildData],
+  );
+  const channels: Channel[] = useMemo(
+    () => (guildData?.channels as unknown as Channel[]) || [],
+    [guildData],
+  );
+  const customEmojis: CustomEmoji[] = useMemo(
+    () => emojisData || [],
+    [emojisData],
+  );
 
   // Create options arrays for SearchableSelect
   const roleOptions = useMemo<SearchableSelectOption[]>(
     () =>
       roles.map((role) => ({ value: role.roleId, label: `@${role.roleName}` })),
-    [roles]
+    [roles],
   );
   const categoryOptions = useMemo<SearchableSelectOption[]>(
     () =>
@@ -106,7 +115,7 @@ export default function CreatePanelPage() {
         value: cat.categoryId,
         label: cat.categoryName,
       })),
-    [categories]
+    [categories],
   );
   const channelOptions = useMemo<SearchableSelectOption[]>(
     () =>
@@ -114,7 +123,7 @@ export default function CreatePanelPage() {
         value: ch.channelId,
         label: `#${ch.channelName}`,
       })),
-    [channels]
+    [channels],
   );
 
   // Update guild name and icon when guildData loads
@@ -124,7 +133,7 @@ export default function CreatePanelPage() {
       if (guildData.guild.icon) {
         const ext = guildData.guild.icon.startsWith("a_") ? "gif" : "png";
         setGuildIcon(
-          `https://cdn.discordapp.com/icons/${guildData.guild.id}/${guildData.guild.icon}.${ext}`
+          `https://cdn.discordapp.com/icons/${guildData.guild.id}/${guildData.guild.icon}.${ext}`,
         );
       }
     }
@@ -304,7 +313,7 @@ export default function CreatePanelPage() {
         letterSpacing: "0.02em",
       } as React.CSSProperties,
     }),
-    [isDark]
+    [isDark],
   );
 
   const handleCreate = async () => {
@@ -486,7 +495,7 @@ export default function CreatePanelPage() {
                           onClick={(e) => {
                             e.stopPropagation();
                             setMentionOnOpen(
-                              mentionOnOpen.filter((id) => id !== roleId)
+                              mentionOnOpen.filter((id) => id !== roleId),
                             );
                           }}
                           style={{

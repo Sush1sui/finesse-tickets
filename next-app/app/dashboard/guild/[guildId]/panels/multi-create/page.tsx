@@ -12,6 +12,11 @@ import {
 } from "@/components/ui/searchable-select";
 import { useGuildData, usePanels, useGuildInfo } from "@/hooks/useGuildQueries";
 
+type Channel = {
+  channelId: string;
+  channelName: string;
+};
+
 export default function CreateMultiPanelPage() {
   const params = useParams();
   const router = useRouter();
@@ -24,7 +29,8 @@ export default function CreateMultiPanelPage() {
   const { data: guildData, isLoading: guildLoading } = useGuildData(guildId);
   const { data: panels = [] } = usePanels(guildId);
 
-  const channels = guildData?.channels || [];
+  const channels: Channel[] =
+    (guildData?.channels as unknown as Channel[]) || [];
 
   // Create options arrays for SearchableSelect
   const channelOptions = useMemo<SearchableSelectOption[]>(
@@ -33,11 +39,11 @@ export default function CreateMultiPanelPage() {
         value: ch.channelId,
         label: `#${ch.channelName}`,
       })),
-    [channels]
+    [channels],
   );
   const panelOptions = useMemo<SearchableSelectOption[]>(
     () => panels.map((panel) => ({ value: panel._id, label: panel.title })),
-    [panels]
+    [panels],
   );
 
   useEffect(() => {
@@ -119,7 +125,7 @@ export default function CreateMultiPanelPage() {
             ...formData,
             selectedPanels: validPanels,
           }),
-        }
+        },
       );
 
       if (!response.ok) throw new Error("Failed to create multi-panel");
@@ -337,7 +343,7 @@ export default function CreateMultiPanelPage() {
         fontWeight: "500",
       } as React.CSSProperties,
     }),
-    [isDark]
+    [isDark],
   );
 
   if (guildLoading) {

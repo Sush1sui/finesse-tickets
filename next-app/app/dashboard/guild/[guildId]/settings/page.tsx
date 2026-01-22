@@ -84,7 +84,10 @@ export default function SettingsPage() {
   const { data: channelsData, isLoading: channelsLoading } =
     useGuildChannels(guildId);
 
-  const channels = useMemo(() => channelsData || [], [channelsData]);
+  const channels: Channel[] = useMemo(
+    () => (channelsData as unknown as Channel[]) || [],
+    [channelsData],
+  );
   const loading = guildLoading || channelsLoading;
 
   // Prepare channel options for searchable select
@@ -96,7 +99,7 @@ export default function SettingsPage() {
         label: `#${channel.channelName}`,
       })),
     ],
-    [channels]
+    [channels],
   );
 
   useEffect(() => {
@@ -119,22 +122,22 @@ export default function SettingsPage() {
     setAutoCloseEnabled(guild.ticketConfig.autoClose.enabled);
     setCloseOnLeave(guild.ticketConfig.autoClose.closeWhenUserLeaves);
     setNoResponseDays(
-      guild.ticketConfig.autoClose.sinceOpenWithoutResponse.Days.toString()
+      guild.ticketConfig.autoClose.sinceOpenWithoutResponse.Days.toString(),
     );
     setNoResponseHours(
-      guild.ticketConfig.autoClose.sinceOpenWithoutResponse.Hours.toString()
+      guild.ticketConfig.autoClose.sinceOpenWithoutResponse.Hours.toString(),
     );
     setNoResponseMinutes(
-      guild.ticketConfig.autoClose.sinceOpenWithoutResponse.Minutes.toString()
+      guild.ticketConfig.autoClose.sinceOpenWithoutResponse.Minutes.toString(),
     );
     setLastMessageDays(
-      guild.ticketConfig.autoClose.sinceLastResponse.Days.toString()
+      guild.ticketConfig.autoClose.sinceLastResponse.Days.toString(),
     );
     setLastMessageHours(
-      guild.ticketConfig.autoClose.sinceLastResponse.Hours.toString()
+      guild.ticketConfig.autoClose.sinceLastResponse.Hours.toString(),
     );
     setLastMessageMinutes(
-      guild.ticketConfig.autoClose.sinceLastResponse.Minutes.toString()
+      guild.ticketConfig.autoClose.sinceLastResponse.Minutes.toString(),
     );
   }, [guildData]);
 
@@ -275,7 +278,7 @@ export default function SettingsPage() {
         fontWeight: "500",
       } as React.CSSProperties,
     }),
-    [isDark]
+    [isDark],
   );
 
   const handleSave = useCallback(async () => {
@@ -337,7 +340,7 @@ export default function SettingsPage() {
     } catch (error) {
       console.error("Error saving settings:", error);
       setError(
-        error instanceof Error ? error.message : "Failed to save settings"
+        error instanceof Error ? error.message : "Failed to save settings",
       );
     } finally {
       setSaving(false);
