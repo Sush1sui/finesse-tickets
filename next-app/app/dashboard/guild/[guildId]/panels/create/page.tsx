@@ -74,6 +74,12 @@ export default function CreatePanelPage() {
   const [welcomeFooter, setWelcomeFooter] = useState("");
   const [welcomeFooterIcon, setWelcomeFooterIcon] = useState("");
 
+  // Ask questions before creating ticket
+  const [askQuestions, setAskQuestions] = useState(false);
+  const [questions, setQuestions] = useState<
+    { id: string; prompt: string }[]
+  >([]);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -89,16 +95,25 @@ export default function CreatePanelPage() {
   const createPanelMutation = useCreatePanel(guildId);
 
   // Extract data from React Query
-  const roles = useMemo(() => guildData?.roles || [], [guildData]);
-  const categories = useMemo(() => guildData?.categories || [], [guildData]);
-  const channels = useMemo(() => guildData?.channels || [], [guildData]);
-  const customEmojis = useMemo(() => emojisData || [], [emojisData]);
+  const roles: Role[] = useMemo(() => guildData?.roles || [], [guildData]);
+  const categories: Category[] = useMemo(
+    () => guildData?.categories || [],
+    [guildData],
+  );
+  const channels: Channel[] = useMemo(
+    () => (guildData?.channels as unknown as Channel[]) || [],
+    [guildData],
+  );
+  const customEmojis: CustomEmoji[] = useMemo(
+    () => emojisData || [],
+    [emojisData],
+  );
 
   // Create options arrays for SearchableSelect
   const roleOptions = useMemo<SearchableSelectOption[]>(
     () =>
       roles.map((role) => ({ value: role.roleId, label: `@${role.roleName}` })),
-    [roles]
+    [roles],
   );
   const categoryOptions = useMemo<SearchableSelectOption[]>(
     () =>
@@ -106,7 +121,7 @@ export default function CreatePanelPage() {
         value: cat.categoryId,
         label: cat.categoryName,
       })),
-    [categories]
+    [categories],
   );
   const channelOptions = useMemo<SearchableSelectOption[]>(
     () =>
@@ -114,7 +129,7 @@ export default function CreatePanelPage() {
         value: ch.channelId,
         label: `#${ch.channelName}`,
       })),
-    [channels]
+    [channels],
   );
 
   // Update guild name and icon when guildData loads
@@ -124,7 +139,7 @@ export default function CreatePanelPage() {
       if (guildData.guild.icon) {
         const ext = guildData.guild.icon.startsWith("a_") ? "gif" : "png";
         setGuildIcon(
-          `https://cdn.discordapp.com/icons/${guildData.guild.id}/${guildData.guild.icon}.${ext}`
+          `https://cdn.discordapp.com/icons/${guildData.guild.id}/${guildData.guild.icon}.${ext}`,
         );
       }
     }
@@ -304,7 +319,7 @@ export default function CreatePanelPage() {
         letterSpacing: "0.02em",
       } as React.CSSProperties,
     }),
-    [isDark]
+    [isDark],
   );
 
   const handleCreate = async () => {
@@ -342,6 +357,8 @@ export default function CreatePanelPage() {
         // Ticket config
         mentionOnOpen: mentionOnOpen,
         ticketCategory: ticketCategory || null,
+        askQuestions: askQuestions,
+        questions: questions.map((q) => ({ prompt: q.prompt })),
 
         // Welcome embed config
         welcomeEmbed: {
@@ -486,7 +503,7 @@ export default function CreatePanelPage() {
                           onClick={(e) => {
                             e.stopPropagation();
                             setMentionOnOpen(
-                              mentionOnOpen.filter((id) => id !== roleId)
+                              mentionOnOpen.filter((id) => id !== roleId),
                             );
                           }}
                           style={{
@@ -660,6 +677,88 @@ export default function CreatePanelPage() {
                 placeholder="https://example/image.png"
               />
             </div>
+          </div>
+
+          {/* Ticket Questions Section */}
+          <div style={styles.section}>
+            <h2 style={styles.sectionTitle}>— Ticket Questions —</h2>
+
+            <div style={styles.formRow}>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>ASK QUESTIONS BEFORE OPEN</label>
+                <div style={styles.checkboxGroup}>
+                  <input
+                    id="askQuestions"
+                    type="checkbox"
+                    checked={askQuestions}
+                    onChange={(e) => setAskQuestions(e.target.checked)}
+                  />
+                  <label htmlFor="askQuestions" style={{ fontWeight: 600 }}>
+                    Ask questions before creating ticket
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {askQuestions && (
+              <div style={{ marginTop: "1rem" }}>
+                {questions.map((q, idx) => (
+                  <div
+                    key={q.id}
+                    style={{
+                      display: "flex",
+                      gap: "0.75rem",
+                      alignItems: "center",
+                      marginBottom: "0.75rem",
+                    }}
+                  >
+                    <input
+                      type="text"
+                      value={q.prompt}
+                      onChange={(e) =>
+                        setQuestions(
+                          questions.map((item) =>
+                            item.id === q.id
+                              ? { ...item, prompt: e.target.value }
+                              : item,
+                          ),
+                        )
+                      }
+                      placeholder={`Question ${idx + 1}`}
+                      style={{ ...styles.input, flex: 1 }}
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => setQuestions(questions.filter((item) => item.id !== q.id))}
+                      style={{
+                        background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)",
+                        border: isDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.06)",
+                        padding: "0.5rem 0.75rem",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        color: isDark ? "#fff" : "#000",
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setQuestions([
+                      ...questions,
+                      { id: String(Date.now()), prompt: "" },
+                    ])
+                  }
+                  style={{ ...styles.createButton, width: "auto", padding: "0.5rem 1rem", marginTop: "0.5rem" }}
+                >
+                  Add Question
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Welcome Message Section */}
