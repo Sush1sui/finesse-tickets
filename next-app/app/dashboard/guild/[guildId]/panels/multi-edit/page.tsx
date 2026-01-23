@@ -11,6 +11,7 @@ import {
   SearchableSelectOption,
 } from "@/components/ui/searchable-select";
 import { useGuildData, usePanels, useGuildInfo } from "@/hooks/useGuildQueries";
+import { Channel } from "@/lib/types";
 
 export default function EditMultiPanelPage() {
   const params = useParams();
@@ -24,7 +25,10 @@ export default function EditMultiPanelPage() {
   const { data: guildData, isLoading: guildLoading } = useGuildData(guildId);
   const { data: panels = [] } = usePanels(guildId);
 
-  const channels = guildData?.channels || [];
+  const channels = useMemo<Channel[]>(
+    () => (guildData?.channels as unknown as Channel[]) || [],
+    [guildData?.channels],
+  );
 
   // Create options arrays for SearchableSelect
   const channelOptions = useMemo<SearchableSelectOption[]>(
@@ -33,11 +37,11 @@ export default function EditMultiPanelPage() {
         value: ch.channelId,
         label: `#${ch.channelName}`,
       })),
-    [channels]
+    [channels],
   );
   const panelOptions = useMemo<SearchableSelectOption[]>(
     () => panels.map((panel) => ({ value: panel._id, label: panel.title })),
-    [panels]
+    [panels],
   );
 
   useEffect(() => {
@@ -70,7 +74,7 @@ export default function EditMultiPanelPage() {
     const fetchMultiPanel = async () => {
       try {
         const response = await fetch(
-          `/api/dashboard/guild/${guildId}/multi-panel`
+          `/api/dashboard/guild/${guildId}/multi-panel`,
         );
         if (response.ok) {
           const data = await response.json();
@@ -158,7 +162,7 @@ export default function EditMultiPanelPage() {
             ...formData,
             selectedPanels: validPanels,
           }),
-        }
+        },
       );
 
       if (!response.ok) throw new Error("Failed to update multi-panel");
@@ -376,7 +380,7 @@ export default function EditMultiPanelPage() {
         fontWeight: "500",
       } as React.CSSProperties,
     }),
-    [isDark]
+    [isDark],
   );
 
   if (loading || guildLoading) {

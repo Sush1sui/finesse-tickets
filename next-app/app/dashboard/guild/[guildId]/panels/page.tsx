@@ -104,10 +104,12 @@ export default function PanelsPage() {
   // Helper function to get channel name from channel ID
   const getChannelName = useCallback(
     (channelId: string) => {
-      const channel = channels.find((c) => c.channelId === channelId);
+      const channel = channels.find(
+        (c) => (c as unknown as Channel).channelId === channelId,
+      ) as unknown as Channel;
       return channel ? channel.channelName : channelId;
     },
-    [channels]
+    [channels],
   );
 
   // Helper function to truncate text
@@ -143,7 +145,7 @@ export default function PanelsPage() {
             `/api/dashboard/guild/${guildId}/multi-panel/send`,
             {
               method: "POST",
-            }
+            },
           );
 
           if (!response.ok) {
@@ -157,7 +159,7 @@ export default function PanelsPage() {
           toast.error(
             error instanceof Error
               ? error.message
-              : "Failed to send multi-panel"
+              : "Failed to send multi-panel",
           );
         } finally {
           setSendingMultiPanel(false);
@@ -180,7 +182,7 @@ export default function PanelsPage() {
             `/api/dashboard/guild/${guildId}/multi-panel`,
             {
               method: "DELETE",
-            }
+            },
           );
 
           if (!response.ok) {
@@ -205,7 +207,7 @@ export default function PanelsPage() {
     (panelId: string) => {
       router.push(`/dashboard/guild/${guildId}/panels/${panelId}/edit`);
     },
-    [guildId, router]
+    [guildId, router],
   );
 
   const handleDeletePanel = useCallback(
@@ -230,7 +232,7 @@ export default function PanelsPage() {
         },
       });
     },
-    [deletePanelMutation, toast]
+    [deletePanelMutation, toast],
   );
 
   const handleSendPanel = useCallback(
@@ -248,7 +250,7 @@ export default function PanelsPage() {
           } catch (error) {
             console.error("Error sending panel:", error);
             toast.error(
-              error instanceof Error ? error.message : "Failed to send panel"
+              error instanceof Error ? error.message : "Failed to send panel",
             );
           } finally {
             setSendingPanelId(null);
@@ -256,7 +258,7 @@ export default function PanelsPage() {
         },
       });
     },
-    [sendPanelMutation, toast]
+    [sendPanelMutation, toast],
   );
 
   const styles = useMemo(
@@ -380,7 +382,7 @@ export default function PanelsPage() {
         fontSize: "0.9375rem",
       } as React.CSSProperties,
     }),
-    [isDark]
+    [isDark],
   );
 
   if (loading || panelsLoading || !guildData) {
@@ -708,7 +710,7 @@ export default function PanelsPage() {
                     >
                       {truncateText(
                         multiPanel?.messageEmbedConfig?.title ||
-                          `Multi-Panel (${multiPanel.panels.length} panels)`
+                          `Multi-Panel (${multiPanel.panels.length} panels)`,
                       )}
                     </td>
                     <td

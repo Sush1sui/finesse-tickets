@@ -17,40 +17,7 @@ import {
   usePanel,
   useUpdatePanel,
 } from "@/hooks/useGuildQueries";
-
-type CustomEmoji = {
-  emojiId: string;
-  emojiName: string;
-  emojiAnimated: boolean;
-  emojiUrl: string;
-  emojiFormat: string;
-};
-
-type Role = {
-  roleId: string;
-  roleName: string;
-};
-
-type Category = {
-  categoryId: string;
-  categoryName: string;
-};
-
-type Channel = {
-  channelId: string;
-  channelName: string;
-};
-
-type GuildData = {
-  roles: Role[];
-  categories: Category[];
-  channels: Channel[];
-  guild?: {
-    id: string;
-    name: string;
-    icon: string;
-  };
-};
+import { GuildData } from "@/lib/types";
 
 export default function EditPanelPage() {
   const params = useParams();
@@ -96,7 +63,7 @@ export default function EditPanelPage() {
 
   // Use React Query hooks - data is cached and instantly available!
   const { data: guildData, isLoading: guildDataLoading } = useGuildData(
-    guildId
+    guildId,
   ) as { data: GuildData | undefined; isLoading: boolean };
   const { data: emojisData, isLoading: emojisLoading } =
     useGuildEmojis(guildId);
@@ -113,7 +80,7 @@ export default function EditPanelPage() {
   const roleOptions = useMemo<SearchableSelectOption[]>(
     () =>
       roles.map((role) => ({ value: role.roleId, label: `@${role.roleName}` })),
-    [roles]
+    [roles],
   );
   const categoryOptions = useMemo<SearchableSelectOption[]>(
     () =>
@@ -121,7 +88,7 @@ export default function EditPanelPage() {
         value: cat.categoryId,
         label: cat.categoryName,
       })),
-    [categories]
+    [categories],
   );
   const channelOptions = useMemo<SearchableSelectOption[]>(
     () =>
@@ -129,7 +96,7 @@ export default function EditPanelPage() {
         value: ch.channelId,
         label: `#${ch.channelName}`,
       })),
-    [channels]
+    [channels],
   );
 
   // Update guild name and icon when guildData loads
@@ -139,7 +106,7 @@ export default function EditPanelPage() {
       if (guildData.guild.icon) {
         const ext = guildData.guild.icon.startsWith("a_") ? "gif" : "png";
         setGuildIcon(
-          `https://cdn.discordapp.com/icons/${guildData.guild.id}/${guildData.guild.icon}.${ext}`
+          `https://cdn.discordapp.com/icons/${guildData.guild.id}/${guildData.guild.icon}.${ext}`,
         );
       }
     }
@@ -348,7 +315,7 @@ export default function EditPanelPage() {
         letterSpacing: "0.02em",
       } as React.CSSProperties,
     }),
-    [isDark]
+    [isDark],
   );
 
   const handleSave = async () => {
@@ -530,7 +497,7 @@ export default function EditPanelPage() {
                           onClick={(e) => {
                             e.stopPropagation();
                             setMentionOnOpen(
-                              mentionOnOpen.filter((id) => id !== roleId)
+                              mentionOnOpen.filter((id) => id !== roleId),
                             );
                           }}
                           style={{

@@ -74,7 +74,7 @@ export default function TranscriptsPage() {
           if (data.guild?.icon) {
             const ext = data.guild.icon.startsWith("a_") ? "gif" : "png";
             setGuildIcon(
-              `https://cdn.discordapp.com/icons/${data.guild.id}/${data.guild.icon}.${ext}`
+              `https://cdn.discordapp.com/icons/${data.guild.id}/${data.guild.icon}.${ext}`,
             );
           }
         }
@@ -100,7 +100,7 @@ export default function TranscriptsPage() {
       queryParams.set("limit", pagination.limit.toString());
 
       const response = await fetch(
-        `/api/dashboard/guild/${guildId}/transcripts?${queryParams.toString()}`
+        `/api/dashboard/guild/${guildId}/transcripts?${queryParams.toString()}`,
       );
 
       if (response.ok) {
@@ -127,7 +127,7 @@ export default function TranscriptsPage() {
     if (guildId) {
       fetchTranscripts();
     }
-  }, [guildId]);
+  }, [guildId, fetchTranscripts]);
 
   const handleSearch = useCallback(() => {
     setPagination({ ...pagination, page: 1 });
@@ -278,7 +278,7 @@ export default function TranscriptsPage() {
         opacity: 0.8,
       } as React.CSSProperties,
     }),
-    [isDark]
+    [isDark],
   );
 
   if (loading || !mounted) {
@@ -394,7 +394,7 @@ export default function TranscriptsPage() {
                       </td>
                       <td style={styles.td}>
                         {new Date(
-                          transcript.metadata.ticketClosedAt
+                          transcript.metadata.ticketClosedAt,
                         ).toLocaleDateString()}
                       </td>
                       <td style={styles.td}>

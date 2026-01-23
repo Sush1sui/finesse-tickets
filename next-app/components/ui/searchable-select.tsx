@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import Image from "next/image";
+import { useState, useRef, useEffect, useMemo, useId } from "react";
 
 export interface SearchableSelectOption {
   value: string;
@@ -38,6 +39,7 @@ export function SearchableSelect({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const listboxId = useId();
 
   // Filter options based on search term
   const filteredOptions = useMemo(() => {
@@ -46,7 +48,7 @@ export function SearchableSelect({
     return options.filter(
       (option) =>
         option.label.toLowerCase().includes(lowerSearch) ||
-        option.subtitle?.toLowerCase().includes(lowerSearch)
+        option.subtitle?.toLowerCase().includes(lowerSearch),
     );
   }, [options, searchTerm]);
 
@@ -110,7 +112,7 @@ export function SearchableSelect({
       case "ArrowDown":
         e.preventDefault();
         setHighlightedIndex((prev) =>
-          prev < filteredOptions.length - 1 ? prev + 1 : prev
+          prev < filteredOptions.length - 1 ? prev + 1 : prev,
         );
         break;
       case "ArrowUp":
@@ -246,6 +248,7 @@ export function SearchableSelect({
         style={baseStyles.trigger}
         role="combobox"
         aria-expanded={isOpen}
+        aria-controls={listboxId}
         aria-haspopup="listbox"
         tabIndex={disabled ? -1 : 0}
       >
@@ -270,7 +273,7 @@ export function SearchableSelect({
           />
 
           {/* Options List */}
-          <div ref={listRef} role="listbox">
+          <div ref={listRef} role="listbox" id={listboxId}>
             {filteredOptions.length === 0 ? (
               <div style={baseStyles.noResults}>No results found</div>
             ) : (
@@ -292,7 +295,7 @@ export function SearchableSelect({
                     aria-selected={isSelected}
                   >
                     {showAvatars && option.avatar && (
-                      <img
+                      <Image
                         src={option.avatar}
                         alt={option.label}
                         style={baseStyles.avatar}

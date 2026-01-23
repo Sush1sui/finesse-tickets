@@ -16,29 +16,7 @@ import {
   useGuildEmojis,
   useCreatePanel,
 } from "@/hooks/useGuildQueries";
-
-type CustomEmoji = {
-  emojiId: string;
-  emojiName: string;
-  emojiAnimated: boolean;
-  emojiUrl: string;
-  emojiFormat: string;
-};
-
-type Role = {
-  roleId: string;
-  roleName: string;
-};
-
-type Category = {
-  categoryId: string;
-  categoryName: string;
-};
-
-type Channel = {
-  channelId: string;
-  channelName: string;
-};
+import { Category, Channel, CustomEmoji, Role } from "@/lib/types";
 
 export default function CreatePanelPage() {
   const params = useParams();
@@ -76,9 +54,9 @@ export default function CreatePanelPage() {
 
   // Ask questions before creating ticket
   const [askQuestions, setAskQuestions] = useState(false);
-  const [questions, setQuestions] = useState<
-    { id: string; prompt: string }[]
-  >([]);
+  const [questions, setQuestions] = useState<{ id: string; prompt: string }[]>(
+    [],
+  );
 
   useEffect(() => {
     setMounted(true);
@@ -730,10 +708,18 @@ export default function CreatePanelPage() {
 
                     <button
                       type="button"
-                      onClick={() => setQuestions(questions.filter((item) => item.id !== q.id))}
+                      onClick={() =>
+                        setQuestions(
+                          questions.filter((item) => item.id !== q.id),
+                        )
+                      }
                       style={{
-                        background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)",
-                        border: isDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.06)",
+                        background: isDark
+                          ? "rgba(255,255,255,0.04)"
+                          : "rgba(0,0,0,0.04)",
+                        border: isDark
+                          ? "1px solid rgba(255,255,255,0.06)"
+                          : "1px solid rgba(0,0,0,0.06)",
                         padding: "0.5rem 0.75rem",
                         borderRadius: "8px",
                         cursor: "pointer",
@@ -753,7 +739,12 @@ export default function CreatePanelPage() {
                       { id: String(Date.now()), prompt: "" },
                     ])
                   }
-                  style={{ ...styles.createButton, width: "auto", padding: "0.5rem 1rem", marginTop: "0.5rem" }}
+                  style={{
+                    ...styles.createButton,
+                    width: "auto",
+                    padding: "0.5rem 1rem",
+                    marginTop: "0.5rem",
+                  }}
                 >
                   Add Question
                 </button>
