@@ -27,7 +27,7 @@ export interface IPanel extends Document {
   btnColor: "blue" | "green" | "red" | "gray";
   btnText: string;
   btnEmoji: string | null;
-  questions: Questions;
+  questions?: Questions;
   largeImgUrl: string | null;
   smallImgUrl: string | null;
   welcomeEmbed: WelcomeEmbed | null;
@@ -65,7 +65,7 @@ const PanelSchema = new Schema<IPanel>(
           default: [],
         },
       },
-      default: { askQuestions: false, questions: [] },
+      default: null,
     },
     largeImgUrl: { type: String, default: null },
     smallImgUrl: { type: String, default: null },

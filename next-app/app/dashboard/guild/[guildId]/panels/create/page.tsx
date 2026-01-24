@@ -17,6 +17,7 @@ import {
   useCreatePanel,
 } from "@/hooks/useGuildQueries";
 import { Category, Channel, CustomEmoji, Role } from "@/lib/types";
+import { genId } from "@/lib/utils";
 
 export default function CreatePanelPage() {
   const params = useParams();
@@ -316,6 +317,17 @@ export default function CreatePanelPage() {
     }
 
     try {
+      // Validate max questions on client as well
+      if (questions.length > 5) {
+        error("Maximum of 5 questions allowed");
+        return;
+      }
+      // Ensure no blank question prompts
+      if (questions.some((q) => !q.prompt || !q.prompt.trim())) {
+        error("Question prompts cannot be blank");
+        return;
+      }
+
       setCreating(true);
 
       const panelData = {
@@ -733,12 +745,13 @@ export default function CreatePanelPage() {
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setQuestions([
-                      ...questions,
-                      { id: String(Date.now()), prompt: "" },
-                    ])
-                  }
+                  onClick={() => {
+                    if (questions.length >= 5) {
+                      error("Maximum of 5 questions allowed");
+                      return;
+                    }
+                    setQuestions([...questions, { id: genId(), prompt: "" }]);
+                  }}
                   style={{
                     ...styles.createButton,
                     width: "auto",

@@ -2,13 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
-import Panel from "@/models/Panel";
+import Panel, { IPanel } from "@/models/Panel";
 import { verifyGuildAccess } from "@/lib/discord";
 import { rateLimit } from "@/lib/rateLimit";
+import { genId } from "@/lib/utils";
+
+type Question = { id?: string; prompt: string };
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ guildId: string }> }
+  { params }: { params: Promise<{ guildId: string }> },
 ) {
   // Apply rate limiting
   const rateLimitResponse = rateLimit(request);
@@ -28,8 +31,43 @@ export async function GET(
     // Access is already verified when fetching /api/dashboard/guild/${guildId}
 
     // Fetch panels for this guild
-    const panels = await Panel.find({ serverId: guildId }).sort({
+    const panelsRaw = (await Panel.find({ serverId: guildId }).sort({
       createdAt: -1,
+    })) as IPanel[];
+
+    const panels = (panelsRaw || []).map((p) => {
+      const welcome = p.welcomeEmbed ?? {
+        color: p.color || "#5865F2",
+        title: null,
+        description: null,
+        titleImgUrl: null,
+        largeImgUrl: null,
+        smallImgUrl: null,
+        footerText: null,
+        footerImgUrl: null,
+      };
+
+      return {
+        _id: String(p._id),
+        guild: p.serverId,
+        channel: p.channel,
+        title: p.title,
+        content: p.content ?? null,
+        color: p.color,
+        largeImgUrl: p.largeImgUrl ?? null,
+        smallImgUrl: p.smallImgUrl ?? null,
+        btnText: p.btnText,
+        btnColor: p.btnColor,
+        btnEmoji: p.btnEmoji ?? null,
+        mentionOnOpen: p.mentionOnOpen ?? [],
+        ticketCategory: p.ticketCategory ?? null,
+        askQuestions: p.questions?.askQuestions ?? false,
+        questions: (p.questions?.questions || []).map((q: Question) => ({
+          id: q.id,
+          prompt: q.prompt,
+        })),
+        welcomeEmbed: welcome,
+      };
     });
 
     return NextResponse.json({ panels });
@@ -40,14 +78,14 @@ export async function GET(
         error: "Internal server error",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ guildId: string }> }
+  { params }: { params: Promise<{ guildId: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -60,10 +98,48 @@ export async function POST(
     const { guildId } = await params;
     const body = await request.json();
 
+    // Validate questions limit (accept both flattened and nested shapes)
+    if (body) {
+      if (Array.isArray(body.questions) && body.questions.length > 5) {
+        return NextResponse.json(
+          { error: "Max 5 questions allowed" },
+          { status: 400 },
+        );
+      }
+      if (
+        body.questions &&
+        Array.isArray(body.questions.questions) &&
+        body.questions.questions.length > 5
+      ) {
+        return NextResponse.json(
+          { error: "Max 5 questions allowed" },
+          { status: 400 },
+        );
+      }
+      // Ensure no blank prompts
+      const flattened = Array.isArray(body.questions)
+        ? body.questions
+        : body.questions && Array.isArray(body.questions.questions)
+          ? body.questions.questions
+          : [];
+
+      if (
+        flattened.some(
+          (q: Question) =>
+            !q || typeof q.prompt !== "string" || !q.prompt.trim(),
+        )
+      ) {
+        return NextResponse.json(
+          { error: "Question prompts cannot be blank" },
+          { status: 400 },
+        );
+      }
+    }
+
     // Verify guild access with automatic token refresh
     const { hasAccess, error, status } = await verifyGuildAccess(
       session.user.id,
-      guildId
+      guildId,
     );
 
     if (!hasAccess) {
@@ -71,10 +147,62 @@ export async function POST(
     }
 
     // Create new panel
-    const panel = await Panel.create({
+    // Normalize questions payload: convert flattened shape to nested schema shape
+    const normalizedBody = { ...body };
+    if (
+      typeof normalizedBody.askQuestions !== "undefined" ||
+      Array.isArray(normalizedBody.questions)
+    ) {
+      const arr = Array.isArray(normalizedBody.questions)
+        ? normalizedBody.questions
+        : normalizedBody.questions &&
+            Array.isArray(normalizedBody.questions.questions)
+          ? normalizedBody.questions.questions
+          : [];
+
+      normalizedBody.questions = {
+        askQuestions: Boolean(normalizedBody.askQuestions) || arr.length > 0,
+        questions: arr.map((q: Question) => ({
+          id: q.id ?? genId(),
+          prompt: q.prompt,
+        })),
+      };
+      delete normalizedBody.askQuestions;
+    }
+
+    const panelDoc = (await Panel.create({
       serverId: guildId,
-      ...body,
-    });
+      ...normalizedBody,
+    })) as IPanel;
+
+    const p = panelDoc;
+    const welcome = p.welcomeEmbed ?? {
+      color: p.color || "#5865F2",
+      title: null,
+      description: null,
+      titleImgUrl: null,
+      largeImgUrl: null,
+      smallImgUrl: null,
+      footerText: null,
+      footerImgUrl: null,
+    };
+
+    const panel = {
+      _id: String(p._id),
+      guild: p.serverId,
+      channel: p.channel,
+      title: p.title,
+      content: p.content ?? null,
+      color: p.color,
+      largeImgUrl: p.largeImgUrl ?? null,
+      smallImgUrl: p.smallImgUrl ?? null,
+      btnText: p.btnText,
+      btnColor: p.btnColor,
+      btnEmoji: p.btnEmoji ?? null,
+      mentionOnOpen: p.mentionOnOpen ?? [],
+      ticketCategory: p.ticketCategory ?? null,
+      welcomeEmbed: welcome,
+    };
 
     return NextResponse.json({ success: true, panel });
   } catch (error) {
@@ -84,7 +212,7 @@ export async function POST(
         error: "Internal server error",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

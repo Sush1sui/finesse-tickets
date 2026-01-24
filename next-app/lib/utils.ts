@@ -8,7 +8,7 @@ export function cn(...inputs: ClassValue[]) {
 export function getDiscordGuildIconUrl(
   guildId: string,
   iconHash?: string | null,
-  size = 128
+  size = 128,
 ) {
   if (!iconHash) return undefined;
   const ext = iconHash.startsWith("a_") ? "gif" : "png";
@@ -19,4 +19,16 @@ export function truncateName(name: string, maxLen = 25) {
   if (!name) return name;
   if (name.length <= maxLen) return name;
   return name.slice(0, maxLen - 3) + "...";
+}
+
+export function genId() {
+  const webCrypto =
+    typeof crypto !== "undefined"
+      ? (crypto as Crypto & { randomUUID?: () => string })
+      : undefined;
+
+  if (webCrypto && typeof webCrypto.randomUUID === "function")
+    return webCrypto.randomUUID();
+
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }

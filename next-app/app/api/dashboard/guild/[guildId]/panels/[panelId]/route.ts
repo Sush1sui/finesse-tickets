@@ -4,10 +4,13 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Panel from "@/models/Panel";
 import { verifyGuildAccess } from "@/lib/discord";
+import { genId } from "@/lib/utils";
+
+type Question = { id?: string; prompt: string };
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ guildId: string; panelId: string }> }
+  { params }: { params: Promise<{ guildId: string; panelId: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -22,7 +25,7 @@ export async function GET(
     // Verify guild access
     const { hasAccess, error, status } = await verifyGuildAccess(
       session.user.id,
-      guildId
+      guildId,
     );
 
     if (!hasAccess) {
@@ -44,14 +47,14 @@ export async function GET(
         error: "Internal server error",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ guildId: string; panelId: string }> }
+  { params }: { params: Promise<{ guildId: string; panelId: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -67,18 +70,69 @@ export async function PATCH(
     // Verify guild access
     const { hasAccess, error, status } = await verifyGuildAccess(
       session.user.id,
-      guildId
+      guildId,
     );
 
     if (!hasAccess) {
       return NextResponse.json({ error }, { status: status || 403 });
     }
 
+    // Sanitize and normalize update payload
+    const updateBody: Record<string, unknown> = { ...body };
+    delete updateBody.serverId;
+    delete updateBody._id;
+
+    // Normalize flattened questions into nested schema shape for update
+    if (
+      typeof body.askQuestions !== "undefined" ||
+      Array.isArray(body.questions)
+    ) {
+      const arr = Array.isArray(body.questions)
+        ? body.questions
+        : body.questions && Array.isArray(body.questions.questions)
+          ? body.questions.questions
+          : [];
+
+      if (arr.length > 5) {
+        return NextResponse.json(
+          { error: "Max 5 questions allowed" },
+          { status: 400 },
+        );
+      }
+      if (
+        arr.some(
+          (q: Question | undefined) =>
+            !q || typeof q.prompt !== "string" || !q.prompt.trim(),
+        )
+      ) {
+        return NextResponse.json(
+          { error: "Question prompts cannot be blank" },
+          { status: 400 },
+        );
+      }
+
+      updateBody.questions = {
+        askQuestions: Boolean(body.askQuestions) || arr.length > 0,
+        questions: arr.map((q: Question) => ({
+          id: q.id ?? genId(),
+          prompt: q.prompt,
+        })),
+      };
+    }
+
+    // If welcomeEmbed provided, ensure nested fields are set properly
+    if (body.welcomeEmbed) {
+      updateBody.welcomeEmbed = {
+        ...((await Panel.findById(panelId))?.welcomeEmbed || {}),
+        ...body.welcomeEmbed,
+      };
+    }
+
     // Update panel
     const panel = await Panel.findOneAndUpdate(
       { _id: panelId, serverId: guildId },
-      { $set: body },
-      { new: true }
+      { $set: updateBody },
+      { new: true },
     );
 
     if (!panel) {
@@ -93,14 +147,14 @@ export async function PATCH(
         error: "Internal server error",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ guildId: string; panelId: string }> }
+  { params }: { params: Promise<{ guildId: string; panelId: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -115,7 +169,7 @@ export async function DELETE(
     // Verify guild access
     const { hasAccess, error, status } = await verifyGuildAccess(
       session.user.id,
-      guildId
+      guildId,
     );
 
     if (!hasAccess) {
@@ -149,8 +203,8 @@ export async function DELETE(
             body: JSON.stringify({ channelId, messageId }),
           }).catch((error) => {
             console.error(`Error deleting message ${messageId}:`, error);
-          })
-        )
+          }),
+        ),
       );
     }
 
@@ -165,7 +219,7 @@ export async function DELETE(
         error: "Internal server error",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
