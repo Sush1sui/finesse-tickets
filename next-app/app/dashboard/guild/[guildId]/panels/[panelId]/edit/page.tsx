@@ -78,10 +78,19 @@ export default function EditPanelPage() {
   const updatePanelMutation = useUpdatePanel(guildId, panelId);
 
   // Extract data from React Query
-  const roles = useMemo(() => guildData?.roles || [], [guildData]);
-  const categories = useMemo(() => guildData?.categories || [], [guildData]);
-  const channels = useMemo(() => guildData?.channels || [], [guildData]);
-  const customEmojis = useMemo(() => emojisData || [], [emojisData]);
+  const roles: Role[] = useMemo(() => guildData?.roles || [], [guildData]);
+  const categories: Category[] = useMemo(
+    () => guildData?.categories || [],
+    [guildData],
+  );
+  const channels: Channel[] = useMemo(
+    () => (guildData?.channels as Channel[]) || [],
+    [guildData],
+  );
+  const customEmojis: CustomEmoji[] = useMemo(
+    () => emojisData || [],
+    [emojisData],
+  );
 
   // Create options arrays for SearchableSelect
   const roleOptions = useMemo<SearchableSelectOption[]>(
