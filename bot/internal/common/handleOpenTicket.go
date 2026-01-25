@@ -12,7 +12,12 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func HandleOpenTicket(s *discordgo.Session, i *discordgo.InteractionCreate, panelID string) {
+type QnA struct {
+	Question string `json:"question"`
+	Answer   string `json:"answer"`
+}
+
+func HandleOpenTicket(s *discordgo.Session, i *discordgo.InteractionCreate, panelID string, QuestionsAndAnswers []QnA) {
 	// Defer interaction response
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
@@ -224,7 +229,7 @@ func HandleOpenTicket(s *discordgo.Session, i *discordgo.InteractionCreate, pane
 				PanelID:      ticket.PanelID,
 				UserID:       ticket.UserID,
 				Username:     i.Member.User.Username,
-				TicketNumber: 0, // You might want to implement a counter
+				TicketNumber: int(ticket.ID.Timestamp().Unix()),
 				Messages:     []repository.TranscriptMessage{},
 				Metadata: repository.TranscriptMetadata{
 					TicketOpenedAt:   ticket.CreatedAt,
@@ -244,8 +249,8 @@ func HandleOpenTicket(s *discordgo.Session, i *discordgo.InteractionCreate, pane
 		}
 	}
 
-	// Send welcome message
-	SendWelcomeMessage(s, channel.ID, i.Member.User, panelData)
+	// Send welcome message (include any answers from modal)
+	SendWelcomeMessage(s, channel.ID, i.Member.User, panelData, QuestionsAndAnswers)
 
 	// Update interaction response
 	s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{

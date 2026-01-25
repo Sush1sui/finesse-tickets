@@ -11,6 +11,7 @@ import {
   SearchableSelect,
   SearchableSelectOption,
 } from "@/components/ui/searchable-select";
+import { Channel } from "@/lib/types";
 
 type GuildData = {
   serverId: string;
@@ -40,11 +41,6 @@ type GuildData = {
       };
     };
   };
-};
-
-type Channel = {
-  channelId: string;
-  channelName: string;
 };
 
 export default function SettingsPage() {
@@ -361,6 +357,7 @@ export default function SettingsPage() {
     lastMessageDays,
     lastMessageHours,
     lastMessageMinutes,
+    queryClient,
   ]);
 
   if (loading || !guildData) {

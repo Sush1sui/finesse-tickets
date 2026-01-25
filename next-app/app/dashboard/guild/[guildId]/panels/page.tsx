@@ -104,9 +104,9 @@ export default function PanelsPage() {
   // Helper function to get channel name from channel ID
   const getChannelName = useCallback(
     (channelId: string) => {
-      const channel: Channel | undefined = channels.find(
+      const channel = channels.find(
         (c) => (c as unknown as Channel).channelId === channelId,
-      ) as Channel | undefined;
+      ) as unknown as Channel;
       return channel ? channel.channelName : channelId;
     },
     [channels],

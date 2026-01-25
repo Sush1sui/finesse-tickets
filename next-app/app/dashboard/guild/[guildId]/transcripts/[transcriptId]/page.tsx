@@ -5,6 +5,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useTheme } from "next-themes";
 import GuildSidebar from "@/components/guild-sidebar";
 import { Spinner } from "@/components/ui/spinner";
+import Image from "next/image";
 
 type TranscriptAuthor = {
   id: string;
@@ -77,7 +78,7 @@ export default function TranscriptViewerPage() {
   const guildId = useMemo(() => params?.guildId as string, [params?.guildId]);
   const transcriptId = useMemo(
     () => params?.transcriptId as string,
-    [params?.transcriptId]
+    [params?.transcriptId],
   );
 
   // Fetch guild name
@@ -91,7 +92,7 @@ export default function TranscriptViewerPage() {
           if (data.guild?.icon) {
             const ext = data.guild.icon.startsWith("a_") ? "gif" : "png";
             setGuildIcon(
-              `https://cdn.discordapp.com/icons/${data.guild.id}/${data.guild.icon}.${ext}`
+              `https://cdn.discordapp.com/icons/${data.guild.id}/${data.guild.icon}.${ext}`,
             );
           }
         }
@@ -306,7 +307,7 @@ export default function TranscriptViewerPage() {
         gap: "0.25rem",
       } as React.CSSProperties,
     }),
-    [isDark]
+    [isDark],
   );
 
   if (loading) {
@@ -437,7 +438,7 @@ export default function TranscriptViewerPage() {
           <div style={styles.messagesContainer}>
             {transcript.messages.map((message, index) => (
               <div key={`${message.id}-${index}`} style={styles.message}>
-                <img
+                <Image
                   src={getAvatarUrl(message.author)}
                   alt={message.author.username}
                   style={styles.avatar}
@@ -496,7 +497,7 @@ export default function TranscriptViewerPage() {
                           </a>
                           {att.contentType?.startsWith("image/") && (
                             <div>
-                              <img
+                              <Image
                                 src={att.url}
                                 alt={att.filename}
                                 style={styles.image}

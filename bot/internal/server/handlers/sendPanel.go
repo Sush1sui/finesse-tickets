@@ -13,24 +13,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-type SendPanelRequest struct {
-	PanelID     string  `json:"panelId"`
-	ServerID    string  `json:"serverId"`
-	ChannelID   string  `json:"channelId"`
-	Title       string  `json:"title"`
-	Content     string  `json:"content"`
-	Color       string  `json:"color"`
-	BtnColor    string  `json:"btnColor"`
-	BtnText     string  `json:"btnText"`
-	BtnEmoji    *string `json:"btnEmoji"`
-	LargeImgUrl *string `json:"largeImgUrl"`
-	SmallImgUrl *string `json:"smallImgUrl"`
-}
-
-type SendPanelResponse struct {
-	MessageID string `json:"messageId"`
-}
-
 func SendPanelHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)

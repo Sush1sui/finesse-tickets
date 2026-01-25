@@ -11,6 +11,7 @@ import {
   SearchableSelectOption,
 } from "@/components/ui/searchable-select";
 import { useGuildData, usePanels, useGuildInfo } from "@/hooks/useGuildQueries";
+import { Channel } from "@/lib/types";
 
 type Channel = {
   channelId: string;
@@ -29,8 +30,10 @@ export default function CreateMultiPanelPage() {
   const { data: guildData, isLoading: guildLoading } = useGuildData(guildId);
   const { data: panels = [] } = usePanels(guildId);
 
-  const channels: Channel[] =
-    (guildData?.channels as unknown as Channel[]) || [];
+  const channels = useMemo<Channel[]>(
+    () => (guildData?.channels as unknown as Channel[]) || [],
+    [guildData?.channels],
+  );
 
   // Create options arrays for SearchableSelect
   const channelOptions = useMemo<SearchableSelectOption[]>(

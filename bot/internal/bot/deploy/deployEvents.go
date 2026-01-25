@@ -9,6 +9,7 @@ import (
 
 var EventHandlers = []any{
 	events.HandleButtonInteraction,
+	events.HandleModalSubmit,
 	events.HandleMessageCreate,
 	events.HandleGuildMemberRemove,
 	handleGuildCreate, // Keep this in deploy package to avoid import cycle

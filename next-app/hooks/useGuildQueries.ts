@@ -8,6 +8,7 @@ import {
   PermittedServer,
   MultiPanel,
   GuildMember,
+  ApiPanel,
 } from "./hookTypes";
 
 // Fetch Functions
@@ -52,7 +53,46 @@ async function fetchPanels(guildId: string) {
   const response = await fetch(`/api/dashboard/guild/${guildId}/panels`);
   if (!response.ok) throw new Error("Failed to fetch panels");
   const data = await response.json();
-  return (data.panels || []) as Panel[];
+  const raw = (data.panels || []) as ApiPanel[];
+
+  return raw.map((p) => {
+    const welcome = p.welcomeEmbed ?? {
+      color: p.color || "#5865F2",
+      title: null,
+      description: null,
+      titleImgUrl: null,
+      largeImgUrl: null,
+      smallImgUrl: null,
+      footerText: null,
+      footerImgUrl: null,
+    };
+
+    return {
+      _id: String(p._id),
+      guild: p.serverId ?? p.guild ?? "",
+      channel: p.channel,
+      title: p.title,
+      content: p.content ?? null,
+      color: p.color,
+      largeImgUrl: p.largeImgUrl ?? null,
+      smallImgUrl: p.smallImgUrl ?? null,
+      btnText: p.btnText,
+      btnColor: p.btnColor,
+      btnEmoji: p.btnEmoji ?? null,
+      mentionOnOpen: p.mentionOnOpen ?? [],
+      ticketCategory: p.ticketCategory ?? null,
+      category: p.category ?? null,
+      ticketChannel: p.ticketChannel ?? null,
+      supportRole: p.supportRole ?? null,
+      enableTranscripts: p.enableTranscripts ?? false,
+      askQuestions: p.askQuestions ?? (p.questions ? true : false),
+      questions: (p.questions || []).map((q) => ({
+        id: q.id,
+        prompt: q.prompt,
+      })),
+      welcomeEmbed: welcome,
+    } as Panel;
+  });
 }
 
 async function fetchPanel(panelId: string) {
@@ -60,7 +100,40 @@ async function fetchPanel(panelId: string) {
   if (!response.ok) throw new Error("Failed to fetch panel");
   const data = await response.json();
   if (!data.panel) throw new Error("Panel not found");
-  return data.panel as Panel;
+  const p = data.panel as ApiPanel;
+  const welcome = p.welcomeEmbed ?? {
+    color: p.color || "#5865F2",
+    title: null,
+    description: null,
+    titleImgUrl: null,
+    largeImgUrl: null,
+    smallImgUrl: null,
+    footerText: null,
+    footerImgUrl: null,
+  };
+
+  return {
+    _id: String(p._id),
+    guild: p.serverId ?? p.guild ?? "",
+    channel: p.channel,
+    title: p.title,
+    content: p.content ?? null,
+    color: p.color,
+    largeImgUrl: p.largeImgUrl ?? null,
+    smallImgUrl: p.smallImgUrl ?? null,
+    btnText: p.btnText,
+    btnColor: p.btnColor,
+    btnEmoji: p.btnEmoji ?? null,
+    mentionOnOpen: p.mentionOnOpen ?? [],
+    ticketCategory: p.ticketCategory ?? null,
+    askQuestions: p.askQuestions ?? (p.questions ? true : false),
+    questions: (p.questions || []).map((q) => ({ id: q.id, prompt: q.prompt })),
+    category: p.category ?? null,
+    ticketChannel: p.ticketChannel ?? null,
+    supportRole: p.supportRole ?? null,
+    enableTranscripts: p.enableTranscripts ?? false,
+    welcomeEmbed: welcome,
+  } as Panel;
 }
 
 // Custom Hooks
@@ -148,7 +221,7 @@ export function useCreatePanel(guildId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (panelData: any) => {
+    mutationFn: async (panelData: Partial<ApiPanel>) => {
       const response = await fetch(`/api/dashboard/guild/${guildId}/panels`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -171,7 +244,7 @@ export function useUpdatePanel(guildId: string, panelId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (panelData: any) => {
+    mutationFn: async (panelData: Partial<ApiPanel>) => {
       const response = await fetch(`/api/panels/${panelId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },

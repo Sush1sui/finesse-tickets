@@ -42,6 +42,8 @@ export interface Panel {
   ticketChannel?: string | null;
   supportRole?: string | null;
   enableTranscripts?: boolean;
+  askQuestions?: boolean;
+  questions?: { id?: string; prompt: string }[];
   welcomeEmbed: {
     color: string;
     title: string | null;
@@ -98,3 +100,37 @@ export interface ToastMessage {
   type: ToastType;
   duration?: number;
 }
+
+// API response panel shape (from server)
+export type ApiPanel = {
+  _id: string;
+  serverId?: string;
+  guild?: string;
+  channel: string;
+  title: string;
+  content?: string | null;
+  color: string;
+  largeImgUrl?: string | null;
+  smallImgUrl?: string | null;
+  btnText: string;
+  btnColor: string;
+  btnEmoji?: string | null;
+  mentionOnOpen?: string[];
+  ticketCategory?: string | null;
+  category?: string | null;
+  ticketChannel?: string | null;
+  supportRole?: string | null;
+  enableTranscripts?: boolean;
+  askQuestions?: boolean;
+  questions?: { id?: string; prompt: string }[];
+  welcomeEmbed?: {
+    color: string;
+    title?: string | null;
+    description?: string | null;
+    titleImgUrl?: string | null;
+    largeImgUrl?: string | null;
+    smallImgUrl?: string | null;
+    footerText?: string | null;
+    footerImgUrl?: string | null;
+  } | null;
+};

@@ -11,7 +11,7 @@ import (
 func HandleCloseTicket(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// Check if user is authorized to close the ticket (staff/admin only)
 	if i.Member != nil && i.GuildID != "" {
-		if IsStaffMember(s, i.GuildID, i.Member) {
+		if !IsStaffMember(s, i.GuildID, i.Member) {
 			// Not authorized - only staff can close tickets
 			err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,

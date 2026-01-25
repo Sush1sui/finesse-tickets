@@ -17,6 +17,7 @@ import {
   SearchableSelect,
   SearchableSelectOption,
 } from "@/components/ui/searchable-select";
+import Image from "next/image";
 
 type Member = {
   userId: string;
@@ -90,7 +91,7 @@ export default function StaffPage() {
   const hasAdminPermissions = useMemo(() => {
     if (!permittedData?.permittedServers || !guildId) return false;
     const guild = permittedData.permittedServers.find(
-      (g: { id: string; permissions?: string }) => g.id === guildId
+      (g: { id: string; permissions?: string }) => g.id === guildId,
     );
     if (!guild?.permissions) return false;
     const perms = BigInt(guild.permissions);
@@ -132,7 +133,7 @@ export default function StaffPage() {
     (userId: string) => {
       setAuthorizedUsers(authorizedUsers.filter((id) => id !== userId));
     },
-    [authorizedUsers]
+    [authorizedUsers],
   );
 
   const handleAddRole = useCallback(() => {
@@ -147,7 +148,7 @@ export default function StaffPage() {
     (roleId: string) => {
       setAuthorizedRoles(authorizedRoles.filter((id) => id !== roleId));
     },
-    [authorizedRoles]
+    [authorizedRoles],
   );
 
   const handleSave = useCallback(async () => {
@@ -184,12 +185,12 @@ export default function StaffPage() {
 
   const getMemberById = useCallback(
     (userId: string) => members?.find((m) => m.userId === userId),
-    [members]
+    [members],
   );
 
   const getRoleById = useCallback(
     (roleId: string) => roles?.find((r) => r.roleId === roleId),
-    [roles]
+    [roles],
   );
 
   // Prepare options for searchable selects
@@ -205,7 +206,7 @@ export default function StaffPage() {
             ? `https://cdn.discordapp.com/avatars/${member.userId}/${member.avatar}.png?size=64`
             : undefined,
         })) || [],
-    [members]
+    [members],
   );
 
   const roleOptions: SearchableSelectOption[] = useMemo(
@@ -214,7 +215,7 @@ export default function StaffPage() {
         value: role.roleId,
         label: `@${role.roleName}`,
       })) || [],
-    [roles]
+    [roles],
   );
 
   const styles = useMemo(
@@ -311,7 +312,7 @@ export default function StaffPage() {
         cursor: "pointer",
       } as React.CSSProperties,
     }),
-    [isDark]
+    [isDark],
   );
 
   if (loading || loadingStaff || !mounted) {
@@ -403,7 +404,7 @@ export default function StaffPage() {
                         }}
                       >
                         {member.avatar && (
-                          <img
+                          <Image
                             src={`https://cdn.discordapp.com/avatars/${member.userId}/${member.avatar}.png?size=64`}
                             alt={member.displayName}
                             style={{

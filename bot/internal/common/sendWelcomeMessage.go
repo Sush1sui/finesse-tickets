@@ -28,7 +28,7 @@ type PanelData struct {
 }
 
 
-func SendWelcomeMessage(s *discordgo.Session, channelID string, user *discordgo.User, panelData PanelData) {
+func SendWelcomeMessage(s *discordgo.Session, channelID string, user *discordgo.User, panelData PanelData, QuestionAndAnswers []QnA) {
 	var embed *discordgo.MessageEmbed
 
 	if panelData.WelcomeEmbed != nil {
@@ -99,6 +99,33 @@ func SendWelcomeMessage(s *discordgo.Session, channelID string, user *discordgo.
 		Emoji: &discordgo.ComponentEmoji{
 			Name: "🔒",
 		},
+	}
+
+	// If there are answers provided, add them as a nicely formatted field in the embed
+	if len(QuestionAndAnswers) > 0 {
+		var parts []string
+		for _, qa := range QuestionAndAnswers {
+			ans := qa.Answer
+			if strings.TrimSpace(ans) == "" {
+				ans = "_No response provided_"
+			}
+			// Bold question, then blockquote the answer for readability
+			parts = append(parts, fmt.Sprintf("**%s**\n> %s", qa.Question, ans))
+		}
+
+		joined := strings.Join(parts, "\n\n")
+
+		// Embed field values are limited; truncate to 1024 runes if necessary
+		const maxRunes = 1024
+		if len([]rune(joined)) > maxRunes {
+			r := []rune(joined)
+			joined = string(r[:maxRunes-1]) + "…"
+		}
+
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+			Name:  "Responses",
+			Value: joined,
+		})
 	}
 
 	// Build message send

@@ -16,29 +16,8 @@ import {
   useGuildEmojis,
   useCreatePanel,
 } from "@/hooks/useGuildQueries";
-
-type CustomEmoji = {
-  emojiId: string;
-  emojiName: string;
-  emojiAnimated: boolean;
-  emojiUrl: string;
-  emojiFormat: string;
-};
-
-type Role = {
-  roleId: string;
-  roleName: string;
-};
-
-type Category = {
-  categoryId: string;
-  categoryName: string;
-};
-
-type Channel = {
-  channelId: string;
-  channelName: string;
-};
+import { Category, Channel, CustomEmoji, Role } from "@/lib/types";
+import { genId } from "@/lib/utils";
 
 export default function CreatePanelPage() {
   const params = useParams();
@@ -73,6 +52,12 @@ export default function CreatePanelPage() {
   const [welcomeSmallImage, setWelcomeSmallImage] = useState("");
   const [welcomeFooter, setWelcomeFooter] = useState("");
   const [welcomeFooterIcon, setWelcomeFooterIcon] = useState("");
+
+  // Ask questions before creating ticket
+  const [askQuestions, setAskQuestions] = useState(false);
+  const [questions, setQuestions] = useState<{ id: string; prompt: string }[]>(
+    [],
+  );
 
   useEffect(() => {
     setMounted(true);
@@ -332,6 +317,17 @@ export default function CreatePanelPage() {
     }
 
     try {
+      // Validate max questions on client as well
+      if (questions.length > 5) {
+        error("Maximum of 5 questions allowed");
+        return;
+      }
+      // Ensure no blank question prompts
+      if (questions.some((q) => !q.prompt || !q.prompt.trim())) {
+        error("Question prompts cannot be blank");
+        return;
+      }
+
       setCreating(true);
 
       const panelData = {
@@ -351,6 +347,8 @@ export default function CreatePanelPage() {
         // Ticket config
         mentionOnOpen: mentionOnOpen,
         ticketCategory: ticketCategory || null,
+        askQuestions: askQuestions,
+        questions: questions.map((q) => ({ prompt: q.prompt })),
 
         // Welcome embed config
         welcomeEmbed: {
@@ -669,6 +667,102 @@ export default function CreatePanelPage() {
                 placeholder="https://example/image.png"
               />
             </div>
+          </div>
+
+          {/* Ticket Questions Section */}
+          <div style={styles.section}>
+            <h2 style={styles.sectionTitle}>— Ticket Questions —</h2>
+
+            <div style={styles.formRow}>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>ASK QUESTIONS BEFORE OPEN</label>
+                <div style={styles.checkboxGroup}>
+                  <input
+                    id="askQuestions"
+                    type="checkbox"
+                    checked={askQuestions}
+                    onChange={(e) => setAskQuestions(e.target.checked)}
+                  />
+                  <label htmlFor="askQuestions" style={{ fontWeight: 600 }}>
+                    Ask questions before creating ticket
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {askQuestions && (
+              <div style={{ marginTop: "1rem" }}>
+                {questions.map((q, idx) => (
+                  <div
+                    key={q.id}
+                    style={{
+                      display: "flex",
+                      gap: "0.75rem",
+                      alignItems: "center",
+                      marginBottom: "0.75rem",
+                    }}
+                  >
+                    <input
+                      type="text"
+                      value={q.prompt}
+                      onChange={(e) =>
+                        setQuestions(
+                          questions.map((item) =>
+                            item.id === q.id
+                              ? { ...item, prompt: e.target.value }
+                              : item,
+                          ),
+                        )
+                      }
+                      placeholder={`Question ${idx + 1}`}
+                      style={{ ...styles.input, flex: 1 }}
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setQuestions(
+                          questions.filter((item) => item.id !== q.id),
+                        )
+                      }
+                      style={{
+                        background: isDark
+                          ? "rgba(255,255,255,0.04)"
+                          : "rgba(0,0,0,0.04)",
+                        border: isDark
+                          ? "1px solid rgba(255,255,255,0.06)"
+                          : "1px solid rgba(0,0,0,0.06)",
+                        padding: "0.5rem 0.75rem",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        color: isDark ? "#fff" : "#000",
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (questions.length >= 5) {
+                      error("Maximum of 5 questions allowed");
+                      return;
+                    }
+                    setQuestions([...questions, { id: genId(), prompt: "" }]);
+                  }}
+                  style={{
+                    ...styles.createButton,
+                    width: "auto",
+                    padding: "0.5rem 1rem",
+                    marginTop: "0.5rem",
+                  }}
+                >
+                  Add Question
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Welcome Message Section */}
