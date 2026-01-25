@@ -11,6 +11,13 @@ import (
 )
 
 func IsStaffMember(s *discordgo.Session, guildID string, member *discordgo.Member) bool {
+	// Check if user is the guild owner
+	if guild, err := s.State.Guild(guildID); err == nil {
+		if guild.OwnerID == member.User.ID {
+			return true
+		}
+	}
+
 	// Check if user has administrator permission by checking their roles
 	guild, err := s.State.Guild(guildID)
 	if err == nil {
