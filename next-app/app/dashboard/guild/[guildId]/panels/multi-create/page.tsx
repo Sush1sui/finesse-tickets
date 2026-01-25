@@ -13,11 +13,6 @@ import {
 import { useGuildData, usePanels, useGuildInfo } from "@/hooks/useGuildQueries";
 import { Channel } from "@/lib/types";
 
-type Channel = {
-  channelId: string;
-  channelName: string;
-};
-
 export default function CreateMultiPanelPage() {
   const params = useParams();
   const router = useRouter();

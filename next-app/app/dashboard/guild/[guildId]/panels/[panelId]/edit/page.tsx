@@ -17,7 +17,7 @@ import {
   usePanel,
   useUpdatePanel,
 } from "@/hooks/useGuildQueries";
-import { GuildData } from "@/lib/types";
+import { Category, Channel, CustomEmoji, GuildData, Role } from "@/lib/types";
 import { genId } from "@/lib/utils";
 
 export default function EditPanelPage() {
