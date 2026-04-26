@@ -159,104 +159,115 @@ export default function SettingsPage() {
       } as React.CSSProperties,
       settingsCard: {
         padding: "2rem",
-        border: isDark
-          ? "2px solid rgba(255,255,255,0.1)"
-          : "2px solid rgba(0,0,0,0.1)",
+        border: `1px solid ${isDark ? "#334155" : "#e2e8f0"}`,
         borderRadius: "12px",
+        background: isDark ? "#1e293b" : "#ffffff",
+        boxShadow: isDark
+          ? "0 1px 3px rgba(0,0,0,0.3)"
+          : "0 1px 3px rgba(0,0,0,0.08)",
       } as React.CSSProperties,
       title: {
-        fontSize: "1.875rem",
+        fontSize: "2rem",
         fontWeight: "700",
         marginBottom: "2rem",
+        color: isDark ? "#e2e8f0" : "#0f172a",
       } as React.CSSProperties,
       section: {
-        marginBottom: "2rem",
+        marginBottom: "2.5rem",
+        paddingBottom: "2rem",
+        borderBottom: `1px solid ${isDark ? "#334155" : "#e2e8f0"}`,
       } as React.CSSProperties,
       sectionTitle: {
         fontSize: "1rem",
         fontWeight: "600",
-        marginBottom: "1rem",
+        marginBottom: "1.5rem",
+        color: isDark ? "#cbd5e1" : "#475569",
+        textTransform: "uppercase",
+        letterSpacing: "0.05em",
+        fontSize: "0.85rem",
       } as React.CSSProperties,
       formGroup: {
         display: "flex",
         gap: "1rem",
-        marginBottom: "1rem",
+        marginBottom: "1.25rem",
         alignItems: "center",
+        flexWrap: "wrap",
       } as React.CSSProperties,
       radioGroup: {
         display: "flex",
         gap: "1.5rem",
         alignItems: "center",
+        flexWrap: "wrap",
       } as React.CSSProperties,
       label: {
         display: "flex",
         alignItems: "center",
         gap: "0.5rem",
         cursor: "pointer",
+        color: isDark ? "#cbd5e1" : "#475569",
+        fontSize: "0.9375rem",
       } as React.CSSProperties,
       input: {
-        padding: "0.5rem",
-        borderRadius: "6px",
-        border: isDark
-          ? "1px solid rgba(255,255,255,0.2)"
-          : "1px solid rgba(0,0,0,0.2)",
-        background: isDark ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.9)",
-        color: isDark ? "#fff" : "#000",
+        padding: "0.625rem 0.875rem",
+        borderRadius: "8px",
+        border: `1px solid ${isDark ? "#475569" : "#cbd5e1"}`,
+        background: isDark ? "#0f172a" : "#f8fafb",
+        color: isDark ? "#e2e8f0" : "#0f172a",
         width: "100%",
+        fontSize: "0.9375rem",
+        transition: "all 0.2s ease",
       } as React.CSSProperties,
       select: {
-        padding: "0.5rem",
-        borderRadius: "6px",
-        border: isDark
-          ? "1px solid rgba(255,255,255,0.2)"
-          : "1px solid rgba(0,0,0,0.2)",
-        background: isDark ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.9)",
-        color: isDark ? "#fff" : "#000",
+        padding: "0.625rem 0.875rem",
+        borderRadius: "8px",
+        border: `1px solid ${isDark ? "#475569" : "#cbd5e1"}`,
+        background: isDark ? "#0f172a" : "#f8fafb",
+        color: isDark ? "#e2e8f0" : "#0f172a",
         cursor: "pointer",
+        fontSize: "0.9375rem",
+        transition: "all 0.2s ease",
       } as React.CSSProperties,
       checkbox: {
         cursor: "pointer",
+        accentColor: "#5865f2",
       } as React.CSSProperties,
       timeInputGroup: {
         display: "flex",
-        gap: "0.5rem",
+        gap: "0.75rem",
         alignItems: "center",
       } as React.CSSProperties,
       timeInput: {
-        padding: "0.5rem",
-        borderRadius: "6px",
-        border: isDark
-          ? "1px solid rgba(255,255,255,0.2)"
-          : "1px solid rgba(0,0,0,0.2)",
-        background: isDark ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.9)",
-        color: isDark ? "#fff" : "#000",
-        width: "60px",
+        padding: "0.625rem 0.875rem",
+        borderRadius: "8px",
+        border: `1px solid ${isDark ? "#475569" : "#cbd5e1"}`,
+        background: isDark ? "#0f172a" : "#f8fafb",
+        color: isDark ? "#e2e8f0" : "#0f172a",
+        width: "80px",
         textAlign: "center",
+        fontSize: "0.875rem",
+        transition: "all 0.2s ease",
       } as React.CSSProperties,
       saveButton: {
-        padding: "1rem 2rem",
+        padding: "0.75rem 2rem",
         borderRadius: "8px",
-        border: isDark
-          ? "2px solid rgba(255,255,255,0.2)"
-          : "2px solid rgba(0,0,0,0.2)",
-        background: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)",
-        color: isDark ? "#fff" : "#000",
-        fontSize: "1rem",
+        border: "none",
+        background: "#5865f2",
+        color: "#ffffff",
+        fontSize: "0.9375rem",
         fontWeight: "600",
         cursor: "pointer",
         width: "100%",
-        transition: "all 0.2s",
+        transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+        boxShadow: "0 2px 8px rgba(88, 101, 242, 0.3)",
       } as React.CSSProperties,
       successMessage: {
         padding: "1rem",
         borderRadius: "8px",
         background: isDark
-          ? "rgba(34, 197, 94, 0.2)"
-          : "rgba(34, 197, 94, 0.1)",
-        border: isDark
-          ? "2px solid rgba(34, 197, 94, 0.5)"
-          : "2px solid rgba(34, 197, 94, 0.3)",
-        color: isDark ? "#86efac" : "#15803d",
+          ? "#064e3b"
+          : "#dcfce7",
+        border: `1px solid ${isDark ? "#047857" : "#86efac"}`,
+        color: isDark ? "#86efac" : "#166534",
         marginBottom: "2rem",
         fontWeight: "500",
       } as React.CSSProperties,
@@ -264,11 +275,9 @@ export default function SettingsPage() {
         padding: "1rem",
         borderRadius: "8px",
         background: isDark
-          ? "rgba(239, 68, 68, 0.2)"
-          : "rgba(239, 68, 68, 0.1)",
-        border: isDark
-          ? "2px solid rgba(239, 68, 68, 0.5)"
-          : "2px solid rgba(239, 68, 68, 0.3)",
+          ? "#7f1d1d"
+          : "#fee2e2",
+        border: `1px solid ${isDark ? "#dc2626" : "#fca5a5"}`,
         color: isDark ? "#fca5a5" : "#991b1b",
         marginBottom: "2rem",
         fontWeight: "500",

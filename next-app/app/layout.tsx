@@ -27,8 +27,8 @@ export default async function RootLayout({
   const session = await getServerSession(authOptions);
 
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body>
+    <html lang="en" suppressHydrationWarning className="bg-background">
+      <body className="bg-background text-foreground antialiased">
         <NextAuthProvider session={session}>
           <QueryProvider>
             <ThemeProvider

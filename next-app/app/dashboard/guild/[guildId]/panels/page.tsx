@@ -280,15 +280,13 @@ export default function PanelsPage() {
         minWidth: 0,
       } as React.CSSProperties,
       panelSection: {
-        background: isDark ? "rgba(255,255,255,0.02)" : "#ffffff",
-        border: isDark
-          ? "1px solid rgba(255,255,255,0.08)"
-          : "1px solid rgba(0,0,0,0.08)",
-        borderRadius: "16px",
         padding: "2rem",
+        borderRadius: "12px",
+        border: `1px solid ${isDark ? "#334155" : "#e2e8f0"}`,
+        background: isDark ? "#1e293b" : "#ffffff",
         boxShadow: isDark
-          ? "0 4px 6px rgba(0,0,0,0.2)"
-          : "0 2px 8px rgba(0,0,0,0.04)",
+          ? "0 1px 3px rgba(0,0,0,0.3)"
+          : "0 1px 3px rgba(0,0,0,0.08)",
       } as React.CSSProperties,
       header: {
         display: "flex",
@@ -298,35 +296,41 @@ export default function PanelsPage() {
         gap: "1rem",
         flexWrap: "wrap",
       } as React.CSSProperties,
+      main: {
+        flex: 1,
+        minWidth: 0,
+      } as React.CSSProperties,
+      container: {
+        display: "flex",
+        gap: "2rem",
+        maxWidth: "1400px",
+        margin: "0 auto",
+        padding: "1.5rem",
+      } as React.CSSProperties,
       title: {
-        fontSize: "1.75rem",
-        fontWeight: "600",
-        letterSpacing: "-0.02em",
-        backgroundImage: isDark
-          ? "linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%)"
-          : "linear-gradient(135deg, #000 0%, rgba(0,0,0,0.7) 100%)",
-        WebkitBackgroundClip: "text",
-        WebkitTextFillColor: "transparent",
-        backgroundClip: "text",
+        fontSize: "2rem",
+        fontWeight: "700",
+        letterSpacing: "-0.5px",
+        color: isDark ? "#e2e8f0" : "#0f172a",
+        margin: 0,
       } as React.CSSProperties,
       subtitle: {
-        fontSize: "0.875rem",
-        opacity: 0.6,
+        fontSize: "0.9375rem",
+        opacity: 0.7,
         marginBottom: "1.5rem",
-        fontWeight: "400",
+        fontWeight: "500",
+        color: isDark ? "#94a3b8" : "#64748b",
       } as React.CSSProperties,
       newButton: {
-        padding: "0.75rem 1.5rem",
-        borderRadius: "10px",
+        padding: "0.625rem 1.25rem",
+        borderRadius: "8px",
         border: "none",
-        background: isDark
-          ? "linear-gradient(135deg, #5865F2 0%, #4752C4 100%)"
-          : "linear-gradient(135deg, #5865F2 0%, #4752C4 100%)",
+        background: "#5865f2",
         color: "#fff",
         fontSize: "0.875rem",
         fontWeight: "600",
         cursor: "pointer",
-        transition: "all 0.2s ease",
+        transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
         boxShadow: "0 2px 8px rgba(88, 101, 242, 0.3)",
       } as React.CSSProperties,
       table: {
@@ -340,18 +344,19 @@ export default function PanelsPage() {
         fontSize: "0.75rem",
         fontWeight: "600",
         letterSpacing: "0.05em",
-        opacity: 0.7,
+        color: isDark ? "#94a3b8" : "#64748b",
         borderBottom: isDark
-          ? "2px solid rgba(255,255,255,0.08)"
-          : "2px solid rgba(0,0,0,0.08)",
+          ? "1px solid #334155"
+          : "1px solid #e2e8f0",
       } as React.CSSProperties,
       td: {
-        padding: "1.25rem 1rem",
+        padding: "1rem",
         borderBottom: isDark
-          ? "1px solid rgba(255,255,255,0.04)"
-          : "1px solid rgba(0,0,0,0.04)",
+          ? "1px solid #334155"
+          : "1px solid #e2e8f0",
         fontSize: "0.9375rem",
         fontWeight: "500",
+        color: isDark ? "#e2e8f0" : "#0f172a",
       } as React.CSSProperties,
       actionButtons: {
         display: "flex",
@@ -360,10 +365,10 @@ export default function PanelsPage() {
       } as React.CSSProperties,
       actionButton: {
         padding: "0.5rem 1rem",
-        borderRadius: "8px",
-        border: "none",
-        background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)",
-        color: isDark ? "#fff" : "#000",
+        borderRadius: "6px",
+        border: `1px solid ${isDark ? "#475569" : "#cbd5e1"}`,
+        background: isDark ? "#334155" : "#f1f5f9",
+        color: isDark ? "#e2e8f0" : "#0f172a",
         fontSize: "0.8125rem",
         fontWeight: "600",
         cursor: "pointer",

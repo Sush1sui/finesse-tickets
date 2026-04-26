@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { ChevronRight } from "lucide-react";
 
 type ServerCardProps = {
   href: string;
@@ -22,7 +23,6 @@ export default function ServerCard({
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const [isActive, setIsActive] = useState(false);
 
   // Wait for component to mount to avoid hydration mismatch
   useEffect(() => {
@@ -35,120 +35,133 @@ export default function ServerCard({
   const cardStyles = useMemo(() => {
     const baseStyles = {
       borderWidth: "1px",
-      borderStyle: "solid",
-      borderColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)",
-      backgroundColor: isDark ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.9)",
-      color: isDark ? "#fff" : "#000",
+      borderStyle: "solid" as const,
+      borderColor: isDark ? "#334155" : "#e2e8f0",
+      backgroundColor: isDark ? "#1e293b" : "#ffffff",
+      color: isDark ? "#e2e8f0" : "#0f172a",
       boxShadow: isDark
-        ? "0 2px 8px rgba(0,0,0,0.4)"
-        : "0 2px 8px rgba(0,0,0,0.08)",
+        ? "0 1px 3px rgba(0,0,0,0.3)"
+        : "0 1px 3px rgba(0,0,0,0.08)",
       transform: "translateY(0) scale(1)",
       transition:
-        "transform 300ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1), border-color 300ms ease, background-color 300ms ease",
+        "all 300ms cubic-bezier(0.4, 0, 0.2, 1)",
+      padding: "1.5rem",
+      minHeight: "140px",
+      display: "flex",
+      flexDirection: "column" as const,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "1rem",
+      borderRadius: "10px",
+      position: "relative" as const,
+      overflow: "hidden",
     };
-
-    if (isActive) {
-      return {
-        ...baseStyles,
-        transform: "translateY(-3px) scale(0.98)",
-        boxShadow: isDark
-          ? "0 8px 24px rgba(0,0,0,0.6)"
-          : "0 8px 24px rgba(0,0,0,0.12)",
-        borderColor: isDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.25)",
-        backgroundColor: isDark ? "rgba(10,10,10,0.75)" : "rgba(245,245,245,1)",
-      };
-    }
 
     if (isHovered) {
       return {
         ...baseStyles,
-        transform: "translateY(-8px) scale(1.05)",
+        transform: "translateY(-4px) scale(1.02)",
         boxShadow: isDark
-          ? "0 20px 50px rgba(0,0,0,0.7), 0 0 0 2px rgba(255,255,255,0.1)"
-          : "0 20px 50px rgba(0,0,0,0.18), 0 0 0 2px rgba(0,0,0,0.08)",
-        borderColor: isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.35)",
-        backgroundColor: isDark ? "rgba(20,20,20,0.85)" : "rgba(255,255,255,1)",
+          ? "0 12px 24px rgba(0,0,0,0.4), 0 0 0 1px #334155"
+          : "0 12px 24px rgba(0,0,0,0.12), 0 0 0 1px #e2e8f0",
+        borderColor: "#5865f2",
+        backgroundColor: isDark ? "#263449" : "#f0f4ff",
       };
     }
 
     return baseStyles;
-  }, [isDark, isHovered, isActive]);
+  }, [isDark, isHovered]);
 
   // Memoize other styles
   const titleStyle = useMemo(
     () => ({
-      color: isDark ? "#fff" : "#000",
+      color: isDark ? "#e2e8f0" : "#0f172a",
       maxWidth: "100%",
-      overflow: "hidden" as const,
-      textOverflow: "ellipsis" as const,
-      fontWeight: isHovered ? 600 : 500,
+      fontWeight: isHovered ? 700 : 600,
+      fontSize: "1rem",
+      textAlign: "center" as const,
+      transition: "all 300ms ease",
     }),
     [isDark, isHovered]
   );
 
   const subtitleStyle = useMemo(
     () => ({
-      color: isDark ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.7)",
+      color: isDark ? "#94a3b8" : "#64748b",
       maxWidth: "100%",
-      overflow: "hidden" as const,
-      textOverflow: "ellipsis" as const,
+      fontSize: "0.875rem",
+      textAlign: "center" as const,
     }),
     [isDark]
   );
 
-  const placeholderStyle = useMemo(
+  const iconContainerStyle = useMemo(
     () => ({
-      background: isDark
-        ? "linear-gradient(135deg, #1a1a1a 0%, #000 100%)"
-        : "linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%)",
+      width: "60px",
+      height: "60px",
+      borderRadius: "12px",
+      background: "linear-gradient(135deg, #5865f2 0%, #4752d4 100%)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: "1.5rem",
+      boxShadow: "0 4px 12px rgba(88, 101, 242, 0.3)",
+      transform: isHovered ? "scale(1.1) rotate(5deg)" : "scale(1)",
+      transition: "all 300ms cubic-bezier(0.4, 0, 0.2, 1)",
     }),
-    [isDark]
+    [isHovered]
   );
 
   // Memoize event handlers
   const handleMouseEnter = useCallback(() => setIsHovered(true), []);
-  const handleMouseLeave = useCallback(() => {
-    setIsHovered(false);
-    setIsActive(false);
-  }, []);
-  const handleMouseDown = useCallback(() => setIsActive(true), []);
-  const handleMouseUp = useCallback(() => setIsActive(false), []);
+  const handleMouseLeave = useCallback(() => setIsHovered(false), []);
 
   return (
     <Link
       href={href}
-      className={`flex flex-col items-center gap-2 no-underline ${
-        className ?? ""
-      }`}
-      style={{ width: "100%", maxWidth: "120px" }}
+      className={`group no-underline ${className ?? ""}`}
+      style={{ width: "100%", textDecoration: "none" }}
       aria-label={title}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onMouseDown={handleMouseDown}
-      onMouseUp={handleMouseUp}
     >
-      <div
-        className="w-24 h-24 rounded-lg flex items-center justify-center text-sm overflow-hidden"
-        style={cardStyles}
-      >
-        {icon ?? (
-          <div
-            className="w-full h-full flex items-center justify-center"
-            style={placeholderStyle}
-          />
+      <div style={cardStyles}>
+        {icon ? (
+          <div style={iconContainerStyle}>
+            {icon}
+          </div>
+        ) : (
+          <div style={iconContainerStyle}>
+            <span style={{ fontSize: "28px" }}>📦</span>
+          </div>
         )}
-      </div>
-      <div
-        className="text-sm text-center transition-all duration-300"
-        style={titleStyle}
-      >
-        {title}
-      </div>
-      {subtitle && (
-        <div className="text-xs text-center" style={subtitleStyle}>
-          {subtitle}
+        <div className="flex flex-col items-center gap-1 flex-1">
+          <div style={titleStyle}>
+            {title}
+          </div>
+          {subtitle && (
+            <div style={subtitleStyle}>
+              {subtitle}
+            </div>
+          )}
         </div>
-      )}
+        <div
+          style={{
+            position: "absolute",
+            right: "1.5rem",
+            top: "50%",
+            transform: "translateY(-50%)",
+            opacity: isHovered ? 1 : 0,
+            transition: "all 300ms ease",
+          }}
+        >
+          <ChevronRight
+            size={20}
+            color="#5865f2"
+            strokeWidth={2}
+          />
+        </div>
+      </div>
     </Link>
   );
 }

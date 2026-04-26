@@ -173,25 +173,40 @@ export default function Dashboard() {
   return (
     <div
       style={{
-        maxWidth: "1200px",
+        maxWidth: "1400px",
         margin: "0 auto",
         padding: "2rem 1rem",
       }}
     >
+      {/* Header Section */}
       <div
         style={{
-          marginBottom: "2rem",
+          marginBottom: "3rem",
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.5rem",
         }}
       >
         <h1
           style={{
-            fontSize: "1.875rem",
-            fontWeight: 700,
-            color: isDark ? "#fff" : "#000",
+            fontSize: "2.5rem",
+            fontWeight: 800,
+            color: isDark ? "#e2e8f0" : "#0f172a",
+            letterSpacing: "-0.5px",
+            margin: 0,
           }}
         >
-          Servers
+          Your Servers
         </h1>
+        <p
+          style={{
+            fontSize: "1rem",
+            color: isDark ? "#94a3b8" : "#64748b",
+            margin: 0,
+          }}
+        >
+          Manage your Discord servers and customize ticket panels
+        </p>
       </div>
 
       {servers.length === 0 && !fetching ? (
@@ -201,27 +216,30 @@ export default function Dashboard() {
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            padding: "4rem 2rem",
+            padding: "6rem 2rem",
             textAlign: "center",
-            gap: "1.5rem",
+            gap: "2rem",
+            borderRadius: "12px",
+            background: isDark ? "#1e293b" : "#f8fafb",
+            border: `2px dashed ${isDark ? "#334155" : "#e2e8f0"}`,
           }}
         >
           <div
             style={{
-              fontSize: "4rem",
-              opacity: 0.5,
+              fontSize: "5rem",
+              opacity: 0.3,
             }}
           >
-            🤖
+            🚀
           </div>
           <div
-            style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+            style={{ display: "flex", flexDirection: "column", gap: "0.75rem", maxWidth: "500px" }}
           >
             <h2
               style={{
                 fontSize: "1.5rem",
                 fontWeight: 600,
-                color: isDark ? "#fff" : "#000",
+                color: isDark ? "#e2e8f0" : "#0f172a",
                 margin: 0,
               }}
             >
@@ -229,16 +247,13 @@ export default function Dashboard() {
             </h2>
             <p
               style={{
-                fontSize: "1rem",
-                color: isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)",
-                maxWidth: "500px",
+                fontSize: "0.95rem",
+                color: isDark ? "#cbd5e1" : "#64748b",
                 margin: 0,
+                lineHeight: 1.6,
               }}
             >
-              The bot might be offline or you don&apos;t have any servers where
-              the bot is present.
-              <br />
-              Please make sure the bot is running and invited to your server.
+              The bot might be offline or you don&apos;t have any servers where the bot is present. Please make sure the bot is running and invited to your server.
             </p>
           </div>
         </div>
@@ -247,9 +262,9 @@ export default function Dashboard() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
-              gap: "2rem",
-              justifyItems: "center",
+              gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+              gap: "1.5rem",
+              gridAutoRows: "minmax(160px, auto)",
             }}
           >
             {display.map((s) => (
@@ -261,18 +276,16 @@ export default function Dashboard() {
                   s.icon ? (
                     <Image
                       src={getDiscordGuildIconUrl(s.id, s.icon)!}
-                      width={120}
-                      height={120}
+                      width={60}
+                      height={60}
                       alt={`${s.name} icon`}
                       className="w-full h-full object-cover"
+                      style={{ borderRadius: "8px" }}
                     />
                   ) : (
-                    <div
-                      className="w-full h-full flex items-center justify-center text-2xl"
-                      style={{ color: isDark ? "#fff" : "#000" }}
-                    >
+                    <span style={{ fontSize: "2rem" }}>
                       {s.name.charAt(0).toUpperCase()}
-                    </div>
+                    </span>
                   )
                 }
               />

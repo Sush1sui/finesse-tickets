@@ -138,9 +138,13 @@ export default memo(function Header() {
     return {
       header: {
         ...baseStyles.header,
-        background: isDark ? "rgba(10,11,14,0.7)" : "rgba(255,255,255,0.9)",
-        borderBottom: "none",
-        color: isDark ? "#fff" : "#000",
+        background: isDark ? "rgba(15, 23, 42, 0.8)" : "rgba(255, 255, 255, 0.95)",
+        borderBottom: `1px solid ${isDark ? "#334155" : "#e2e8f0"}`,
+        color: isDark ? "#e2e8f0" : "#0f172a",
+        backdropFilter: "blur(10px)",
+        boxShadow: isDark
+          ? "0 1px 3px rgba(0, 0, 0, 0.3)"
+          : "0 1px 3px rgba(0, 0, 0, 0.08)",
       } as React.CSSProperties,
       inner: baseStyles.inner,
       left: baseStyles.left,
@@ -162,25 +166,24 @@ export default memo(function Header() {
       avatarWrap: baseStyles.avatarWrap,
       avatarBtn: {
         ...baseStyles.avatarBtn,
-        background: isDark ? "#000" : "rgba(0,0,0,0.03)",
-        color: isDark ? "#fff" : "#000",
-        border: isDark
-          ? "1px solid rgba(255,255,255,0.06)"
-          : "1px solid rgba(0,0,0,0.06)",
-        boxShadow: isDark ? undefined : "0 1px 2px rgba(0,0,0,0.04)",
+        background: isDark ? "#1e293b" : "#f1f5f9",
+        color: isDark ? "#e2e8f0" : "#0f172a",
+        border: `1px solid ${isDark ? "#334155" : "#e2e8f0"}`,
+        boxShadow: isDark
+          ? "0 1px 3px rgba(0,0,0,0.2)"
+          : "0 1px 3px rgba(0,0,0,0.08)",
+        transition: "all 0.2s ease",
       } as React.CSSProperties,
       menu: {
         ...baseStyles.menu,
-        background: isDark ? "rgba(18,18,20,0.95)" : "#fff",
-        border: isDark
-          ? "1px solid rgba(255,255,255,0.06)"
-          : "1px solid rgba(0,0,0,0.12)",
-        color: isDark ? "#fff" : "#000",
+        background: isDark ? "#1e293b" : "#ffffff",
+        border: `1px solid ${isDark ? "#334155" : "#e2e8f0"}`,
+        color: isDark ? "#e2e8f0" : "#0f172a",
         boxShadow: isDark
-          ? "0 8px 30px rgba(0,0,0,0.6)"
-          : "0 8px 30px rgba(2,6,23,0.06)",
-        outline: isDark ? undefined : "1px solid rgba(0,0,0,0.02)",
+          ? "0 8px 30px rgba(0,0,0,0.4)"
+          : "0 8px 30px rgba(0,0,0,0.1)",
         padding: 8,
+        backdropFilter: "blur(10px)",
       } as React.CSSProperties,
       menuItem: {
         ...baseStyles.menuItem,
