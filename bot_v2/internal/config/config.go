@@ -8,8 +8,9 @@ import (
 )
 
 type Config struct {
-	Port  string
-	DBUrl string
+	Port     string
+	DBUrl    string
+	BotToken string
 }
 
 func Load() *Config {
@@ -26,8 +27,14 @@ func Load() *Config {
 		port = "8080"
 	}
 
+	botToken := os.Getenv("BOT_TOKEN")
+	if botToken == "" {
+		log.Fatal("BOT_TOKEN is required in .env")
+	}
+
 	return &Config{
-		Port:  port,
-		DBUrl: dbUrl,
+		Port:     port,
+		DBUrl:    dbUrl,
+		BotToken: botToken,
 	}
 }

@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 
 	"github.com/Sush1sui/FNS_BOT/internal/api"
+	"github.com/Sush1sui/FNS_BOT/internal/bot"
 	"github.com/Sush1sui/FNS_BOT/internal/config"
 	"github.com/Sush1sui/FNS_BOT/internal/db"
 	"github.com/Sush1sui/FNS_BOT/internal/storage"
@@ -33,8 +36,19 @@ func main() {
 	mux := api.NewRouter(queries, azureClient)
 
 	// 4. Start Server
-	fmt.Printf("🚀 Finesse API flying on port %s\n", cfg.Port)
+	fmt.Printf("Finesse API on port %s\n", cfg.Port)
 	if err := http.ListenAndServe(":"+cfg.Port, mux); err != nil {
 		log.Fatal(err)
 	}
+
+	// 5. Start Bot
+	go func() {
+		bot.StartBot()
+	}()
+
+	// Graceful shutdown
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt)
+	<-sigChan
+	fmt.Println("\nShutting down gracefully...")
 }
