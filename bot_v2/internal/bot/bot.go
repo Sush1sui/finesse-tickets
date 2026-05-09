@@ -55,7 +55,7 @@ func StartBot() {
 			Status: "idle",
 			Activities: []*discordgo.Activity{
 				{
-					Name: "8 BOT! (BETA FOR 1 WEEK, Ping @Sush1sui to report bugs)",
+					Name: "Finesse Bot",
 				},
 			},
 		})
@@ -96,4 +96,13 @@ func StartBot() {
 
 	Session = s
 	fmt.Println("Bot is up!")
+}
+
+func StopBot() {
+	if Session == nil {
+		return
+	}
+
+	_ = Session.Close()
+	Session = nil
 }

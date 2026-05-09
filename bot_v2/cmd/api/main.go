@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/Sush1sui/FNS_BOT/internal/api"
 	"github.com/Sush1sui/FNS_BOT/internal/bot"
@@ -33,22 +35,30 @@ func main() {
 	azureClient := storage.NewAzureClient()
 
 	// 3. Mount Router
-	mux := api.NewRouter(queries, azureClient)
+	mux := api.NewRouter(queries, azureClient, cfg)
 
-	// 4. Start Server
-	fmt.Printf("Finesse API on port %s\n", cfg.Port)
-	if err := http.ListenAndServe(":"+cfg.Port, mux); err != nil {
-		log.Fatal(err)
-	}
+	// 4. Start Bot
+	bot.StartBot()
 
-	// 5. Start Bot
+	// 5. Start Server
+	server := &http.Server{Addr: ":" + cfg.Port, Handler: mux}
 	go func() {
-		bot.StartBot()
+		fmt.Printf("Finesse API on port %s\n", cfg.Port)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Printf("HTTP server error: %v", err)
+		}
 	}()
 
 	// Graceful shutdown
 	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	<-sigChan
 	fmt.Println("\nShutting down gracefully...")
+
+	bot.StopBot()
+	ctxShutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := server.Shutdown(ctxShutdown); err != nil {
+		log.Printf("HTTP shutdown error: %v", err)
+	}
 }

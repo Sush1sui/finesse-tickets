@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/Sush1sui/FNS_BOT/internal/config"
 	"github.com/Sush1sui/FNS_BOT/internal/db"
 	"github.com/Sush1sui/FNS_BOT/internal/storage"
 )
@@ -14,6 +15,7 @@ import (
 type Server struct {
 	DB      *db.Queries
 	Storage *storage.Client
+	Config  *config.Config
 }
 
 func writeJSON(w http.ResponseWriter, status int, data any) {
