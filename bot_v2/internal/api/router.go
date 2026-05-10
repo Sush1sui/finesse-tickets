@@ -3,6 +3,8 @@ package api
 import (
 	"net/http"
 
+	"github.com/Sush1sui/FNS_BOT/internal/api/auth"
+	"github.com/Sush1sui/FNS_BOT/internal/api/server-config"
 	"github.com/Sush1sui/FNS_BOT/internal/config"
 	"github.com/Sush1sui/FNS_BOT/internal/db"
 	"github.com/Sush1sui/FNS_BOT/internal/storage"
@@ -15,22 +17,48 @@ func NewRouter(queries *db.Queries, storageClient *storage.Client, cfg *config.C
 		Config:  cfg,
 	}
 
+	configHandler := &serverconfig.Handler{DB: queries}
+	authHandler := &auth.Handler{Server: s}
+
 	mux := http.NewServeMux()
 
-	// Public Routes
 	mux.HandleFunc("GET /health", s.handleHealth)
 
-	// API Routes for Server Config
-	mux.HandleFunc("GET /api/config/{server_id}", s.handleGetServerConfig)
-	mux.HandleFunc("PUT /api/config/{server_id}", s.handleUpdateServerConfig)
+	// Server config routes with auth wrapper
+	mux.HandleFunc("GET /api/config/{server_id}", s.wrapAuthConfig(configHandler.HandleGetServerConfig))
+	mux.HandleFunc("PUT /api/config/{server_id}", s.wrapAuthConfig(configHandler.HandleUpdateServerConfig))
 
-	// Auth Routes
-	mux.HandleFunc("GET /api/auth/login", s.handleAuthLogin)
-	mux.HandleFunc("GET /api/auth/callback", s.handleAuthCallback)
-	mux.HandleFunc("GET /api/auth/me", s.handleAuthMe)
-	mux.HandleFunc("GET /api/auth/servers", s.handleAuthServers)
-	mux.HandleFunc("POST /api/auth/logout", s.handleAuthLogout)
+	// Auth routes
+	mux.HandleFunc("GET /api/auth/login", authHandler.HandleAuthLogin)
+	mux.HandleFunc("GET /api/auth/callback", authHandler.HandleAuthCallback)
+	mux.HandleFunc("GET /api/auth/me", authHandler.HandleAuthMe)
+	mux.HandleFunc("GET /api/auth/servers", authHandler.HandleAuthServers)
+	mux.HandleFunc("POST /api/auth/logout", authHandler.HandleAuthLogout)
 
-	// Wrap the entire router with our CORS middleware
 	return EnableCORS(mux, cfg.ClientOrigin, true)
+}
+
+// wrapAuthConfig wraps a handler to require auth + server authorization
+func (s *Server) wrapAuthConfig(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		serverID := r.PathValue("server_id")
+
+		claims, err := s.AuthFromRequest(r)
+		if err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+			return
+		}
+
+		authorized, err := s.IsAuthorizedForServer(r.Context(), serverID, claims)
+		if err != nil {
+			writeJSON(w, http.StatusBadGateway, map[string]string{"error": "auth check failed"})
+			return
+		}
+		if !authorized {
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied"})
+			return
+		}
+
+		next(w, r)
+	}
 }
