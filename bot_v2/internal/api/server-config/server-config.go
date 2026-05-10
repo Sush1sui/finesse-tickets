@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/Sush1sui/FNS_BOT/internal/bot"
 	"github.com/Sush1sui/FNS_BOT/internal/db"
+	"github.com/Sush1sui/FNS_BOT/internal/utils"
 )
 
 // Handler handles HTTP endpoints for server configuration
@@ -22,6 +24,8 @@ func writeJSON(w http.ResponseWriter, status int, data any) {
 
 func (h *Handler) HandleGetServerConfig(w http.ResponseWriter, r *http.Request) {
 	serverIDStr := r.PathValue("server_id")
+	showChannels := r.URL.Query().Get("show_channels") == "true"
+
 	serverID, err := strconv.ParseInt(serverIDStr, 10, 64)
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid Server ID"})
@@ -32,6 +36,18 @@ func (h *Handler) HandleGetServerConfig(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "Config not found"})
 		return
+	}
+
+	if showChannels {
+		channels, ok := utils.GetGuildChannelsCache(bot.Session, serverIDStr)
+		if ok {
+			response := map[string]any{
+				"config":   config,
+				"channels": channels,
+			}
+			writeJSON(w, http.StatusOK, response)
+			return
+		}
 	}
 
 	writeJSON(w, http.StatusOK, config)

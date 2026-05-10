@@ -9,6 +9,8 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 const DiscordAPIBase = "https://discord.com/api/v10"
@@ -182,4 +184,61 @@ func ParsePermissions(permStr string) (int64, error) {
 
 func HasAdminPerms(perms int64) bool {
 	return perms&PermAdministrator != 0 || perms&PermManageGuild != 0
+}
+
+type DiscordChannel struct {
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	Type    int    `json:"type"`
+	ParentID string `json:"parent_id"`
+}
+
+// ChannelTypeText is the type for text channels
+const ChannelTypeText = 0
+const ChannelTypeVoice = 2
+const ChannelTypeCategory = 4
+
+// GetGuildChannels fetches all channels for a guild via bot API
+func GetGuildChannels(session *discordgo.Session, guildID string) ([]DiscordChannel, error) {
+	channels, err := session.GuildChannels(guildID)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]DiscordChannel, 0, len(channels))
+	for _, ch := range channels {
+		result = append(result, DiscordChannel{
+			ID:       ch.ID,
+			Name:     ch.Name,
+			Type:     int(ch.Type),
+			ParentID: ch.ParentID,
+		})
+	}
+	return result, nil
+}
+
+// GetGuildChannelsCache gets channels from bot's state cache (like discord.js .channels.cache)
+func GetGuildChannelsCache(session *discordgo.Session, guildID string) ([]DiscordChannel, bool) {
+	if session == nil || session.State == nil {
+		return nil, false
+	}
+
+	session.State.RLock()
+	defer session.State.RUnlock()
+
+	guild, err := session.State.Guild(guildID)
+	if err != nil {
+		return nil, false
+	}
+
+	result := make([]DiscordChannel, 0, len(guild.Channels))
+	for _, ch := range guild.Channels {
+		result = append(result, DiscordChannel{
+			ID:       ch.ID,
+			Name:     ch.Name,
+			Type:     int(ch.Type),
+			ParentID: ch.ParentID,
+		})
+	}
+	return result, true
 }
