@@ -1,37 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { api, type ServerSummary } from "../../lib/api";
 import useAuth from "../../lib/context/auth";
+import { useServers } from "../../lib/hooks/useServers";
 
 export default function ServersPage() {
   const router = useRouter();
   const { user, authLoading, logout } = useAuth();
-  const [servers, setServers] = useState<ServerSummary[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { servers, isLoading } = useServers();
 
-  useEffect(() => {
-    if (!user) return;
-
-    let cancelled = false;
-    const fetchServers = async () => {
-      try {
-        const data = await api.auth.servers();
-        if (!cancelled) setServers(data.servers ?? []);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    void fetchServers();
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
-
-  if (authLoading) {
+  if (authLoading || isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="text-sm text-zinc-500">Loading...</p>
@@ -73,9 +52,7 @@ export default function ServersPage() {
         </div>
       </header>
 
-      {loading ? (
-        <p className="text-sm text-zinc-500">Loading servers...</p>
-      ) : servers.length === 0 ? (
+      {servers.length === 0 ? (
         <p className="text-sm text-zinc-500">No servers found.</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

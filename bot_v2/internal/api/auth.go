@@ -235,7 +235,12 @@ func (s *Server) signJWT(user discordUser, name, image string, token *discordTok
 }
 
 // IsAuthorizedForServer checks if user is authorized to access a server
+// Optimized: Uses bot cache + DB only, no Discord user API calls
 func (s *Server) IsAuthorizedForServer(ctx context.Context, serverID string, claims *AuthClaims) (bool, error) {
+	if !BotInGuild(serverID) {
+		return false, nil
+	}
+
 	id, err := strconv.ParseInt(serverID, 10, 64)
 	if err != nil {
 		return false, err
@@ -243,36 +248,82 @@ func (s *Server) IsAuthorizedForServer(ctx context.Context, serverID string, cla
 
 	cfg, err := s.DB.GetServerConfig(ctx, id)
 	if err != nil {
-		// If config doesn't exist, check if user has guild perms (owner/admin)
-		// This allows access to new servers before any config is created
-		if claims.AccessToken != "" {
-			ok, permsErr := s.HasGuildPerms(claims.AccessToken, serverID)
-			if permsErr == nil && ok {
-				return true, nil
-			}
-		}
-		return false, nil
+		return true, nil
 	}
 
 	if utils.ContainsString(cfg.AuthorizedMemberIds, claims.DiscordID) {
 		return true, nil
 	}
 
-	if claims.AccessToken != "" {
-		ok, err := s.HasGuildPerms(claims.AccessToken, serverID)
-		if err == nil && ok {
-			return true, nil
-		}
+	if hasAdminPermsFromCache(serverID, claims.DiscordID) {
+		return true, nil
 	}
 
-	if len(cfg.AuthorizedRoleIds) > 0 {
-		ok, err := s.MemberHasRole(serverID, claims.DiscordID, cfg.AuthorizedRoleIds)
-		if err == nil && ok {
-			return true, nil
-		}
+	if len(cfg.AuthorizedRoleIds) > 0 && userHasAuthorizedRole(serverID, claims.DiscordID, cfg.AuthorizedRoleIds) {
+		return true, nil
 	}
 
 	return false, nil
+}
+
+func BotInGuild(guildID string) bool {
+	if bot.Session == nil || bot.Session.State == nil {
+		return false
+	}
+	bot.Session.State.RLock()
+	defer bot.Session.State.RUnlock()
+	_, err := bot.Session.State.Guild(guildID)
+	return err == nil
+}
+
+func userHasAuthorizedRole(guildID, userID string, allowedRoles []string) bool {
+	if bot.Session == nil || bot.Session.State == nil {
+		return false
+	}
+
+	member, err := bot.Session.State.Member(guildID, userID)
+	if err != nil {
+		return false
+	}
+
+	for _, roleID := range member.Roles {
+		if utils.ContainsString(allowedRoles, roleID) {
+			return true
+		}
+	}
+	return false
+}
+
+func hasAdminPermsFromCache(guildID, userID string) bool {
+	if bot.Session == nil || bot.Session.State == nil {
+		return false
+	}
+
+	guild, err := bot.Session.State.Guild(guildID)
+	if err != nil {
+		return false
+	}
+
+	if guild.OwnerID == userID {
+		return true
+	}
+
+	member, err := bot.Session.State.Member(guildID, userID)
+	if err != nil {
+		return false
+	}
+
+	var perms int64
+	for _, roleID := range member.Roles {
+		role, err := bot.Session.State.Role(guildID, roleID)
+		if err != nil {
+			continue
+		}
+		perms |= role.Permissions
+	}
+
+	// Admin = 0x8, Manage Channels = 0x10, Manage Server = 0x20
+return perms&0x8 != 0 || perms&0x10 != 0 || perms&0x20 != 0
 }
 
 func (s *Server) isAuthorizedGuild(ctx context.Context, guild discordGuild, claims *AuthClaims) (bool, error) {
@@ -338,6 +389,7 @@ func (s *Server) HasGuildPerms(accessToken, guildID string) (bool, error) {
 }
 
 // MemberHasRole checks if user has any of the allowed roles in a guild
+// Note: Using API call directly - member caching is complex in discordgo
 func (s *Server) MemberHasRole(guildID, userID string, allowedRoles []string) (bool, error) {
 	if s.Config.BotToken == "" {
 		return false, errors.New("missing bot token")

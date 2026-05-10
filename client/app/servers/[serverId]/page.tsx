@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { api, type ServerConfig, type DiscordChannel } from "../../../lib/api";
+import { api, type ServerConfig } from "../../../lib/api";
 import useAuth from "../../../lib/context/auth";
+import { useServerConfig } from "../../../lib/hooks/useServers";
 
 type FormData = {
   TicketNameStyle: string;
@@ -26,11 +28,8 @@ export default function ServerSettingsPage() {
   const params = useParams();
   const router = useRouter();
   const { user, authLoading } = useAuth();
-  const [config, setConfig] = useState<ServerConfig | null>(null);
-  const [channels, setChannels] = useState<DiscordChannel[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { config, channels, isLoading } = useServerConfig(params.serverId as string, true);
   const [saving, setSaving] = useState(false);
-
   const serverId = params.serverId as string;
 
   const [formData, setFormData] = useState<FormData>({
@@ -51,53 +50,24 @@ export default function ServerSettingsPage() {
   });
 
   useEffect(() => {
-    if (!user || !serverId) return;
-
-    let cancelled = false;
-    const fetchConfig = async () => {
-      try {
-        const data = await api.config.get(serverId, true);
-        // Handle both plain config and config with channels response
-        const config = "config" in data ? data.config : data;
-        const channelList = "channels" in data ? data.channels : [];
-        if (!cancelled) {
-          setConfig(config);
-          setChannels(channelList);
-          setFormData({
-            TicketNameStyle: config.TicketNameStyle || "number",
-            TicketTranscripts: config.TicketTranscripts || "",
-            MaxTicketsPerUser: config.MaxTicketsPerUser || 1,
-            TicketPermissionsAttachFiles:
-              config.TicketPermissionsAttachFiles || false,
-            TicketPermissionsEmbedLinks:
-              config.TicketPermissionsEmbedLinks || false,
-            TicketPermissionsAddReactions:
-              config.TicketPermissionsAddReactions || false,
-            AutoClose: config.AutoClose || false,
-            AutoCloseOnUserLeave: config.AutoCloseOnUserLeave || false,
-            AutoCloseNoResponseDays: config.AutoCloseNoResponseDays || 0,
-            AutoCloseNoResponseHours: config.AutoCloseNoResponseHours || 0,
-            AutoCloseNoResponseMins: config.AutoCloseNoResponseMins || 0,
-            AutoCloseSinceLastMessageDays:
-              config.AutoCloseSinceLastMessageDays || 0,
-            AutoCloseSinceLastMessageHours:
-              config.AutoCloseSinceLastMessageHours || 0,
-            AutoCloseSinceLastMessageMins:
-              config.AutoCloseSinceLastMessageMins || 0,
-          });
-        }
-      } catch {
-        // ignore
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    void fetchConfig();
-    return () => {
-      cancelled = true;
-    };
-  }, [user, serverId]);
+    if (!config) return;
+    setFormData({
+      TicketNameStyle: config.TicketNameStyle || "number",
+      TicketTranscripts: config.TicketTranscripts || "",
+      MaxTicketsPerUser: config.MaxTicketsPerUser || 1,
+      TicketPermissionsAttachFiles: config.TicketPermissionsAttachFiles || false,
+      TicketPermissionsEmbedLinks: config.TicketPermissionsEmbedLinks || false,
+      TicketPermissionsAddReactions: config.TicketPermissionsAddReactions || false,
+      AutoClose: config.AutoClose || false,
+      AutoCloseOnUserLeave: config.AutoCloseOnUserLeave || false,
+      AutoCloseNoResponseDays: config.AutoCloseNoResponseDays || 0,
+      AutoCloseNoResponseHours: config.AutoCloseNoResponseHours || 0,
+      AutoCloseNoResponseMins: config.AutoCloseNoResponseMins || 0,
+      AutoCloseSinceLastMessageDays: config.AutoCloseSinceLastMessageDays || 0,
+      AutoCloseSinceLastMessageHours: config.AutoCloseSinceLastMessageHours || 0,
+      AutoCloseSinceLastMessageMins: config.AutoCloseSinceLastMessageMins || 0,
+    });
+  }, [config]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -119,7 +89,7 @@ export default function ServerSettingsPage() {
     }
   };
 
-  if (authLoading || loading) {
+  if (authLoading || isLoading) {
     return (
       <div className="flex items-center justify-center py-10">
         <p className="text-sm text-zinc-500">Loading...</p>
@@ -129,13 +99,21 @@ export default function ServerSettingsPage() {
 
   if (!user) {
     router.push("/servers");
-    return null;
+return null;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-zinc-900">Server Settings</h1>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/servers"
+            className="text-zinc-500 hover:text-zinc-700"
+          >
+            ← Back
+          </Link>
+          <h1 className="text-lg font-semibold text-zinc-900">Server Settings</h1>
+        </div>
         <button
           onClick={handleSave}
           disabled={saving}

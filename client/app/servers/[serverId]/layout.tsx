@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { api, type ServerSummary } from "../../../lib/api";
 import useAuth from "../../../lib/context/auth";
+import { useServers } from "../../../lib/hooks/useServers";
 
 const navItems = [
   { href: "", label: "Settings" },
@@ -21,32 +20,12 @@ export default function ServerLayout({
   const params = useParams();
   const router = useRouter();
   const { user, authLoading } = useAuth();
-  const [server, setServer] = useState<ServerSummary | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { servers, isLoading: serversLoading } = useServers();
 
   const serverId = params.serverId as string;
+  const server = servers.find((s) => s.id === serverId);
 
-  useEffect(() => {
-    if (!user) return;
-
-    let cancelled = false;
-    const fetchServers = async () => {
-      try {
-        const data = await api.auth.servers();
-        const found = data.servers.find((s) => s.id === serverId);
-        if (!cancelled) setServer(found ?? null);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    void fetchServers();
-    return () => {
-      cancelled = true;
-    };
-  }, [user, serverId]);
-
-  if (authLoading || loading) {
+  if (authLoading || serversLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="text-sm text-zinc-500">Loading...</p>
