@@ -24,6 +24,5 @@ fns-go.exe
 Thumbs.db
 
 node_modules/
-*.sql
 *agents
 skills-lock.json

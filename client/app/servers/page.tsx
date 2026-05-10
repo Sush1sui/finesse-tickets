@@ -3,22 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import useAuth from "../../context/auth";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "";
-
-type Server = {
-  id: string;
-  name: string;
-  iconUrl: string;
-};
-
-type ServersRes = { servers: Server[] };
+import { api, type ServerSummary } from "../../lib/api";
+import useAuth from "../../lib/context/auth";
 
 export default function ServersPage() {
   const router = useRouter();
   const { user, authLoading, logout } = useAuth();
-  const [servers, setServers] = useState<Server[]>([]);
+  const [servers, setServers] = useState<ServerSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,13 +18,8 @@ export default function ServersPage() {
     let cancelled = false;
     const fetchServers = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/auth/servers`, {
-          credentials: "include",
-        });
-        if (res.ok) {
-          const data = (await res.json()) as ServersRes;
-          if (!cancelled) setServers(data.servers ?? []);
-        }
+        const data = await api.auth.servers();
+        if (!cancelled) setServers(data.servers ?? []);
       } finally {
         if (!cancelled) setLoading(false);
       }

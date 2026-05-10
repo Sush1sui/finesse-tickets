@@ -243,7 +243,15 @@ func (s *Server) IsAuthorizedForServer(ctx context.Context, serverID string, cla
 
 	cfg, err := s.DB.GetServerConfig(ctx, id)
 	if err != nil {
-		return false, err
+		// If config doesn't exist, check if user has guild perms (owner/admin)
+		// This allows access to new servers before any config is created
+		if claims.AccessToken != "" {
+			ok, permsErr := s.HasGuildPerms(claims.AccessToken, serverID)
+			if permsErr == nil && ok {
+				return true, nil
+			}
+		}
+		return false, nil
 	}
 
 	if utils.ContainsString(cfg.AuthorizedMemberIds, claims.DiscordID) {

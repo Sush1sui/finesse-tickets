@@ -3,12 +3,8 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import useAuth from "../../../context/auth";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "";
-
-type Server = { id: string; name: string; iconUrl: string };
-type ServersRes = { servers: Server[] };
+import { api, type ServerSummary } from "../../../lib/api";
+import useAuth from "../../../lib/context/auth";
 
 const navItems = [
   { href: "", label: "Settings" },
@@ -25,7 +21,7 @@ export default function ServerLayout({
   const params = useParams();
   const router = useRouter();
   const { user, authLoading } = useAuth();
-  const [server, setServer] = useState<Server | null>(null);
+  const [server, setServer] = useState<ServerSummary | null>(null);
   const [loading, setLoading] = useState(true);
 
   const serverId = params.serverId as string;
@@ -36,14 +32,9 @@ export default function ServerLayout({
     let cancelled = false;
     const fetchServers = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/auth/servers`, {
-          credentials: "include",
-        });
-        if (res.ok) {
-          const data = (await res.json()) as ServersRes;
-          const found = data.servers.find((s) => s.id === serverId);
-          if (!cancelled) setServer(found ?? null);
-        }
+        const data = await api.auth.servers();
+        const found = data.servers.find((s) => s.id === serverId);
+        if (!cancelled) setServer(found ?? null);
       } finally {
         if (!cancelled) setLoading(false);
       }

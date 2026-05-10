@@ -9,12 +9,11 @@ import (
 )
 
 type AutoCloseConfig struct {
-	ID                               int32
-	ServerConfigID                   int64
-	IsActive                         bool
-	CloseOnUserLeave                 bool
-	CloseSinceOpenWithNoResponseMins pgtype.Int4
-	CloseSinceLastMessageMins        pgtype.Int4
+	ServerConfigID                    int64
+	IsActive                          bool
+	CloseOnUserLeave                   bool
+	CloseSinceOpenWithNoResponseMins   pgtype.Int4
+	CloseSinceLastMessageMins          pgtype.Int4
 }
 
 type MultiPanelConfig struct {

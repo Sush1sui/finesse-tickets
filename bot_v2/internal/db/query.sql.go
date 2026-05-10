@@ -49,7 +49,7 @@ func (q *Queries) CreateTranscript(ctx context.Context, arg CreateTranscriptPara
 }
 
 const getAutoCloseConfig = `-- name: GetAutoCloseConfig :one
-SELECT id, server_config_id, is_active, close_on_user_leave, close_since_open_with_no_response_mins, close_since_last_message_mins FROM auto_close_config 
+SELECT server_config_id, is_active, close_on_user_leave, close_since_open_with_no_response_mins, close_since_last_message_mins FROM auto_close_config
 WHERE server_config_id = $1 LIMIT 1
 `
 
@@ -57,7 +57,46 @@ func (q *Queries) GetAutoCloseConfig(ctx context.Context, serverConfigID int64) 
 	row := q.db.QueryRow(ctx, getAutoCloseConfig, serverConfigID)
 	var i AutoCloseConfig
 	err := row.Scan(
-		&i.ID,
+		&i.ServerConfigID,
+		&i.IsActive,
+		&i.CloseOnUserLeave,
+		&i.CloseSinceOpenWithNoResponseMins,
+		&i.CloseSinceLastMessageMins,
+	)
+	return i, err
+}
+
+const upsertAutoCloseConfig = `-- name: UpsertAutoCloseConfig :one
+INSERT INTO auto_close_config (
+    server_config_id, is_active, close_on_user_leave,
+    close_since_open_with_no_response_mins, close_since_last_message_mins
+) VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (server_config_id) DO UPDATE SET
+    is_active = EXCLUDED.is_active,
+    close_on_user_leave = EXCLUDED.close_on_user_leave,
+    close_since_open_with_no_response_mins = EXCLUDED.close_since_open_with_no_response_mins,
+    close_since_last_message_mins = EXCLUDED.close_since_last_message_mins
+RETURNING server_config_id, is_active, close_on_user_leave, close_since_open_with_no_response_mins, close_since_last_message_mins
+`
+
+type UpsertAutoCloseConfigParams struct {
+	ServerConfigID                    int64
+	IsActive                          bool
+	CloseOnUserLeave                  bool
+	CloseSinceOpenWithNoResponseMins  int32
+	CloseSinceLastMessageMins         int32
+}
+
+func (q *Queries) UpsertAutoCloseConfig(ctx context.Context, arg UpsertAutoCloseConfigParams) (AutoCloseConfig, error) {
+	row := q.db.QueryRow(ctx, upsertAutoCloseConfig,
+		arg.ServerConfigID,
+		arg.IsActive,
+		arg.CloseOnUserLeave,
+		arg.CloseSinceOpenWithNoResponseMins,
+		arg.CloseSinceLastMessageMins,
+	)
+	var i AutoCloseConfig
+	err := row.Scan(
 		&i.ServerConfigID,
 		&i.IsActive,
 		&i.CloseOnUserLeave,
