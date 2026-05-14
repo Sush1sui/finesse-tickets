@@ -187,10 +187,23 @@ func HasAdminPerms(perms int64) bool {
 }
 
 type DiscordChannel struct {
-	ID      string `json:"id"`
-	Name    string `json:"name"`
-	Type    int    `json:"type"`
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Type     int    `json:"type"`
 	ParentID string `json:"parent_id"`
+}
+
+type DiscordRole struct {
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Color    int    `json:"color"`
+	Position int    `json:"position"`
+}
+
+type DiscordEmoji struct {
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Animated bool   `json:"animated"`
 }
 
 // ChannelTypeText is the type for text channels
@@ -238,6 +251,55 @@ func GetGuildChannelsCache(session *discordgo.Session, guildID string) ([]Discor
 			Name:     ch.Name,
 			Type:     int(ch.Type),
 			ParentID: ch.ParentID,
+		})
+	}
+	return result, true
+}
+
+func GetGuildRolesCache(session *discordgo.Session, guildID string) ([]DiscordRole, bool) {
+	if session == nil || session.State == nil {
+		return nil, false
+	}
+
+	session.State.RLock()
+	defer session.State.RUnlock()
+
+	guild, err := session.State.Guild(guildID)
+	if err != nil {
+		return nil, false
+	}
+
+	result := make([]DiscordRole, 0, len(guild.Roles))
+	for _, role := range guild.Roles {
+		result = append(result, DiscordRole{
+			ID:       role.ID,
+			Name:     role.Name,
+			Color:    int(role.Color),
+			Position: role.Position,
+		})
+	}
+	return result, true
+}
+
+func GetGuildEmojisCache(session *discordgo.Session, guildID string) ([]DiscordEmoji, bool) {
+	if session == nil || session.State == nil {
+		return nil, false
+	}
+
+	session.State.RLock()
+	defer session.State.RUnlock()
+
+	guild, err := session.State.Guild(guildID)
+	if err != nil {
+		return nil, false
+	}
+
+	result := make([]DiscordEmoji, 0, len(guild.Emojis))
+	for _, emoji := range guild.Emojis {
+		result = append(result, DiscordEmoji{
+			ID:       emoji.ID,
+			Name:     emoji.Name,
+			Animated: emoji.Animated,
 		})
 	}
 	return result, true

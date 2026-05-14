@@ -15,7 +15,7 @@ import (
 	"github.com/Sush1sui/FNS_BOT/internal/config"
 	"github.com/Sush1sui/FNS_BOT/internal/db"
 	"github.com/Sush1sui/FNS_BOT/internal/storage"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
@@ -23,13 +23,13 @@ func main() {
 
 	// 1. Connect to PostgreSQL
 	ctx := context.Background()
-	conn, err := pgx.Connect(ctx, cfg.DBUrl)
+	pool, err := pgxpool.New(ctx, cfg.DBUrl)
 	if err != nil {
 		log.Fatalf("Unable to connect to database: %v\n", err)
 	}
-	defer conn.Close(ctx)
+	defer pool.Close()
 
-	queries := db.New(conn)
+	queries := db.New(pool)
 
 	// 2. Connect to Azure Blob Storage
 	azureClient := storage.NewAzureClient()
