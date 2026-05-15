@@ -1,18 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import useSWR from "swr";
 
 import {
   api,
   type DiscordEmoji,
   type DiscordRole,
-} from "../../../../../lib/api";
+  type PanelDetail,
+} from "../../../../../../lib/api";
 import EmojiPicker from "@/components/emoji-picker";
 import {
   useGuildEmojis,
   useGuildMeta,
-} from "../../../../../lib/hooks/useGuildMeta";
+} from "../../../../../../lib/hooks/useGuildMeta";
 
 const buttonColors = ["red", "blue", "green", "gray"] as const;
 
@@ -43,10 +45,35 @@ type PanelForm = {
   smallImageUrl: string;
 };
 
-export default function CreatePanelPage() {
+const toHex = (value: number, fallback: string) => {
+  if (!value) return fallback;
+  return `#${value.toString(16).padStart(6, "0")}`;
+};
+
+const parseCustomEmoji = (value: string) => {
+  if (!value) {
+    return { useCustom: false, emoji: "", customEmojiId: "" };
+  }
+
+  const match = value.match(/<a?:(.+?):(\d+)>/);
+  if (match) {
+    return { useCustom: true, emoji: "", customEmojiId: match[2] };
+  }
+
+  const parts = value.split(":");
+  const maybeId = parts[parts.length - 1];
+  if (parts.length >= 2 && /^\d+$/.test(maybeId)) {
+    return { useCustom: true, emoji: "", customEmojiId: maybeId };
+  }
+
+  return { useCustom: false, emoji: value, customEmojiId: "" };
+};
+
+export default function EditPanelPage() {
   const router = useRouter();
   const params = useParams();
   const serverId = params.serverId as string;
+  const panelId = params.panelId as string;
 
   const [form, setForm] = useState<PanelForm>({
     mentionRoles: [],
@@ -74,13 +101,59 @@ export default function CreatePanelPage() {
     largeImageUrl: "",
     smallImageUrl: "",
   });
-  const { roles, channels, categories, isLoading } = useGuildMeta(serverId);
+
+  const {
+    data: panel,
+    isLoading,
+    error,
+  } = useSWR<PanelDetail>(
+    serverId && panelId ? [serverId, panelId] : null,
+    () => api.panels.get(serverId, panelId),
+    { revalidateOnFocus: false },
+  );
+
+  const { roles, channels, categories } = useGuildMeta(serverId);
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const { emojis, isLoading: emojisLoading } = useGuildEmojis(
     serverId,
     form.customEmoji && emojiPickerOpen,
   );
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    if (!panel) return;
+
+    const parsedEmoji = parseCustomEmoji(panel.btnEmoji);
+    const welcome = panel.welcomeMessage;
+
+    setForm({
+      mentionRoles: panel.mentionRolesOnOpen ?? [],
+      categoryId: panel.categoryId ?? "",
+      title: panel.title ?? "",
+      content: panel.content ?? "",
+      questions: panel.questions?.length ? panel.questions : [""],
+      welcomeMessage: {
+        embedColor: toHex(welcome?.embedColor ?? 0, "#57f287"),
+        title: welcome?.title ?? "",
+        description: welcome?.description ?? "",
+        titleUrl: welcome?.titleUrl ?? "",
+        largeImgUrl: welcome?.largeImgUrl ?? "",
+        smallImgUrl: welcome?.smallImgUrl ?? "",
+        footerText: welcome?.footerText ?? "",
+        footerIconUrl: welcome?.footerIconUrl ?? "",
+      },
+      color: toHex(panel.embedColor ?? 0, "#5865f2"),
+      channelId: panel.channelId ?? "",
+      buttonColor: panel.btnColor ?? "blue",
+      buttonText: panel.btnTxt ?? "Open Ticket",
+      emoji: parsedEmoji.useCustom ? "" : parsedEmoji.emoji,
+      customEmoji: parsedEmoji.useCustom,
+      customEmojiId: parsedEmoji.customEmojiId,
+      largeImageUrl: panel.largeImgUrl ?? "",
+      smallImageUrl: panel.smallImgUrl ?? "",
+    });
+  }, [panel]);
 
   const sortedRoles = useMemo(() => {
     return [...roles].sort((a, b) => b.position - a.position);
@@ -112,7 +185,7 @@ export default function CreatePanelPage() {
         ? buildEmojiValue(selectedCustomEmoji)
         : form.emoji;
 
-      await api.panels.create(serverId, {
+      await api.panels.update(serverId, panelId, {
         mentionRolesOnOpen: form.mentionRoles,
         categoryId: form.categoryId,
         title: form.title,
@@ -144,17 +217,46 @@ export default function CreatePanelPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!window.confirm("Delete this panel?")) return;
+    setDeleting(true);
+    try {
+      await api.panels.delete(serverId, panelId);
+      router.push(`/servers/${serverId}/panels`);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  if (isLoading && !panel) {
+    return <p className="text-sm text-zinc-500">Loading panel...</p>;
+  }
+
+  if (error) {
+    return <p className="text-sm text-red-600">Failed to load panel.</p>;
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-zinc-900">Create Panel</h1>
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm text-white disabled:opacity-50"
-        >
-          {saving ? "Saving..." : "Save"}
-        </button>
+        <h1 className="text-lg font-semibold text-zinc-900">Edit Panel</h1>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={deleting}
+            className="rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-700 disabled:opacity-50"
+          >
+            {deleting ? "Deleting..." : "Delete"}
+          </button>
+          <button
+            type="submit"
+            disabled={saving}
+            className="rounded-md bg-zinc-900 px-4 py-2 text-sm text-white disabled:opacity-50"
+          >
+            {saving ? "Saving..." : "Save"}
+          </button>
+        </div>
       </div>
 
       <section className="grid gap-4 rounded-lg border border-zinc-200 bg-white p-4">
@@ -519,10 +621,6 @@ export default function CreatePanelPage() {
           </label>
         </div>
       </section>
-
-      {isLoading && (
-        <p className="text-sm text-zinc-500">Loading server data...</p>
-      )}
     </form>
   );
 }

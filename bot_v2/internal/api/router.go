@@ -44,12 +44,14 @@ func NewRouter(queries *db.Queries, storageClient *storage.Client, cfg *config.C
 
 	// Panel routes
 	mux.HandleFunc("GET /api/servers/{server_id}/panels", s.wrapAuthConfig(panelsHandler.HandleListPanels))
+	mux.HandleFunc("GET /api/servers/{server_id}/panels/{panel_id}", s.wrapAuthConfig(panelsHandler.HandleGetPanel))
 	mux.HandleFunc("POST /api/servers/{server_id}/panels", s.wrapAuthConfig(panelsHandler.HandleCreatePanel))
 	mux.HandleFunc("PUT /api/servers/{server_id}/panels/{panel_id}", s.wrapAuthConfig(panelsHandler.HandleUpdatePanel))
 	mux.HandleFunc("DELETE /api/servers/{server_id}/panels/{panel_id}", s.wrapAuthConfig(panelsHandler.HandleDeletePanel))
 
 	// Multi-panel routes
 	mux.HandleFunc("GET /api/servers/{server_id}/multi-panels", s.wrapAuthConfig(panelsHandler.HandleListMultiPanels))
+	mux.HandleFunc("GET /api/servers/{server_id}/multi-panels/{multi_panel_id}", s.wrapAuthConfig(panelsHandler.HandleGetMultiPanel))
 	mux.HandleFunc("POST /api/servers/{server_id}/multi-panels", s.wrapAuthConfig(panelsHandler.HandleCreateMultiPanel))
 	mux.HandleFunc("PUT /api/servers/{server_id}/multi-panels/{multi_panel_id}", s.wrapAuthConfig(panelsHandler.HandleUpdateMultiPanel))
 	mux.HandleFunc("DELETE /api/servers/{server_id}/multi-panels/{multi_panel_id}", s.wrapAuthConfig(panelsHandler.HandleDeleteMultiPanel))

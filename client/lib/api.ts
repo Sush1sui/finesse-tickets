@@ -59,11 +59,58 @@ export const api = {
       fetchApi<PanelConfig[]>(`/api/servers/${serverId}/panels`),
     listMulti: (serverId: string) =>
       fetchApi<MultiPanelConfig[]>(`/api/servers/${serverId}/multi-panels`),
+    get: (serverId: string, panelId: string) =>
+      fetchApi<PanelDetail>(`/api/servers/${serverId}/panels/${panelId}`),
     create: (serverId: string, payload: CreatePanelPayload) =>
       fetchApi<PanelConfig>(`/api/servers/${serverId}/panels`, {
         method: "POST",
         body: JSON.stringify(payload),
       }),
+    update: (serverId: string, panelId: string, payload: CreatePanelPayload) =>
+      fetchApi<PanelConfig>(`/api/servers/${serverId}/panels/${panelId}`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      }),
+    delete: (serverId: string, panelId: string) =>
+      fetchApi<{ status: string }>(
+        `/api/servers/${serverId}/panels/${panelId}`,
+        {
+          method: "DELETE",
+        },
+      ),
+  },
+
+  multiPanels: {
+    list: (serverId: string) =>
+      fetchApi<MultiPanelConfig[]>(`/api/servers/${serverId}/multi-panels`),
+    get: (serverId: string, multiPanelId: string) =>
+      fetchApi<MultiPanelDetail>(
+        `/api/servers/${serverId}/multi-panels/${multiPanelId}`,
+      ),
+    create: (serverId: string, payload: MultiPanelPayload) =>
+      fetchApi<MultiPanelConfig>(`/api/servers/${serverId}/multi-panels`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    update: (
+      serverId: string,
+      multiPanelId: string,
+      payload: MultiPanelPayload,
+    ) =>
+      fetchApi<MultiPanelConfig>(
+        `/api/servers/${serverId}/multi-panels/${multiPanelId}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(payload),
+        },
+      ),
+    delete: (serverId: string, multiPanelId: string) =>
+      fetchApi<{ status: string }>(
+        `/api/servers/${serverId}/multi-panels/${multiPanelId}`,
+        {
+          method: "DELETE",
+        },
+      ),
   },
 
   guildMeta: {
@@ -166,6 +213,22 @@ export type CreatePanelPayload = {
   welcomeMessage: WelcomeMessagePayload;
 };
 
+export type PanelDetail = {
+  mentionRolesOnOpen: string[];
+  categoryId: string;
+  title: string;
+  content: string;
+  embedColor: number;
+  channelId: string;
+  btnColor: string;
+  btnTxt: string;
+  btnEmoji: string;
+  largeImgUrl: string;
+  smallImgUrl: string;
+  questions: string[];
+  welcomeMessage: WelcomeMessagePayload | null;
+};
+
 export type WelcomeMessagePayload = {
   embedColor: number;
   title: string;
@@ -190,4 +253,30 @@ export type MultiPanelConfig = {
   PanelConfigIds: number[];
   Footer: { String: string; Valid: boolean };
   FootIconUrl: { String: string; Valid: boolean };
+};
+
+export type MultiPanelPayload = {
+  title: string;
+  content: string;
+  embedColor: number;
+  channelId: string;
+  largeImgUrl: string;
+  smallImgUrl: string;
+  useDropdown: boolean;
+  panelConfigIds: number[];
+  footer: string;
+  footIconUrl: string;
+};
+
+export type MultiPanelDetail = {
+  title: string;
+  content: string;
+  embedColor: number;
+  channelId: string;
+  largeImgUrl: string;
+  smallImgUrl: string;
+  useDropdown: boolean;
+  panelConfigIds: number[];
+  footer: string;
+  footIconUrl: string;
 };

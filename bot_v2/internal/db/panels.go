@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -46,6 +47,78 @@ func (q *Queries) GetPanelConfigsByServer(ctx context.Context, serverConfigID in
 		return nil, err
 	}
 	return items, nil
+}
+
+const getPanelConfigByID = `
+SELECT id, server_config_id, mention_roles_on_open, category_id, title, content, embed_color, channel_id, btn_color, btn_txt, btn_emoji, large_img_url, small_img_url
+FROM panel_config
+WHERE server_config_id = $1 AND id = $2
+`
+
+func (q *Queries) GetPanelConfigByID(ctx context.Context, serverConfigID int64, panelID int32) (PanelConfig, error) {
+	row := q.db.QueryRow(ctx, getPanelConfigByID, serverConfigID, panelID)
+	var i PanelConfig
+	err := row.Scan(
+		&i.ID,
+		&i.ServerConfigID,
+		&i.MentionRolesOnOpen,
+		&i.CategoryID,
+		&i.Title,
+		&i.Content,
+		&i.EmbedColor,
+		&i.ChannelID,
+		&i.BtnColor,
+		&i.BtnTxt,
+		&i.BtnEmoji,
+		&i.LargeImgUrl,
+		&i.SmallImgUrl,
+	)
+	return i, err
+}
+
+const getQuestionsByPanel = `
+SELECT questions
+FROM questions_config
+WHERE panel_config_id = $1
+`
+
+func (q *Queries) GetPanelQuestions(ctx context.Context, panelID int32) ([]string, error) {
+	var questions []string
+	err := q.db.QueryRow(ctx, getQuestionsByPanel, panelID).Scan(&questions)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return []string{}, nil
+		}
+		return nil, err
+	}
+	return questions, nil
+}
+
+const getWelcomeByPanel = `
+SELECT embed_color, title, description, title_url, large_img_url, small_img_url, footer, footer_icon_url
+FROM welcome_msg_config
+WHERE panel_config_id = $1
+`
+
+func (q *Queries) GetPanelWelcome(ctx context.Context, panelID int32) (WelcomeMsgConfig, bool, error) {
+	var i WelcomeMsgConfig
+	err := q.db.QueryRow(ctx, getWelcomeByPanel, panelID).Scan(
+		&i.EmbedColor,
+		&i.Title,
+		&i.Description,
+		&i.TitleUrl,
+		&i.LargeImgUrl,
+		&i.SmallImgUrl,
+		&i.Footer,
+		&i.FooterIconUrl,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return WelcomeMsgConfig{}, false, nil
+		}
+		return WelcomeMsgConfig{}, false, err
+	}
+	return i, true, nil
 }
 
 type CreatePanelConfigParams struct {
@@ -183,6 +256,18 @@ func (q *Queries) DeletePanelConfig(ctx context.Context, id int32, serverConfigI
 	return err
 }
 
+const removePanelFromMultiPanels = `
+UPDATE multi_panel_config
+SET panel_config_ids = array_remove(panel_config_ids, $2)
+WHERE server_config_id = $1
+AND panel_config_ids @> ARRAY[$2]
+`
+
+func (q *Queries) RemovePanelFromMultiPanels(ctx context.Context, serverConfigID int64, panelID int32) error {
+	_, err := q.db.Exec(ctx, removePanelFromMultiPanels, serverConfigID, panelID)
+	return err
+}
+
 const deleteQuestionsByPanel = `
 DELETE FROM questions_config
 WHERE panel_config_id = $1
@@ -289,6 +374,32 @@ func (q *Queries) GetMultiPanelConfigsByServer(ctx context.Context, serverConfig
 		return nil, err
 	}
 	return items, nil
+}
+
+const getMultiPanelConfigByID = `
+SELECT id, server_config_id, title, content, embed_color, channel_id, large_img_url, small_img_url, use_dropdown, panel_config_ids, footer, foot_icon_url
+FROM multi_panel_config
+WHERE server_config_id = $1 AND id = $2
+`
+
+func (q *Queries) GetMultiPanelConfigByID(ctx context.Context, serverConfigID int64, multiPanelID int32) (MultiPanelConfig, error) {
+	row := q.db.QueryRow(ctx, getMultiPanelConfigByID, serverConfigID, multiPanelID)
+	var i MultiPanelConfig
+	err := row.Scan(
+		&i.ID,
+		&i.ServerConfigID,
+		&i.Title,
+		&i.Content,
+		&i.EmbedColor,
+		&i.ChannelID,
+		&i.LargeImgUrl,
+		&i.SmallImgUrl,
+		&i.UseDropdown,
+		&i.PanelConfigIds,
+		&i.Footer,
+		&i.FootIconUrl,
+	)
+	return i, err
 }
 
 type CreateMultiPanelConfigParams struct {

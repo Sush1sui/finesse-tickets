@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import type { EmojiClickData, Theme } from "emoji-picker-react";
 
@@ -16,6 +16,7 @@ type EmojiPickerProps = {
   onCustomEmojiSelect: (emojiId: string) => void;
   useCustom: boolean;
   onToggleCustom: (useCustom: boolean) => void;
+  onOpenChange?: (open: boolean) => void;
 };
 
 const getEmojiUrl = (emoji: DiscordEmoji) => {
@@ -31,8 +32,10 @@ export default function EmojiPicker({
   onCustomEmojiSelect,
   useCustom,
   onToggleCustom,
+  onOpenChange,
 }: EmojiPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(64);
 
   const selectedCustomEmoji = useMemo(() => {
     return customEmojis.find((emoji) => emoji.id === customEmojiId);
@@ -48,20 +51,41 @@ export default function EmojiPicker({
 
   const placeholder = useCustom ? "Select custom emoji" : "Select emoji";
 
+  useEffect(() => {
+    if (isOpen && useCustom) {
+      setVisibleCount(64);
+    }
+  }, [isOpen, useCustom]);
+
   const handleEmojiClick = (emojiData: EmojiClickData) => {
     onChange(emojiData.emoji);
     setIsOpen(false);
+    onOpenChange?.(false);
   };
 
   const handleCustomEmojiSelect = (emojiId: string) => {
     onCustomEmojiSelect(emojiId);
     setIsOpen(false);
+    onOpenChange?.(false);
   };
 
   const handleToggleCustom = (checked: boolean) => {
     onToggleCustom(checked);
     setIsOpen(false);
+    onOpenChange?.(false);
   };
+
+  const handleOpenToggle = () => {
+    setIsOpen((prev) => {
+      const next = !prev;
+      onOpenChange?.(next);
+      return next;
+    });
+  };
+
+  const visibleEmojis = useMemo(() => {
+    return customEmojis.slice(0, visibleCount);
+  }, [customEmojis, visibleCount]);
 
   return (
     <div className="relative">
@@ -79,7 +103,7 @@ export default function EmojiPicker({
         readOnly
         value={displayValue}
         placeholder={placeholder}
-        onClick={() => setIsOpen((prev) => !prev)}
+        onClick={handleOpenToggle}
       />
 
       {isOpen && (
@@ -88,27 +112,38 @@ export default function EmojiPicker({
             customEmojis.length === 0 ? (
               <p className="text-xs text-zinc-500">No custom emojis.</p>
             ) : (
-              <div className="grid max-h-80 grid-cols-8 gap-2 overflow-y-auto">
-                {customEmojis.map((emoji) => (
+              <div className="space-y-2">
+                <div className="grid max-h-72 grid-cols-8 gap-2 overflow-y-auto">
+                  {visibleEmojis.map((emoji) => (
+                    <button
+                      key={emoji.id}
+                      type="button"
+                      onClick={() => handleCustomEmojiSelect(emoji.id)}
+                      className={
+                        emoji.id === customEmojiId
+                          ? "rounded-md border border-zinc-900 bg-zinc-50 p-1"
+                          : "rounded-md border border-zinc-200 p-1"
+                      }
+                      title={emoji.name}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={getEmojiUrl(emoji)}
+                        alt={emoji.name}
+                        className="h-8 w-8"
+                      />
+                    </button>
+                  ))}
+                </div>
+                {customEmojis.length > visibleCount && (
                   <button
-                    key={emoji.id}
                     type="button"
-                    onClick={() => handleCustomEmojiSelect(emoji.id)}
-                    className={
-                      emoji.id === customEmojiId
-                        ? "rounded-md border border-zinc-900 bg-zinc-50 p-1"
-                        : "rounded-md border border-zinc-200 p-1"
-                    }
-                    title={emoji.name}
+                    className="w-full rounded-md border border-zinc-200 py-1 text-xs text-zinc-600"
+                    onClick={() => setVisibleCount((prev) => prev + 64)}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={getEmojiUrl(emoji)}
-                      alt={emoji.name}
-                      className="h-8 w-8"
-                    />
+                    Show more
                   </button>
-                ))}
+                )}
               </div>
             )
           ) : (
