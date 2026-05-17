@@ -75,7 +75,10 @@ func (h *Handler) HandleGetTranscript(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	item, err := h.DB.GetTranscriptByID(context.Background(), transcriptID, serverID)
+	item, err := h.DB.GetTranscriptByID(context.Background(), db.GetTranscriptByIDParams{
+		ID:             transcriptID,
+		ServerConfigID: serverID,
+	})
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			writeJSON(w, http.StatusNotFound, map[string]string{"error": "transcript not found"})

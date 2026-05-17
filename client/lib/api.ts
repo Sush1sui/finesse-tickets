@@ -136,6 +136,16 @@ export const api = {
         `/api/servers/${serverId}/transcripts/${transcriptId}`,
       ),
   },
+
+  staff: {
+    get: (serverId: string) =>
+      fetchApi<StaffConfig>(`/api/servers/${serverId}/staff`),
+    update: (serverId: string, payload: StaffUpdatePayload) =>
+      fetchApi<{ status: string }>(`/api/servers/${serverId}/staff`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      }),
+  },
 };
 
 export type ServerSummary = {
@@ -373,4 +383,29 @@ export type TranscriptContent = {
     totalEmbeds: number;
     participants: { id: string; username: string; messageCount: number }[];
   };
+};
+
+export type StaffMember = {
+  id: string;
+  username: string;
+  globalName: string;
+  avatarUrl: string;
+};
+
+export type StaffRole = {
+  id: string;
+  name: string;
+  color: number;
+};
+
+export type StaffConfig = {
+  members: StaffMember[];
+  roles: StaffRole[];
+  authorizedMemberIds: string[];
+  authorizedRoleIds: string[];
+};
+
+export type StaffUpdatePayload = {
+  authorizedMemberIds: string[];
+  authorizedRoleIds: string[];
 };

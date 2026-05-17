@@ -37,6 +37,10 @@ func NewRouter(queries *db.Queries, storageClient *storage.Client, cfg *config.C
 	mux.HandleFunc("GET /api/servers/{server_id}/meta/categories", s.wrapAuthConfig(configHandler.HandleGetCategories))
 	mux.HandleFunc("GET /api/servers/{server_id}/meta/emojis", s.wrapAuthConfig(configHandler.HandleGetEmojis))
 
+	// Staff routes
+	mux.HandleFunc("GET /api/servers/{server_id}/staff", s.wrapAuthConfig(configHandler.HandleGetStaff))
+	mux.HandleFunc("PUT /api/servers/{server_id}/staff", s.wrapAuthConfig(configHandler.HandleUpdateStaff))
+
 	// Auth routes
 	mux.HandleFunc("GET /api/auth/login", authHandler.HandleAuthLogin)
 	mux.HandleFunc("GET /api/auth/callback", authHandler.HandleAuthCallback)

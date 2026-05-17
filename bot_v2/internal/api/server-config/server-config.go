@@ -117,8 +117,8 @@ func (h *Handler) HandleUpdateServerConfig(w http.ResponseWriter, r *http.Reques
 		ServerConfigID:                   serverID,
 		IsActive:                         form.AutoClose,
 		CloseOnUserLeave:                 form.AutoCloseOnUserLeave,
-		CloseSinceOpenWithNoResponseMins: noResponseMins,
-		CloseSinceLastMessageMins:        sinceLastMessageMins,
+		CloseSinceOpenWithNoResponseMins: pgtype.Int4{Int32: noResponseMins, Valid: true},
+		CloseSinceLastMessageMins:        pgtype.Int4{Int32: sinceLastMessageMins, Valid: true},
 	})
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to save auto close config: " + err.Error()})

@@ -11,6 +11,24 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const clearAuthorizedMembers = `-- name: ClearAuthorizedMembers :exec
+DELETE FROM authorized_members WHERE server_config_id = $1
+`
+
+func (q *Queries) ClearAuthorizedMembers(ctx context.Context, serverConfigID int64) error {
+	_, err := q.db.Exec(ctx, clearAuthorizedMembers, serverConfigID)
+	return err
+}
+
+const clearAuthorizedRoles = `-- name: ClearAuthorizedRoles :exec
+DELETE FROM authorized_roles WHERE server_config_id = $1
+`
+
+func (q *Queries) ClearAuthorizedRoles(ctx context.Context, serverConfigID int64) error {
+	_, err := q.db.Exec(ctx, clearAuthorizedRoles, serverConfigID)
+	return err
+}
+
 const countTranscriptsByServer = `-- name: CountTranscriptsByServer :one
 SELECT COUNT(*) FROM transcript WHERE server_config_id = $1
 `
@@ -33,17 +51,17 @@ INSERT INTO transcript (
 `
 
 type CreateTranscriptParams struct {
-	ServerConfigID  int64
-	TicketID        pgtype.Text
-	Username        pgtype.Text
-	UserID          pgtype.Text
-	OpenedAt        int64
-	ClosedAt        int64
-	ClosedBy        string
-	StorageKey      string
-	TotalMessages   pgtype.Int4
+	ServerConfigID   int64
+	TicketID         pgtype.Text
+	Username         pgtype.Text
+	UserID           pgtype.Text
+	OpenedAt         int64
+	ClosedAt         int64
+	ClosedBy         string
+	StorageKey       string
+	TotalMessages    pgtype.Int4
 	TotalAttachments pgtype.Int4
-	TotalEmbeds     pgtype.Int4
+	TotalEmbeds      pgtype.Int4
 }
 
 func (q *Queries) CreateTranscript(ctx context.Context, arg CreateTranscriptParams) (Transcript, error) {
@@ -78,6 +96,84 @@ func (q *Queries) CreateTranscript(ctx context.Context, arg CreateTranscriptPara
 	return i, err
 }
 
+const deleteAuthorizedMember = `-- name: DeleteAuthorizedMember :exec
+DELETE FROM authorized_members WHERE server_config_id = $1 AND member_id = $2
+`
+
+type DeleteAuthorizedMemberParams struct {
+	ServerConfigID int64
+	MemberID       string
+}
+
+func (q *Queries) DeleteAuthorizedMember(ctx context.Context, arg DeleteAuthorizedMemberParams) error {
+	_, err := q.db.Exec(ctx, deleteAuthorizedMember, arg.ServerConfigID, arg.MemberID)
+	return err
+}
+
+const deleteAuthorizedRole = `-- name: DeleteAuthorizedRole :exec
+DELETE FROM authorized_roles WHERE server_config_id = $1 AND role_id = $2
+`
+
+type DeleteAuthorizedRoleParams struct {
+	ServerConfigID int64
+	RoleID         string
+}
+
+func (q *Queries) DeleteAuthorizedRole(ctx context.Context, arg DeleteAuthorizedRoleParams) error {
+	_, err := q.db.Exec(ctx, deleteAuthorizedRole, arg.ServerConfigID, arg.RoleID)
+	return err
+}
+
+const getAuthorizedMembers = `-- name: GetAuthorizedMembers :many
+SELECT member_id FROM authorized_members
+WHERE server_config_id = $1
+`
+
+func (q *Queries) GetAuthorizedMembers(ctx context.Context, serverConfigID int64) ([]string, error) {
+	rows, err := q.db.Query(ctx, getAuthorizedMembers, serverConfigID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var member_id string
+		if err := rows.Scan(&member_id); err != nil {
+			return nil, err
+		}
+		items = append(items, member_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAuthorizedRoles = `-- name: GetAuthorizedRoles :many
+SELECT role_id FROM authorized_roles
+WHERE server_config_id = $1
+`
+
+func (q *Queries) GetAuthorizedRoles(ctx context.Context, serverConfigID int64) ([]string, error) {
+	rows, err := q.db.Query(ctx, getAuthorizedRoles, serverConfigID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var role_id string
+		if err := rows.Scan(&role_id); err != nil {
+			return nil, err
+		}
+		items = append(items, role_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getAutoCloseConfig = `-- name: GetAutoCloseConfig :one
 SELECT server_config_id, is_active, close_on_user_leave, close_since_open_with_no_response_mins, close_since_last_message_mins FROM auto_close_config
 WHERE server_config_id = $1 LIMIT 1
@@ -96,12 +192,85 @@ func (q *Queries) GetAutoCloseConfig(ctx context.Context, serverConfigID int64) 
 	return i, err
 }
 
+const getServerConfig = `-- name: GetServerConfig :one
+SELECT id, ticket_name_style, ticket_transcript_cid, max_ticket_per_user, ticket_permissions, max_panel, max_multi_panel FROM server_config 
+WHERE id = $1 LIMIT 1
+`
+
+func (q *Queries) GetServerConfig(ctx context.Context, id int64) (ServerConfig, error) {
+	row := q.db.QueryRow(ctx, getServerConfig, id)
+	var i ServerConfig
+	err := row.Scan(
+		&i.ID,
+		&i.TicketNameStyle,
+		&i.TicketTranscriptCid,
+		&i.MaxTicketPerUser,
+		&i.TicketPermissions,
+		&i.MaxPanel,
+		&i.MaxMultiPanel,
+	)
+	return i, err
+}
+
+const getServersByMember = `-- name: GetServersByMember :many
+SELECT server_config_id FROM authorized_members WHERE member_id = $1
+`
+
+func (q *Queries) GetServersByMember(ctx context.Context, memberID string) ([]int64, error) {
+	rows, err := q.db.Query(ctx, getServersByMember, memberID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var server_config_id int64
+		if err := rows.Scan(&server_config_id); err != nil {
+			return nil, err
+		}
+		items = append(items, server_config_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getServersByRole = `-- name: GetServersByRole :many
+SELECT server_config_id FROM authorized_roles WHERE role_id = $1
+`
+
+func (q *Queries) GetServersByRole(ctx context.Context, roleID string) ([]int64, error) {
+	rows, err := q.db.Query(ctx, getServersByRole, roleID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var server_config_id int64
+		if err := rows.Scan(&server_config_id); err != nil {
+			return nil, err
+		}
+		items = append(items, server_config_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getTranscriptByID = `-- name: GetTranscriptByID :one
 SELECT id, server_config_id, ticket_id, username, user_id, opened_at, closed_at, closed_by, storage_key, total_messages, total_attachments, total_embeds FROM transcript WHERE id = $1 AND server_config_id = $2
 `
 
-func (q *Queries) GetTranscriptByID(ctx context.Context, id int32, serverConfigID int64) (Transcript, error) {
-	row := q.db.QueryRow(ctx, getTranscriptByID, id, serverConfigID)
+type GetTranscriptByIDParams struct {
+	ID             int32
+	ServerConfigID int64
+}
+
+func (q *Queries) GetTranscriptByID(ctx context.Context, arg GetTranscriptByIDParams) (Transcript, error) {
+	row := q.db.QueryRow(ctx, getTranscriptByID, arg.ID, arg.ServerConfigID)
 	var i Transcript
 	err := row.Scan(
 		&i.ID,
@@ -169,26 +338,52 @@ func (q *Queries) GetTranscriptsByServer(ctx context.Context, arg GetTranscripts
 	return items, nil
 }
 
-const getServerConfig = `-- name: GetServerConfig :one
-SELECT id, ticket_name_style, ticket_transcript_cid, max_ticket_per_user, ticket_permissions, max_panel, max_multi_panel, authorized_member_ids, authorized_role_ids FROM server_config 
-WHERE id = $1 LIMIT 1
+const isMemberAuthorized = `-- name: IsMemberAuthorized :one
+SELECT EXISTS(SELECT 1 FROM authorized_members WHERE server_config_id = $1 AND member_id = $2)
 `
 
-func (q *Queries) GetServerConfig(ctx context.Context, id int64) (ServerConfig, error) {
-	row := q.db.QueryRow(ctx, getServerConfig, id)
-	var i ServerConfig
-	err := row.Scan(
-		&i.ID,
-		&i.TicketNameStyle,
-		&i.TicketTranscriptCid,
-		&i.MaxTicketPerUser,
-		&i.TicketPermissions,
-		&i.MaxPanel,
-		&i.MaxMultiPanel,
-		&i.AuthorizedMemberIds,
-		&i.AuthorizedRoleIds,
-	)
-	return i, err
+type IsMemberAuthorizedParams struct {
+	ServerConfigID int64
+	MemberID       string
+}
+
+func (q *Queries) IsMemberAuthorized(ctx context.Context, arg IsMemberAuthorizedParams) (bool, error) {
+	row := q.db.QueryRow(ctx, isMemberAuthorized, arg.ServerConfigID, arg.MemberID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const upsertAuthorizedMember = `-- name: UpsertAuthorizedMember :exec
+INSERT INTO authorized_members (server_config_id, member_id)
+VALUES ($1, $2)
+ON CONFLICT (server_config_id, member_id) DO NOTHING
+`
+
+type UpsertAuthorizedMemberParams struct {
+	ServerConfigID int64
+	MemberID       string
+}
+
+func (q *Queries) UpsertAuthorizedMember(ctx context.Context, arg UpsertAuthorizedMemberParams) error {
+	_, err := q.db.Exec(ctx, upsertAuthorizedMember, arg.ServerConfigID, arg.MemberID)
+	return err
+}
+
+const upsertAuthorizedRole = `-- name: UpsertAuthorizedRole :exec
+INSERT INTO authorized_roles (server_config_id, role_id)
+VALUES ($1, $2)
+ON CONFLICT (server_config_id, role_id) DO NOTHING
+`
+
+type UpsertAuthorizedRoleParams struct {
+	ServerConfigID int64
+	RoleID         string
+}
+
+func (q *Queries) UpsertAuthorizedRole(ctx context.Context, arg UpsertAuthorizedRoleParams) error {
+	_, err := q.db.Exec(ctx, upsertAuthorizedRole, arg.ServerConfigID, arg.RoleID)
+	return err
 }
 
 const upsertAutoCloseConfig = `-- name: UpsertAutoCloseConfig :one
@@ -208,8 +403,8 @@ type UpsertAutoCloseConfigParams struct {
 	ServerConfigID                   int64
 	IsActive                         bool
 	CloseOnUserLeave                 bool
-	CloseSinceOpenWithNoResponseMins int32
-	CloseSinceLastMessageMins        int32
+	CloseSinceOpenWithNoResponseMins pgtype.Int4
+	CloseSinceLastMessageMins        pgtype.Int4
 }
 
 func (q *Queries) UpsertAutoCloseConfig(ctx context.Context, arg UpsertAutoCloseConfigParams) (AutoCloseConfig, error) {
@@ -234,9 +429,9 @@ func (q *Queries) UpsertAutoCloseConfig(ctx context.Context, arg UpsertAutoClose
 const upsertServerConfig = `-- name: UpsertServerConfig :one
 INSERT INTO server_config (
     id, ticket_name_style, ticket_transcript_cid, max_ticket_per_user, 
-    ticket_permissions, max_panel, max_multi_panel, authorized_member_ids, authorized_role_ids
+    ticket_permissions, max_panel, max_multi_panel
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9
+    $1, $2, $3, $4, $5, $6, $7
 )
 ON CONFLICT (id) DO UPDATE SET
     ticket_name_style = EXCLUDED.ticket_name_style,
@@ -244,10 +439,8 @@ ON CONFLICT (id) DO UPDATE SET
     max_ticket_per_user = EXCLUDED.max_ticket_per_user,
     ticket_permissions = EXCLUDED.ticket_permissions,
     max_panel = EXCLUDED.max_panel,
-    max_multi_panel = EXCLUDED.max_multi_panel,
-    authorized_member_ids = EXCLUDED.authorized_member_ids,
-    authorized_role_ids = EXCLUDED.authorized_role_ids
-RETURNING id, ticket_name_style, ticket_transcript_cid, max_ticket_per_user, ticket_permissions, max_panel, max_multi_panel, authorized_member_ids, authorized_role_ids
+    max_multi_panel = EXCLUDED.max_multi_panel
+RETURNING id, ticket_name_style, ticket_transcript_cid, max_ticket_per_user, ticket_permissions, max_panel, max_multi_panel
 `
 
 type UpsertServerConfigParams struct {
@@ -258,8 +451,6 @@ type UpsertServerConfigParams struct {
 	TicketPermissions   []byte
 	MaxPanel            pgtype.Int4
 	MaxMultiPanel       pgtype.Int4
-	AuthorizedMemberIds []string
-	AuthorizedRoleIds   []string
 }
 
 func (q *Queries) UpsertServerConfig(ctx context.Context, arg UpsertServerConfigParams) (ServerConfig, error) {
@@ -271,8 +462,6 @@ func (q *Queries) UpsertServerConfig(ctx context.Context, arg UpsertServerConfig
 		arg.TicketPermissions,
 		arg.MaxPanel,
 		arg.MaxMultiPanel,
-		arg.AuthorizedMemberIds,
-		arg.AuthorizedRoleIds,
 	)
 	var i ServerConfig
 	err := row.Scan(
@@ -283,8 +472,6 @@ func (q *Queries) UpsertServerConfig(ctx context.Context, arg UpsertServerConfig
 		&i.TicketPermissions,
 		&i.MaxPanel,
 		&i.MaxMultiPanel,
-		&i.AuthorizedMemberIds,
-		&i.AuthorizedRoleIds,
 	)
 	return i, err
 }

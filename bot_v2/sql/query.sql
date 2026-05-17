@@ -3,12 +3,11 @@ SELECT * FROM server_config
 WHERE id = $1 LIMIT 1;
 
 -- name: UpsertServerConfig :one
--- Upsert means "Insert if it doesn't exist, Update if it does"
 INSERT INTO server_config (
     id, ticket_name_style, ticket_transcript_cid, max_ticket_per_user, 
-    ticket_permissions, max_panel, max_multi_panel, authorized_member_ids, authorized_role_ids
+    ticket_permissions, max_panel, max_multi_panel
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9
+    $1, $2, $3, $4, $5, $6, $7
 )
 ON CONFLICT (id) DO UPDATE SET
     ticket_name_style = EXCLUDED.ticket_name_style,
@@ -16,10 +15,47 @@ ON CONFLICT (id) DO UPDATE SET
     max_ticket_per_user = EXCLUDED.max_ticket_per_user,
     ticket_permissions = EXCLUDED.ticket_permissions,
     max_panel = EXCLUDED.max_panel,
-    max_multi_panel = EXCLUDED.max_multi_panel,
-    authorized_member_ids = EXCLUDED.authorized_member_ids,
-    authorized_role_ids = EXCLUDED.authorized_role_ids
+    max_multi_panel = EXCLUDED.max_multi_panel
 RETURNING *;
+
+-- name: GetAuthorizedMembers :many
+SELECT member_id FROM authorized_members
+WHERE server_config_id = $1;
+
+-- name: GetAuthorizedRoles :many
+SELECT role_id FROM authorized_roles
+WHERE server_config_id = $1;
+
+-- name: IsMemberAuthorized :one
+SELECT EXISTS(SELECT 1 FROM authorized_members WHERE server_config_id = $1 AND member_id = $2);
+
+-- name: UpsertAuthorizedMember :exec
+INSERT INTO authorized_members (server_config_id, member_id)
+VALUES ($1, $2)
+ON CONFLICT (server_config_id, member_id) DO NOTHING;
+
+-- name: DeleteAuthorizedMember :exec
+DELETE FROM authorized_members WHERE server_config_id = $1 AND member_id = $2;
+
+-- name: ClearAuthorizedMembers :exec
+DELETE FROM authorized_members WHERE server_config_id = $1;
+
+-- name: UpsertAuthorizedRole :exec
+INSERT INTO authorized_roles (server_config_id, role_id)
+VALUES ($1, $2)
+ON CONFLICT (server_config_id, role_id) DO NOTHING;
+
+-- name: DeleteAuthorizedRole :exec
+DELETE FROM authorized_roles WHERE server_config_id = $1 AND role_id = $2;
+
+-- name: ClearAuthorizedRoles :exec
+DELETE FROM authorized_roles WHERE server_config_id = $1;
+
+-- name: GetServersByMember :many
+SELECT server_config_id FROM authorized_members WHERE member_id = $1;
+
+-- name: GetServersByRole :many
+SELECT server_config_id FROM authorized_roles WHERE role_id = $1;
 
 -- name: GetAutoCloseConfig :one
 SELECT * FROM auto_close_config
@@ -38,7 +74,6 @@ ON CONFLICT (server_config_id) DO UPDATE SET
 RETURNING *;
 
 -- name: GetTranscriptsByServer :many
--- Paginated list for dashboard — only summary columns, no blob fetch
 SELECT id, server_config_id, ticket_id, username, user_id,
        opened_at, closed_at, closed_by, storage_key,
        total_messages, total_attachments, total_embeds
@@ -48,15 +83,12 @@ ORDER BY closed_at DESC
 LIMIT $2 OFFSET $3;
 
 -- name: CountTranscriptsByServer :one
--- Total count for pagination — uses index, minimal compute
 SELECT COUNT(*) FROM transcript WHERE server_config_id = $1;
 
 -- name: GetTranscriptByID :one
--- Single row lookup for viewer — returns storage_key for presigned URL
 SELECT * FROM transcript WHERE id = $1 AND server_config_id = $2;
 
 -- name: CreateTranscript :one
--- Used by the bot when a ticket is closed and uploaded to Azure Blob
 INSERT INTO transcript (
     server_config_id, ticket_id, username, user_id,
     opened_at, closed_at, closed_by, storage_key,

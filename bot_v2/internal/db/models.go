@@ -8,12 +8,22 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type AuthorizedMember struct {
+	ServerConfigID int64
+	MemberID       string
+}
+
+type AuthorizedRole struct {
+	ServerConfigID int64
+	RoleID         string
+}
+
 type AutoCloseConfig struct {
-	ServerConfigID                    int64
-	IsActive                          bool
-	CloseOnUserLeave                   bool
-	CloseSinceOpenWithNoResponseMins   pgtype.Int4
-	CloseSinceLastMessageMins          pgtype.Int4
+	ServerConfigID                   int64
+	IsActive                         bool
+	CloseOnUserLeave                 bool
+	CloseSinceOpenWithNoResponseMins pgtype.Int4
+	CloseSinceLastMessageMins        pgtype.Int4
 }
 
 type MultiPanelConfig struct {
@@ -61,23 +71,21 @@ type ServerConfig struct {
 	TicketPermissions   []byte
 	MaxPanel            pgtype.Int4
 	MaxMultiPanel       pgtype.Int4
-	AuthorizedMemberIds []string
-	AuthorizedRoleIds   []string
 }
 
 type Transcript struct {
-	ID             int32
-	ServerConfigID int64
-	TicketID       pgtype.Text
-	Username       pgtype.Text
-	UserID         pgtype.Text
-	OpenedAt       int64
-	ClosedAt       int64
-	ClosedBy       string
-	StorageKey     string
-	TotalMessages  pgtype.Int4
+	ID               int32
+	ServerConfigID   int64
+	TicketID         pgtype.Text
+	Username         pgtype.Text
+	UserID           pgtype.Text
+	OpenedAt         int64
+	ClosedAt         int64
+	ClosedBy         string
+	StorageKey       string
+	TotalMessages    pgtype.Int4
 	TotalAttachments pgtype.Int4
-	TotalEmbeds    pgtype.Int4
+	TotalEmbeds      pgtype.Int4
 }
 
 type WelcomeMsgConfig struct {

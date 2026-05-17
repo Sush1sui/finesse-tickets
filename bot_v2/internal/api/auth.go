@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Sush1sui/FNS_BOT/internal/bot"
+	"github.com/Sush1sui/FNS_BOT/internal/db"
 	"github.com/Sush1sui/FNS_BOT/internal/utils"
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -246,12 +247,16 @@ func (s *Server) IsAuthorizedForServer(ctx context.Context, serverID string, cla
 		return false, err
 	}
 
-	cfg, err := s.DB.GetServerConfig(ctx, id)
+	_, err = s.DB.GetServerConfig(ctx, id)
 	if err != nil {
 		return true, nil
 	}
 
-	if utils.ContainsString(cfg.AuthorizedMemberIds, claims.DiscordID) {
+	isMember, _ := s.DB.IsMemberAuthorized(ctx, db.IsMemberAuthorizedParams{
+		ServerConfigID: id,
+		MemberID:       claims.DiscordID,
+	})
+	if isMember {
 		return true, nil
 	}
 
@@ -259,7 +264,8 @@ func (s *Server) IsAuthorizedForServer(ctx context.Context, serverID string, cla
 		return true, nil
 	}
 
-	if len(cfg.AuthorizedRoleIds) > 0 && userHasAuthorizedRole(serverID, claims.DiscordID, cfg.AuthorizedRoleIds) {
+	roleIds, _ := s.DB.GetAuthorizedRoles(ctx, id)
+	if len(roleIds) > 0 && userHasAuthorizedRole(serverID, claims.DiscordID, roleIds) {
 		return true, nil
 	}
 
@@ -336,16 +342,21 @@ func (s *Server) isAuthorizedGuild(ctx context.Context, guild discordGuild, clai
 		return false, err
 	}
 
-	cfg, err := s.DB.GetServerConfig(ctx, id)
+	_, err = s.DB.GetServerConfig(ctx, id)
 	if err != nil {
 		return false, nil
 	}
 
-	if utils.ContainsString(cfg.AuthorizedMemberIds, claims.DiscordID) {
+	isMember, _ := s.DB.IsMemberAuthorized(ctx, db.IsMemberAuthorizedParams{
+		ServerConfigID: id,
+		MemberID:       claims.DiscordID,
+	})
+	if isMember {
 		return true, nil
 	}
 
-	if len(cfg.AuthorizedRoleIds) == 0 {
+	roleIds, _ := s.DB.GetAuthorizedRoles(ctx, id)
+	if len(roleIds) == 0 {
 		return false, nil
 	}
 
@@ -354,7 +365,7 @@ func (s *Server) isAuthorizedGuild(ctx context.Context, guild discordGuild, clai
 		return false, err
 	}
 	for _, roleID := range member.Roles {
-		if utils.ContainsString(cfg.AuthorizedRoleIds, roleID) {
+		if utils.ContainsString(roleIds, roleID) {
 			return true, nil
 		}
 	}

@@ -7,9 +7,7 @@ CREATE TABLE server_config (
     max_ticket_per_user INTEGER NOT NULL DEFAULT 2,
     ticket_permissions JSONB,
     max_panel INTEGER DEFAULT 3,
-    max_multi_panel INTEGER DEFAULT 3,
-    authorized_member_ids TEXT[],
-    authorized_role_ids TEXT[]
+    max_multi_panel INTEGER DEFAULT 3
 );
 
 CREATE TABLE auto_close_config (
@@ -74,10 +72,16 @@ CREATE TABLE multi_panel_config (
 CREATE TABLE transcript (
     id SERIAL PRIMARY KEY,
     server_config_id BIGINT NOT NULL REFERENCES server_config(id) ON DELETE CASCADE,
+    ticket_id TEXT,
+    username TEXT,
+    user_id TEXT,
     opened_at BIGINT NOT NULL,
     closed_at BIGINT NOT NULL,
     closed_by TEXT NOT NULL,
-    storage_key TEXT NOT NULL
+    storage_key TEXT NOT NULL,
+    total_messages INTEGER DEFAULT 0,
+    total_attachments INTEGER DEFAULT 0,
+    total_embeds INTEGER DEFAULT 0
 );
 
 CREATE INDEX IF NOT EXISTS idx_panel_config_server_id ON panel_config (server_config_id, id);
@@ -86,3 +90,18 @@ CREATE INDEX IF NOT EXISTS idx_welcome_msg_panel_id ON welcome_msg_config (panel
 CREATE INDEX IF NOT EXISTS idx_multi_panel_config_server_id ON multi_panel_config (server_config_id, id);
 CREATE INDEX IF NOT EXISTS idx_multi_panel_panel_ids_gin ON multi_panel_config USING GIN (panel_config_ids);
 CREATE INDEX IF NOT EXISTS idx_transcript_server_closed_at ON transcript (server_config_id, closed_at DESC);
+
+CREATE TABLE authorized_members (
+    server_config_id BIGINT NOT NULL REFERENCES server_config(id) ON DELETE CASCADE,
+    member_id TEXT NOT NULL,
+    PRIMARY KEY (server_config_id, member_id)
+);
+
+CREATE TABLE authorized_roles (
+    server_config_id BIGINT NOT NULL REFERENCES server_config(id) ON DELETE CASCADE,
+    role_id TEXT NOT NULL,
+    PRIMARY KEY (server_config_id, role_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_am_member ON authorized_members (member_id);
+CREATE INDEX IF NOT EXISTS idx_ar_role ON authorized_roles (role_id);

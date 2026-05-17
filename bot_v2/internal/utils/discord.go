@@ -206,6 +206,14 @@ type DiscordEmoji struct {
 	Animated bool   `json:"animated"`
 }
 
+type DiscordMember struct {
+	ID         string `json:"id"`
+	Username   string `json:"username"`
+	GlobalName string `json:"global_name"`
+	Avatar     string `json:"avatar"`
+	Bot        bool   `json:"bot"`
+}
+
 // ChannelTypeText is the type for text channels
 const ChannelTypeText = 0
 const ChannelTypeVoice = 2
@@ -300,6 +308,36 @@ func GetGuildEmojisCache(session *discordgo.Session, guildID string) ([]DiscordE
 			ID:       emoji.ID,
 			Name:     emoji.Name,
 			Animated: emoji.Animated,
+		})
+	}
+	return result, true
+}
+
+func GetGuildMembersCache(session *discordgo.Session, guildID string) ([]DiscordMember, bool) {
+	if session == nil || session.State == nil {
+		return nil, false
+	}
+
+	session.State.RLock()
+	defer session.State.RUnlock()
+
+	guild, err := session.State.Guild(guildID)
+	if err != nil {
+		return nil, false
+	}
+
+	result := make([]DiscordMember, 0, len(guild.Members))
+	for _, m := range guild.Members {
+		name := m.User.GlobalName
+		if name == "" {
+			name = m.User.Username
+		}
+		result = append(result, DiscordMember{
+			ID:         m.User.ID,
+			Username:   m.User.Username,
+			GlobalName: name,
+			Avatar:     m.User.Avatar,
+			Bot:        m.User.Bot,
 		})
 	}
 	return result, true
