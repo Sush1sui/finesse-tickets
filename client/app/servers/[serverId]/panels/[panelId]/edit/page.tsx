@@ -41,6 +41,7 @@ type PanelForm = {
   emoji: string;
   customEmoji: boolean;
   customEmojiId: string;
+  customEmojiToken: string;
   largeImageUrl: string;
   smallImageUrl: string;
 };
@@ -52,21 +53,31 @@ const toHex = (value: number, fallback: string) => {
 
 const parseCustomEmoji = (value: string) => {
   if (!value) {
-    return { useCustom: false, emoji: "", customEmojiId: "" };
+    return { useCustom: false, emoji: "", customEmojiId: "", token: "" };
   }
 
   const match = value.match(/<a?:(.+?):(\d+)>/);
   if (match) {
-    return { useCustom: true, emoji: "", customEmojiId: match[2] };
+    return {
+      useCustom: true,
+      emoji: "",
+      customEmojiId: match[2],
+      token: `${match[1]}:${match[2]}`,
+    };
   }
 
   const parts = value.split(":");
   const maybeId = parts[parts.length - 1];
   if (parts.length >= 2 && /^\d+$/.test(maybeId)) {
-    return { useCustom: true, emoji: "", customEmojiId: maybeId };
+    return {
+      useCustom: true,
+      emoji: "",
+      customEmojiId: maybeId,
+      token: value,
+    };
   }
 
-  return { useCustom: false, emoji: value, customEmojiId: "" };
+  return { useCustom: false, emoji: value, customEmojiId: "", token: "" };
 };
 
 export default function EditPanelPage() {
@@ -98,6 +109,7 @@ export default function EditPanelPage() {
     emoji: "",
     customEmoji: false,
     customEmojiId: "",
+    customEmojiToken: "",
     largeImageUrl: "",
     smallImageUrl: "",
   });
@@ -150,6 +162,7 @@ export default function EditPanelPage() {
       emoji: parsedEmoji.useCustom ? "" : parsedEmoji.emoji,
       customEmoji: parsedEmoji.useCustom,
       customEmojiId: parsedEmoji.customEmojiId,
+      customEmojiToken: parsedEmoji.token,
       largeImageUrl: panel.largeImgUrl ?? "",
       smallImageUrl: panel.smallImgUrl ?? "",
     });
@@ -159,11 +172,13 @@ export default function EditPanelPage() {
     return [...roles].sort((a, b) => b.position - a.position);
   }, [roles]);
 
-  const handleRoleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const selected = Array.from(event.target.selectedOptions).map(
-      (opt) => opt.value,
-    );
-    setForm((prev) => ({ ...prev, mentionRoles: selected }));
+  const toggleMentionRole = (roleId: string) => {
+    setForm((prev) => {
+      const next = prev.mentionRoles.includes(roleId)
+        ? prev.mentionRoles.filter((id) => id !== roleId)
+        : [...prev.mentionRoles, roleId];
+      return { ...prev, mentionRoles: next };
+    });
   };
 
   const selectedCustomEmoji = useMemo<DiscordEmoji | undefined>(() => {
@@ -171,6 +186,7 @@ export default function EditPanelPage() {
   }, [emojis, form.customEmojiId]);
 
   const buildEmojiValue = (emoji: DiscordEmoji | undefined) => {
+    if (form.customEmojiToken) return form.customEmojiToken;
     if (!emoji) return "";
     return `${emoji.name}:${emoji.id}`;
   };
@@ -262,18 +278,41 @@ export default function EditPanelPage() {
       <section className="grid gap-4 rounded-lg border border-zinc-200 bg-white p-4">
         <label className="text-sm font-medium text-zinc-700">
           Mention on open
-          <select
-            multiple
-            className="mt-2 h-32 w-full rounded-md border border-zinc-200 p-2 text-sm"
-            value={form.mentionRoles}
-            onChange={handleRoleChange}
-          >
+          {form.mentionRoles.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {form.mentionRoles.map((roleId) => {
+                const role = sortedRoles.find((item) => item.id === roleId);
+                return (
+                  <span
+                    key={roleId}
+                    className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs"
+                  >
+                    @{role?.name ?? roleId}
+                    <button
+                      type="button"
+                      className="text-zinc-600 hover:text-zinc-900"
+                      onClick={() => toggleMentionRole(roleId)}
+                      aria-label={`Remove ${role?.name ?? "role"}`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
+          )}
+          <div className="mt-2 grid max-h-40 gap-2 overflow-y-auto rounded-md border border-zinc-200 p-2 text-sm">
             {sortedRoles.map((role: DiscordRole) => (
-              <option key={role.id} value={role.id}>
-                {role.name}
-              </option>
+              <label key={role.id} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={form.mentionRoles.includes(role.id)}
+                  onChange={() => toggleMentionRole(role.id)}
+                />
+                <span>{role.name}</span>
+              </label>
             ))}
-          </select>
+          </div>
         </label>
 
         <label className="text-sm font-medium text-zinc-700">
@@ -432,9 +471,16 @@ export default function EditPanelPage() {
                 }
                 customEmojis={emojis}
                 customEmojiId={form.customEmojiId}
-                onCustomEmojiSelect={(emojiId) =>
-                  setForm((prev) => ({ ...prev, customEmojiId: emojiId }))
-                }
+                onCustomEmojiSelect={(emojiId) => {
+                  const picked = emojis.find((emoji) => emoji.id === emojiId);
+                  setForm((prev) => ({
+                    ...prev,
+                    customEmojiId: emojiId,
+                    customEmojiToken: picked
+                      ? `${picked.name}:${picked.id}`
+                      : prev.customEmojiToken,
+                  }));
+                }}
                 useCustom={form.customEmoji}
                 onToggleCustom={(useCustom) =>
                   setForm((prev) => ({ ...prev, customEmoji: useCustom }))

@@ -176,6 +176,20 @@ func (h *Handler) HandleCreatePanel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if _, err := h.DB.GetServerConfig(context.Background(), serverID); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			if err := h.DB.EnsureServerConfig(context.Background(), serverID); err != nil {
+				log.Printf("create default server config failed: %v", err)
+				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to create server config"})
+				return
+			}
+		} else {
+			log.Printf("load server config failed: %v", err)
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to load server config"})
+			return
+		}
+	}
+
 	var payload PanelPayload
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid json"})
@@ -205,6 +219,7 @@ func (h *Handler) HandleCreatePanel(w http.ResponseWriter, r *http.Request) {
 		SmallImgUrl:        toText(payload.SmallImgUrl),
 	})
 	if err != nil {
+		log.Printf("create panel failed: %v", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to create panel"})
 		return
 	}
@@ -464,7 +479,7 @@ func parseServerPanelIDs(r *http.Request) (int64, int32, error) {
 func hasWelcomeMessage(msg WelcomeMessagePayload) bool {
 	return msg.Title != "" || msg.Description != "" || msg.TitleURL != "" ||
 		msg.LargeImgUrl != "" || msg.SmallImgUrl != "" || msg.FooterText != "" ||
-		msg.FooterIconUrl != "" || msg.EmbedColor != 0
+		msg.FooterIconUrl != ""
 }
 
 func toWelcomeParams(msg WelcomeMessagePayload) db.WelcomeMessageParams {

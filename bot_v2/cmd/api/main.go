@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -23,7 +24,17 @@ func main() {
 
 	// 1. Connect to PostgreSQL
 	ctx := context.Background()
-	pool, err := pgxpool.New(ctx, cfg.DBUrl)
+	poolConfig, err := pgxpool.ParseConfig(cfg.DBUrl)
+	if err != nil {
+		log.Fatalf("Unable to connect to database: %v\n", err)
+	}
+	poolConfig.MaxConns = int32(getEnvInt("PG_MAX_CONNS", 4))
+	poolConfig.MinConns = int32(getEnvInt("PG_MIN_CONNS", 0))
+	poolConfig.MaxConnIdleTime = getEnvDuration("PG_MAX_CONN_IDLE", 5*time.Minute)
+	poolConfig.MaxConnLifetime = getEnvDuration("PG_MAX_CONN_LIFETIME", 30*time.Minute)
+	poolConfig.HealthCheckPeriod = getEnvDuration("PG_HEALTHCHECK_PERIOD", 1*time.Minute)
+
+	pool, err := pgxpool.NewWithConfig(ctx, poolConfig)
 	if err != nil {
 		log.Fatalf("Unable to connect to database: %v\n", err)
 	}
@@ -61,4 +72,28 @@ func main() {
 	if err := server.Shutdown(ctxShutdown); err != nil {
 		log.Printf("HTTP shutdown error: %v", err)
 	}
+}
+
+func getEnvInt(key string, fallback int) int {
+	value := os.Getenv(key)
+	if value == "" {
+		return fallback
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil {
+		return fallback
+	}
+	return parsed
+}
+
+func getEnvDuration(key string, fallback time.Duration) time.Duration {
+	value := os.Getenv(key)
+	if value == "" {
+		return fallback
+	}
+	parsed, err := time.ParseDuration(value)
+	if err != nil {
+		return fallback
+	}
+	return parsed
 }

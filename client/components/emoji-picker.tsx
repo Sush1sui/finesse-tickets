@@ -57,30 +57,27 @@ export default function EmojiPicker({
     }
   }, [isOpen, useCustom]);
 
+  useEffect(() => {
+    onOpenChange?.(isOpen);
+  }, [isOpen, onOpenChange]);
+
   const handleEmojiClick = (emojiData: EmojiClickData) => {
     onChange(emojiData.emoji);
     setIsOpen(false);
-    onOpenChange?.(false);
   };
 
   const handleCustomEmojiSelect = (emojiId: string) => {
     onCustomEmojiSelect(emojiId);
     setIsOpen(false);
-    onOpenChange?.(false);
   };
 
   const handleToggleCustom = (checked: boolean) => {
     onToggleCustom(checked);
     setIsOpen(false);
-    onOpenChange?.(false);
   };
 
   const handleOpenToggle = () => {
-    setIsOpen((prev) => {
-      const next = !prev;
-      onOpenChange?.(next);
-      return next;
-    });
+    setIsOpen((prev) => !prev);
   };
 
   const visibleEmojis = useMemo(() => {

@@ -1,6 +1,4 @@
--- sql/schema.sql
-
-CREATE TABLE server_config (
+CREATE TABLE IF NOT EXISTS server_config (
     id BIGINT PRIMARY KEY,
     ticket_name_style TEXT NOT NULL,
     ticket_transcript_cid TEXT,
@@ -12,7 +10,7 @@ CREATE TABLE server_config (
     authorized_role_ids TEXT[]
 );
 
-CREATE TABLE auto_close_config (
+CREATE TABLE IF NOT EXISTS auto_close_config (
     server_config_id BIGINT NOT NULL UNIQUE REFERENCES server_config(id) ON DELETE CASCADE,
     is_active BOOLEAN NOT NULL DEFAULT false,
     close_on_user_leave BOOLEAN NOT NULL DEFAULT false,
@@ -21,7 +19,7 @@ CREATE TABLE auto_close_config (
     PRIMARY KEY (server_config_id)
 );
 
-CREATE TABLE panel_config (
+CREATE TABLE IF NOT EXISTS panel_config (
     id SERIAL PRIMARY KEY,
     server_config_id BIGINT NOT NULL REFERENCES server_config(id) ON DELETE CASCADE,
     mention_roles_on_open TEXT[],
@@ -37,13 +35,13 @@ CREATE TABLE panel_config (
     small_img_url TEXT
 );
 
-CREATE TABLE questions_config (
+CREATE TABLE IF NOT EXISTS questions_config (
     id SERIAL PRIMARY KEY,
     panel_config_id INTEGER NOT NULL REFERENCES panel_config(id) ON DELETE CASCADE,
     questions TEXT[]
 );
 
-CREATE TABLE welcome_msg_config (
+CREATE TABLE IF NOT EXISTS welcome_msg_config (
     id SERIAL PRIMARY KEY,
     panel_config_id INTEGER NOT NULL REFERENCES panel_config(id) ON DELETE CASCADE,
     embed_color INTEGER NOT NULL,
@@ -56,7 +54,7 @@ CREATE TABLE welcome_msg_config (
     footer_icon_url TEXT
 );
 
-CREATE TABLE multi_panel_config (
+CREATE TABLE IF NOT EXISTS multi_panel_config (
     id SERIAL PRIMARY KEY,
     server_config_id BIGINT NOT NULL REFERENCES server_config(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
@@ -71,7 +69,7 @@ CREATE TABLE multi_panel_config (
     foot_icon_url TEXT
 );
 
-CREATE TABLE transcript (
+CREATE TABLE IF NOT EXISTS transcript (
     id SERIAL PRIMARY KEY,
     server_config_id BIGINT NOT NULL REFERENCES server_config(id) ON DELETE CASCADE,
     opened_at BIGINT NOT NULL,
