@@ -6,6 +6,7 @@ import (
 	"github.com/Sush1sui/FNS_BOT/internal/api/auth"
 	"github.com/Sush1sui/FNS_BOT/internal/api/panels"
 	serverconfig "github.com/Sush1sui/FNS_BOT/internal/api/server-config"
+	"github.com/Sush1sui/FNS_BOT/internal/api/transcripts"
 	"github.com/Sush1sui/FNS_BOT/internal/config"
 	"github.com/Sush1sui/FNS_BOT/internal/db"
 	"github.com/Sush1sui/FNS_BOT/internal/storage"
@@ -21,6 +22,7 @@ func NewRouter(queries *db.Queries, storageClient *storage.Client, cfg *config.C
 	configHandler := &serverconfig.Handler{DB: queries}
 	authHandler := &auth.Handler{Server: s}
 	panelsHandler := &panels.Handler{DB: queries}
+	transcriptsHandler := &transcripts.Handler{DB: queries, Storage: s.Storage}
 
 	mux := http.NewServeMux()
 
@@ -55,6 +57,10 @@ func NewRouter(queries *db.Queries, storageClient *storage.Client, cfg *config.C
 	mux.HandleFunc("POST /api/servers/{server_id}/multi-panels", s.wrapAuthConfig(panelsHandler.HandleCreateMultiPanel))
 	mux.HandleFunc("PUT /api/servers/{server_id}/multi-panels/{multi_panel_id}", s.wrapAuthConfig(panelsHandler.HandleUpdateMultiPanel))
 	mux.HandleFunc("DELETE /api/servers/{server_id}/multi-panels/{multi_panel_id}", s.wrapAuthConfig(panelsHandler.HandleDeleteMultiPanel))
+
+	// Transcript routes
+	mux.HandleFunc("GET /api/servers/{server_id}/transcripts", s.wrapAuthConfig(transcriptsHandler.HandleListTranscripts))
+	mux.HandleFunc("GET /api/servers/{server_id}/transcripts/{transcript_id}", s.wrapAuthConfig(transcriptsHandler.HandleGetTranscript))
 
 	return EnableCORS(mux, cfg.ClientOrigin, true)
 }

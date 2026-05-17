@@ -38,15 +38,29 @@ ON CONFLICT (server_config_id) DO UPDATE SET
 RETURNING *;
 
 -- name: GetTranscriptsByServer :many
--- Fetches the latest transcripts for the dashboard
-SELECT * FROM transcript 
-WHERE server_config_id = $1 
-ORDER BY closed_at DESC;
+-- Paginated list for dashboard — only summary columns, no blob fetch
+SELECT id, server_config_id, ticket_id, username, user_id,
+       opened_at, closed_at, closed_by, storage_key,
+       total_messages, total_attachments, total_embeds
+FROM transcript
+WHERE server_config_id = $1
+ORDER BY closed_at DESC
+LIMIT $2 OFFSET $3;
+
+-- name: CountTranscriptsByServer :one
+-- Total count for pagination — uses index, minimal compute
+SELECT COUNT(*) FROM transcript WHERE server_config_id = $1;
+
+-- name: GetTranscriptByID :one
+-- Single row lookup for viewer — returns storage_key for presigned URL
+SELECT * FROM transcript WHERE id = $1 AND server_config_id = $2;
 
 -- name: CreateTranscript :one
--- Used by the bot when a ticket is closed and uploaded to R2
+-- Used by the bot when a ticket is closed and uploaded to Azure Blob
 INSERT INTO transcript (
-    server_config_id, opened_at, closed_at, closed_by, storage_key
+    server_config_id, ticket_id, username, user_id,
+    opened_at, closed_at, closed_by, storage_key,
+    total_messages, total_attachments, total_embeds
 ) VALUES (
-    $1, $2, $3, $4, $5
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
 ) RETURNING *;

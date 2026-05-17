@@ -11,39 +11,69 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countTranscriptsByServer = `-- name: CountTranscriptsByServer :one
+SELECT COUNT(*) FROM transcript WHERE server_config_id = $1
+`
+
+func (q *Queries) CountTranscriptsByServer(ctx context.Context, serverConfigID int64) (int64, error) {
+	row := q.db.QueryRow(ctx, countTranscriptsByServer, serverConfigID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createTranscript = `-- name: CreateTranscript :one
 INSERT INTO transcript (
-    server_config_id, opened_at, closed_at, closed_by, storage_key
+    server_config_id, ticket_id, username, user_id,
+    opened_at, closed_at, closed_by, storage_key,
+    total_messages, total_attachments, total_embeds
 ) VALUES (
-    $1, $2, $3, $4, $5
-) RETURNING id, server_config_id, opened_at, closed_at, closed_by, storage_key
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+) RETURNING id, server_config_id, ticket_id, username, user_id, opened_at, closed_at, closed_by, storage_key, total_messages, total_attachments, total_embeds
 `
 
 type CreateTranscriptParams struct {
-	ServerConfigID int64
-	OpenedAt       int64
-	ClosedAt       int64
-	ClosedBy       string
-	StorageKey     string
+	ServerConfigID  int64
+	TicketID        pgtype.Text
+	Username        pgtype.Text
+	UserID          pgtype.Text
+	OpenedAt        int64
+	ClosedAt        int64
+	ClosedBy        string
+	StorageKey      string
+	TotalMessages   pgtype.Int4
+	TotalAttachments pgtype.Int4
+	TotalEmbeds     pgtype.Int4
 }
 
-// Used by the bot when a ticket is closed and uploaded to R2
 func (q *Queries) CreateTranscript(ctx context.Context, arg CreateTranscriptParams) (Transcript, error) {
 	row := q.db.QueryRow(ctx, createTranscript,
 		arg.ServerConfigID,
+		arg.TicketID,
+		arg.Username,
+		arg.UserID,
 		arg.OpenedAt,
 		arg.ClosedAt,
 		arg.ClosedBy,
 		arg.StorageKey,
+		arg.TotalMessages,
+		arg.TotalAttachments,
+		arg.TotalEmbeds,
 	)
 	var i Transcript
 	err := row.Scan(
 		&i.ID,
 		&i.ServerConfigID,
+		&i.TicketID,
+		&i.Username,
+		&i.UserID,
 		&i.OpenedAt,
 		&i.ClosedAt,
 		&i.ClosedBy,
 		&i.StorageKey,
+		&i.TotalMessages,
+		&i.TotalAttachments,
+		&i.TotalEmbeds,
 	)
 	return i, err
 }
@@ -66,44 +96,77 @@ func (q *Queries) GetAutoCloseConfig(ctx context.Context, serverConfigID int64) 
 	return i, err
 }
 
-const upsertAutoCloseConfig = `-- name: UpsertAutoCloseConfig :one
-INSERT INTO auto_close_config (
-    server_config_id, is_active, close_on_user_leave,
-    close_since_open_with_no_response_mins, close_since_last_message_mins
-) VALUES ($1, $2, $3, $4, $5)
-ON CONFLICT (server_config_id) DO UPDATE SET
-    is_active = EXCLUDED.is_active,
-    close_on_user_leave = EXCLUDED.close_on_user_leave,
-    close_since_open_with_no_response_mins = EXCLUDED.close_since_open_with_no_response_mins,
-    close_since_last_message_mins = EXCLUDED.close_since_last_message_mins
-RETURNING server_config_id, is_active, close_on_user_leave, close_since_open_with_no_response_mins, close_since_last_message_mins
+const getTranscriptByID = `-- name: GetTranscriptByID :one
+SELECT id, server_config_id, ticket_id, username, user_id, opened_at, closed_at, closed_by, storage_key, total_messages, total_attachments, total_embeds FROM transcript WHERE id = $1 AND server_config_id = $2
 `
 
-type UpsertAutoCloseConfigParams struct {
-	ServerConfigID                    int64
-	IsActive                          bool
-	CloseOnUserLeave                  bool
-	CloseSinceOpenWithNoResponseMins  int32
-	CloseSinceLastMessageMins         int32
-}
-
-func (q *Queries) UpsertAutoCloseConfig(ctx context.Context, arg UpsertAutoCloseConfigParams) (AutoCloseConfig, error) {
-	row := q.db.QueryRow(ctx, upsertAutoCloseConfig,
-		arg.ServerConfigID,
-		arg.IsActive,
-		arg.CloseOnUserLeave,
-		arg.CloseSinceOpenWithNoResponseMins,
-		arg.CloseSinceLastMessageMins,
-	)
-	var i AutoCloseConfig
+func (q *Queries) GetTranscriptByID(ctx context.Context, id int32, serverConfigID int64) (Transcript, error) {
+	row := q.db.QueryRow(ctx, getTranscriptByID, id, serverConfigID)
+	var i Transcript
 	err := row.Scan(
+		&i.ID,
 		&i.ServerConfigID,
-		&i.IsActive,
-		&i.CloseOnUserLeave,
-		&i.CloseSinceOpenWithNoResponseMins,
-		&i.CloseSinceLastMessageMins,
+		&i.TicketID,
+		&i.Username,
+		&i.UserID,
+		&i.OpenedAt,
+		&i.ClosedAt,
+		&i.ClosedBy,
+		&i.StorageKey,
+		&i.TotalMessages,
+		&i.TotalAttachments,
+		&i.TotalEmbeds,
 	)
 	return i, err
+}
+
+const getTranscriptsByServer = `-- name: GetTranscriptsByServer :many
+SELECT id, server_config_id, ticket_id, username, user_id,
+       opened_at, closed_at, closed_by, storage_key,
+       total_messages, total_attachments, total_embeds
+FROM transcript
+WHERE server_config_id = $1
+ORDER BY closed_at DESC
+LIMIT $2 OFFSET $3
+`
+
+type GetTranscriptsByServerParams struct {
+	ServerConfigID int64
+	Limit          int32
+	Offset         int32
+}
+
+func (q *Queries) GetTranscriptsByServer(ctx context.Context, arg GetTranscriptsByServerParams) ([]Transcript, error) {
+	rows, err := q.db.Query(ctx, getTranscriptsByServer, arg.ServerConfigID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Transcript
+	for rows.Next() {
+		var i Transcript
+		if err := rows.Scan(
+			&i.ID,
+			&i.ServerConfigID,
+			&i.TicketID,
+			&i.Username,
+			&i.UserID,
+			&i.OpenedAt,
+			&i.ClosedAt,
+			&i.ClosedBy,
+			&i.StorageKey,
+			&i.TotalMessages,
+			&i.TotalAttachments,
+			&i.TotalEmbeds,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getServerConfig = `-- name: GetServerConfig :one
@@ -128,38 +191,44 @@ func (q *Queries) GetServerConfig(ctx context.Context, id int64) (ServerConfig, 
 	return i, err
 }
 
-const getTranscriptsByServer = `-- name: GetTranscriptsByServer :many
-SELECT id, server_config_id, opened_at, closed_at, closed_by, storage_key FROM transcript 
-WHERE server_config_id = $1 
-ORDER BY closed_at DESC
+const upsertAutoCloseConfig = `-- name: UpsertAutoCloseConfig :one
+INSERT INTO auto_close_config (
+    server_config_id, is_active, close_on_user_leave,
+    close_since_open_with_no_response_mins, close_since_last_message_mins
+) VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (server_config_id) DO UPDATE SET
+    is_active = EXCLUDED.is_active,
+    close_on_user_leave = EXCLUDED.close_on_user_leave,
+    close_since_open_with_no_response_mins = EXCLUDED.close_since_open_with_no_response_mins,
+    close_since_last_message_mins = EXCLUDED.close_since_last_message_mins
+RETURNING server_config_id, is_active, close_on_user_leave, close_since_open_with_no_response_mins, close_since_last_message_mins
 `
 
-// Fetches the latest transcripts for the dashboard
-func (q *Queries) GetTranscriptsByServer(ctx context.Context, serverConfigID int64) ([]Transcript, error) {
-	rows, err := q.db.Query(ctx, getTranscriptsByServer, serverConfigID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Transcript
-	for rows.Next() {
-		var i Transcript
-		if err := rows.Scan(
-			&i.ID,
-			&i.ServerConfigID,
-			&i.OpenedAt,
-			&i.ClosedAt,
-			&i.ClosedBy,
-			&i.StorageKey,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+type UpsertAutoCloseConfigParams struct {
+	ServerConfigID                   int64
+	IsActive                         bool
+	CloseOnUserLeave                 bool
+	CloseSinceOpenWithNoResponseMins int32
+	CloseSinceLastMessageMins        int32
+}
+
+func (q *Queries) UpsertAutoCloseConfig(ctx context.Context, arg UpsertAutoCloseConfigParams) (AutoCloseConfig, error) {
+	row := q.db.QueryRow(ctx, upsertAutoCloseConfig,
+		arg.ServerConfigID,
+		arg.IsActive,
+		arg.CloseOnUserLeave,
+		arg.CloseSinceOpenWithNoResponseMins,
+		arg.CloseSinceLastMessageMins,
+	)
+	var i AutoCloseConfig
+	err := row.Scan(
+		&i.ServerConfigID,
+		&i.IsActive,
+		&i.CloseOnUserLeave,
+		&i.CloseSinceOpenWithNoResponseMins,
+		&i.CloseSinceLastMessageMins,
+	)
+	return i, err
 }
 
 const upsertServerConfig = `-- name: UpsertServerConfig :one
@@ -193,7 +262,6 @@ type UpsertServerConfigParams struct {
 	AuthorizedRoleIds   []string
 }
 
-// Upsert means "Insert if it doesn't exist, Update if it does"
 func (q *Queries) UpsertServerConfig(ctx context.Context, arg UpsertServerConfigParams) (ServerConfig, error) {
 	row := q.db.QueryRow(ctx, upsertServerConfig,
 		arg.ID,

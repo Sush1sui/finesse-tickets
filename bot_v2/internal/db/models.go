@@ -68,10 +68,16 @@ type ServerConfig struct {
 type Transcript struct {
 	ID             int32
 	ServerConfigID int64
+	TicketID       pgtype.Text
+	Username       pgtype.Text
+	UserID         pgtype.Text
 	OpenedAt       int64
 	ClosedAt       int64
 	ClosedBy       string
 	StorageKey     string
+	TotalMessages  pgtype.Int4
+	TotalAttachments pgtype.Int4
+	TotalEmbeds    pgtype.Int4
 }
 
 type WelcomeMsgConfig struct {

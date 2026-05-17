@@ -125,6 +125,17 @@ export const api = {
     emojis: (serverId: string) =>
       fetchApi<DiscordEmoji[]>(`/api/servers/${serverId}/meta/emojis`),
   },
+
+  transcripts: {
+    list: (serverId: string, page = 1, limit = 20) =>
+      fetchApi<TranscriptListResponse>(
+        `/api/servers/${serverId}/transcripts?page=${page}&limit=${limit}`,
+      ),
+    get: (serverId: string, transcriptId: string) =>
+      fetchApi<TranscriptDetailResponse>(
+        `/api/servers/${serverId}/transcripts/${transcriptId}`,
+      ),
+  },
 };
 
 export type ServerSummary = {
@@ -279,4 +290,87 @@ export type MultiPanelDetail = {
   panelConfigIds: number[];
   footer: string;
   footIconUrl: string;
+};
+
+export type Transcript = {
+  id: number;
+  ticketId: string;
+  username: string;
+  userId: string;
+  openedAt: number;
+  closedAt: number;
+  closedBy: string;
+  totalMessages: number;
+  totalAttachments: number;
+  totalEmbeds: number;
+};
+
+export type TranscriptListResponse = {
+  transcripts: Transcript[];
+  pagination: { page: number; limit: number; total: number; pages: number };
+};
+
+export type TranscriptDetailResponse = {
+  transcript: Transcript & { storageKey: string };
+  presignedUrl: string;
+};
+
+export type TranscriptMessage = {
+  id: string;
+  type:
+    | "message"
+    | "embed"
+    | "attachment"
+    | "voice_join"
+    | "voice_leave"
+    | "system";
+  author: {
+    id: string;
+    username: string;
+    discriminator: string;
+    avatar: string | null;
+    bot: boolean;
+  };
+  content: string | null;
+  timestamp: string;
+  embeds?: {
+    title?: string;
+    description?: string;
+    url?: string;
+    color?: number;
+    fields?: { name: string; value: string; inline: boolean }[];
+    image?: { url: string } | null;
+    thumbnail?: { url: string } | null;
+    footer?: { text: string; iconUrl: string | null } | null;
+    author?: { name: string; url: string | null; iconUrl: string | null } | null;
+  }[];
+  attachments?: {
+    id: string;
+    filename: string;
+    url: string;
+    proxyUrl: string;
+    size: number;
+    contentType: string | null;
+    width: number | null;
+    height: number | null;
+  }[];
+  edited: boolean;
+  editedTimestamp: string | null;
+  reactions?: { emoji: string; count: number }[];
+};
+
+export type TranscriptContent = {
+  ticketId: string;
+  username: string;
+  userId: string;
+  messages: TranscriptMessage[];
+  metadata: {
+    ticketOpenedAt: string;
+    ticketClosedAt: string;
+    closedBy: { id: string; username: string };
+    totalMessages: number;
+    totalAttachments: number;
+    totalEmbeds: number;
+    participants: { id: string; username: string; messageCount: number }[];
+  };
 };
