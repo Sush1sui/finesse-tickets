@@ -37,3 +37,30 @@ func (q *Queries) DeleteActiveTicketByChannel(ctx context.Context, serverConfigI
 	_, err := q.db.Exec(ctx, deleteActiveTicketByChannel, serverConfigID, channelID)
 	return err
 }
+
+const getActiveTicketChannelsByUser = `
+SELECT channel_id
+FROM active_ticket
+WHERE server_config_id = $1 AND user_id = $2
+`
+
+func (q *Queries) GetActiveTicketChannelsByUser(ctx context.Context, serverConfigID int64, userID string) ([]string, error) {
+	rows, err := q.db.Query(ctx, getActiveTicketChannelsByUser, serverConfigID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items := make([]string, 0)
+	for rows.Next() {
+		var channelID string
+		if err := rows.Scan(&channelID); err != nil {
+			return nil, err
+		}
+		items = append(items, channelID)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

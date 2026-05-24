@@ -146,7 +146,26 @@ func openTicket(s *discordgo.Session, i *discordgo.InteractionCreate, panelID in
 			return err
 		}
 		if count >= int64(serverConfig.MaxTicketPerUser) {
-			return errMaxTickets
+			if s != nil && s.State != nil {
+				channels, err := queries.GetActiveTicketChannelsByUser(ctx, serverID, i.Member.User.ID)
+				if err == nil {
+					for _, channelID := range channels {
+						if _, err := s.State.Channel(channelID); err == nil {
+							continue
+						}
+						if err := queries.DeleteActiveTicketByChannel(ctx, serverID, channelID); err != nil {
+							log.Printf("delete stale active ticket failed: %v", err)
+						}
+					}
+					count, err = queries.CountActiveTicketsByUser(ctx, serverID, i.Member.User.ID)
+					if err != nil {
+						return err
+					}
+				}
+			}
+			if count >= int64(serverConfig.MaxTicketPerUser) {
+				return errMaxTickets
+			}
 		}
 	}
 	allowedPerms := parseTicketPermissions(serverConfig.TicketPermissions)

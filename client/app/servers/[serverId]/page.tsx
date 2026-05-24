@@ -28,7 +28,10 @@ export default function ServerSettingsPage() {
   const params = useParams();
   const router = useRouter();
   const { user, authLoading } = useAuth();
-  const { config, channels, isLoading } = useServerConfig(params.serverId as string, true);
+  const { config, channels, isLoading } = useServerConfig(
+    params.serverId as string,
+    true,
+  );
   const [saving, setSaving] = useState(false);
   const serverId = params.serverId as string;
 
@@ -51,22 +54,26 @@ export default function ServerSettingsPage() {
 
   useEffect(() => {
     if (!config) return;
-    setFormData({
+    setFormData((prev) => ({
+      ...prev,
       TicketNameStyle: config.TicketNameStyle || "number",
       TicketTranscripts: config.TicketTranscripts || "",
-      MaxTicketsPerUser: config.MaxTicketsPerUser || 1,
-      TicketPermissionsAttachFiles: config.TicketPermissionsAttachFiles || false,
+      MaxTicketsPerUser: config.MaxTicketsPerUser,
+      TicketPermissionsAttachFiles:
+        config.TicketPermissionsAttachFiles || false,
       TicketPermissionsEmbedLinks: config.TicketPermissionsEmbedLinks || false,
-      TicketPermissionsAddReactions: config.TicketPermissionsAddReactions || false,
+      TicketPermissionsAddReactions:
+        config.TicketPermissionsAddReactions || false,
       AutoClose: config.AutoClose || false,
       AutoCloseOnUserLeave: config.AutoCloseOnUserLeave || false,
       AutoCloseNoResponseDays: config.AutoCloseNoResponseDays || 0,
       AutoCloseNoResponseHours: config.AutoCloseNoResponseHours || 0,
       AutoCloseNoResponseMins: config.AutoCloseNoResponseMins || 0,
       AutoCloseSinceLastMessageDays: config.AutoCloseSinceLastMessageDays || 0,
-      AutoCloseSinceLastMessageHours: config.AutoCloseSinceLastMessageHours || 0,
+      AutoCloseSinceLastMessageHours:
+        config.AutoCloseSinceLastMessageHours || 0,
       AutoCloseSinceLastMessageMins: config.AutoCloseSinceLastMessageMins || 0,
-    });
+    }));
   }, [config]);
 
   const handleSave = async () => {
@@ -99,20 +106,19 @@ export default function ServerSettingsPage() {
 
   if (!user) {
     router.push("/servers");
-return null;
+    return null;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link
-            href="/servers"
-            className="text-zinc-500 hover:text-zinc-700"
-          >
+          <Link href="/servers" className="text-zinc-500 hover:text-zinc-700">
             ← Back
           </Link>
-          <h1 className="text-lg font-semibold text-zinc-900">Server Settings</h1>
+          <h1 className="text-lg font-semibold text-zinc-900">
+            Server Settings
+          </h1>
         </div>
         <button
           onClick={handleSave}
