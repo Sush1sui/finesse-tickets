@@ -100,7 +100,7 @@ export default function Home() {
 											</div>
 										)}
 										<span className="text-sm font-medium text-zinc-300">
-											Chef {user.name}
+											Welcome, {user.name}
 										</span>
 									</div>
 									<Link
@@ -108,7 +108,7 @@ export default function Home() {
 										className="group flex items-center justify-center gap-2 rounded-xl bg-[#FF5A36] px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-rose-600/25 hover:bg-[#FF6B4A] hover:shadow-rose-500/35 transition-all duration-300 active:scale-95 hover:-translate-y-0.5"
 									>
 										<Layout className="h-4 w-4" />
-										Enter Kitchen
+										Manage Servers
 										<ExternalLink className="h-3.5 w-3.5 opacity-60 group-hover:translate-x-0.5 transition-transform" />
 									</Link>
 								</div>

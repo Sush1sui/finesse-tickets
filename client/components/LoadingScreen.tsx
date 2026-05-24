@@ -6,7 +6,7 @@ interface LoadingScreenProps {
 	text?: string;
 }
 
-export default function LoadingScreen({ text = "Rolling Sushi..." }: LoadingScreenProps) {
+export default function LoadingScreen({ text = "Loading..." }: LoadingScreenProps) {
 	return (
 		<div className="flex min-h-screen flex-col items-center justify-center bg-[#07090E] text-zinc-100 font-sans">
 			<div className="relative flex h-16 w-16 items-center justify-center">
