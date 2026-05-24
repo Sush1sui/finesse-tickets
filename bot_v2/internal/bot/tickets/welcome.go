@@ -1,0 +1,123 @@
+package tickets
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/Sush1sui/FNS_BOT/internal/db"
+	"github.com/Sush1sui/FNS_BOT/internal/utils"
+	"github.com/bwmarrin/discordgo"
+)
+
+func SendWelcomeMessage(
+	s *discordgo.Session,
+	channelID string,
+	user *discordgo.User,
+	mentionRoles []string,
+	welcome db.WelcomeMsgConfig,
+	hasWelcome bool,
+	qna []QnA,
+) {
+	if s == nil || user == nil {
+		return
+	}
+
+	embed := buildWelcomeEmbed(user, welcome, hasWelcome)
+	appendQnA(embed, qna)
+
+	mentions := make([]string, 0, 1+len(mentionRoles))
+	mentions = append(mentions, user.Mention())
+	for _, roleID := range mentionRoles {
+		if roleID == "" {
+			continue
+		}
+		mentions = append(mentions, fmt.Sprintf("<@&%s>", roleID))
+	}
+
+	closeButton := discordgo.Button{
+		Label:    "Close Ticket",
+		Style:    discordgo.DangerButton,
+		CustomID: closeTicketID,
+		Emoji: &discordgo.ComponentEmoji{
+			Name: "🔒",
+		},
+	}
+
+	message := &discordgo.MessageSend{
+		Content: strings.Join(mentions, " "),
+		Embeds:  []*discordgo.MessageEmbed{embed},
+		Components: []discordgo.MessageComponent{
+			discordgo.ActionsRow{Components: []discordgo.MessageComponent{closeButton}},
+		},
+	}
+
+	_, _ = s.ChannelMessageSendComplex(channelID, message)
+}
+
+func buildWelcomeEmbed(user *discordgo.User, welcome db.WelcomeMsgConfig, hasWelcome bool) *discordgo.MessageEmbed {
+	if hasWelcome {
+		embed := &discordgo.MessageEmbed{
+			Title:       welcome.Title,
+			Description: welcome.Description,
+			Color:       int(welcome.EmbedColor),
+		}
+
+		if url := utils.TextOrEmpty(welcome.TitleUrl); url != "" {
+			embed.URL = url
+		}
+		if url := utils.TextOrEmpty(welcome.LargeImgUrl); url != "" {
+			embed.Image = &discordgo.MessageEmbedImage{URL: url}
+		}
+		if url := utils.TextOrEmpty(welcome.SmallImgUrl); url != "" {
+			embed.Thumbnail = &discordgo.MessageEmbedThumbnail{URL: url}
+		}
+		if footerText := utils.TextOrEmpty(welcome.Footer); footerText != "" {
+			embed.Footer = &discordgo.MessageEmbedFooter{Text: footerText}
+			if iconURL := utils.TextOrEmpty(welcome.FooterIconUrl); iconURL != "" {
+				embed.Footer.IconURL = iconURL
+			}
+		}
+
+		if embed.Description == "" {
+			embed.Description = fmt.Sprintf("Welcome %s! A staff member will assist you shortly.", user.Mention())
+		}
+		if embed.Title == "" {
+			embed.Title = "Sushi Tickets"
+		}
+
+		return embed
+	}
+
+	return &discordgo.MessageEmbed{
+		Title:       "Sushi Tickets",
+		Description: fmt.Sprintf("Hello %s! Thank you for creating a ticket. A staff member will assist you shortly.", user.Mention()),
+		Color:       0xFFFFFF,
+	}
+}
+
+func appendQnA(embed *discordgo.MessageEmbed, qna []QnA) {
+	if len(qna) == 0 || embed == nil {
+		return
+	}
+
+	parts := make([]string, 0, len(qna))
+	for _, qa := range qna {
+		ans := strings.TrimSpace(qa.Answer)
+		if ans == "" {
+			ans = "_No response provided_"
+		}
+		parts = append(parts, fmt.Sprintf("**%s**\n> %s", qa.Question, ans))
+	}
+
+	joined := strings.Join(parts, "\n\n")
+	const maxRunes = 1024
+	if len([]rune(joined)) > maxRunes {
+		r := []rune(joined)
+		joined = string(r[:maxRunes-1]) + "…"
+	}
+
+	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+		Name:  "Responses",
+		Value: joined,
+	})
+}

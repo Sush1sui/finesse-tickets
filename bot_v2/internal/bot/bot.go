@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/Sush1sui/FNS_BOT/internal/bot/deploy"
+	"github.com/Sush1sui/FNS_BOT/internal/bot/tickets"
 	"github.com/Sush1sui/FNS_BOT/internal/config"
 	"github.com/bwmarrin/discordgo"
 )
@@ -78,14 +79,21 @@ func StartBot() {
 	})
 
 	s.AddHandler(func(sess *discordgo.Session, i *discordgo.InteractionCreate) {
-		if i == nil || i.Type != discordgo.InteractionApplicationCommand {
+		if i == nil {
 			return
 		}
 
-		name := i.ApplicationCommandData().Name
-		// Fast map lookup for handlers.
-		if handler, ok := deploy.CommandHandlers[name]; ok {
-			handler(sess, i)
+		switch i.Type {
+		case discordgo.InteractionApplicationCommand:
+			name := i.ApplicationCommandData().Name
+			// Fast map lookup for handlers.
+			if handler, ok := deploy.CommandHandlers[name]; ok {
+				handler(sess, i)
+			}
+		case discordgo.InteractionMessageComponent:
+			tickets.HandleComponentInteraction(sess, i)
+		case discordgo.InteractionModalSubmit:
+			tickets.HandleModalSubmit(sess, i)
 		}
 	})
 

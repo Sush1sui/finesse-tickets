@@ -13,6 +13,7 @@ import (
 
 	"github.com/Sush1sui/FNS_BOT/internal/api"
 	"github.com/Sush1sui/FNS_BOT/internal/bot"
+	"github.com/Sush1sui/FNS_BOT/internal/bot/tickets"
 	"github.com/Sush1sui/FNS_BOT/internal/config"
 	"github.com/Sush1sui/FNS_BOT/internal/db"
 	"github.com/Sush1sui/FNS_BOT/internal/storage"
@@ -41,6 +42,7 @@ func main() {
 	defer pool.Close()
 
 	queries := db.New(pool)
+	tickets.SetQueries(queries)
 
 	// 2. Connect to Azure Blob Storage
 	azureClient := storage.NewAzureClient()

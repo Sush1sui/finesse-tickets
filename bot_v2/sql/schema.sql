@@ -84,12 +84,21 @@ CREATE TABLE transcript (
     total_embeds INTEGER DEFAULT 0
 );
 
+CREATE TABLE active_ticket (
+    server_config_id BIGINT NOT NULL REFERENCES server_config(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL,
+    channel_id TEXT NOT NULL,
+    created_at BIGINT NOT NULL,
+    PRIMARY KEY (server_config_id, channel_id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_panel_config_server_id ON panel_config (server_config_id, id);
 CREATE INDEX IF NOT EXISTS idx_questions_config_panel_id ON questions_config (panel_config_id);
 CREATE INDEX IF NOT EXISTS idx_welcome_msg_panel_id ON welcome_msg_config (panel_config_id);
 CREATE INDEX IF NOT EXISTS idx_multi_panel_config_server_id ON multi_panel_config (server_config_id, id);
 CREATE INDEX IF NOT EXISTS idx_multi_panel_panel_ids_gin ON multi_panel_config USING GIN (panel_config_ids);
 CREATE INDEX IF NOT EXISTS idx_transcript_server_closed_at ON transcript (server_config_id, closed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_active_ticket_user ON active_ticket (server_config_id, user_id);
 
 CREATE TABLE authorized_members (
     server_config_id BIGINT NOT NULL REFERENCES server_config(id) ON DELETE CASCADE,
