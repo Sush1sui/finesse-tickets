@@ -11,31 +11,6 @@ import (
 	"github.com/Sush1sui/FNS_BOT/internal/utils"
 )
 
-type StaffMember struct {
-	ID         string `json:"id"`
-	Username   string `json:"username"`
-	GlobalName string `json:"globalName"`
-	AvatarURL  string `json:"avatarUrl"`
-}
-
-type StaffRole struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Color int    `json:"color"`
-}
-
-type StaffResponse struct {
-	Members             []StaffMember `json:"members"`
-	Roles               []StaffRole   `json:"roles"`
-	AuthorizedMemberIds []string      `json:"authorizedMemberIds"`
-	AuthorizedRoleIds   []string      `json:"authorizedRoleIds"`
-}
-
-type StaffUpdatePayload struct {
-	AuthorizedMemberIds []string `json:"authorizedMemberIds"`
-	AuthorizedRoleIds   []string `json:"authorizedRoleIds"`
-}
-
 func (h *Handler) HandleGetStaff(w http.ResponseWriter, r *http.Request) {
 	serverID := r.PathValue("server_id")
 

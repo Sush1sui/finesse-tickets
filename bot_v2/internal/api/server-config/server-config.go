@@ -12,34 +12,12 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-// Handler handles HTTP endpoints for server configuration
-type Handler struct {
-	DB *db.Queries
-}
+
 
 func writeJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(data)
-}
-
-type TicketPermissions []string
-
-type FormData struct {
-	TicketNameStyle                  string `json:"TicketNameStyle"`
-	TicketTranscripts                string `json:"TicketTranscripts"`
-	MaxTicketsPerUser                int    `json:"MaxTicketsPerUser"`
-	TicketPermissionsAttachFiles    bool   `json:"TicketPermissionsAttachFiles"`
-	TicketPermissionsEmbedLinks     bool   `json:"TicketPermissionsEmbedLinks"`
-	TicketPermissionsAddReactions  bool   `json:"TicketPermissionsAddReactions"`
-	AutoClose                        bool   `json:"AutoClose"`
-	AutoCloseOnUserLeave            bool   `json:"AutoCloseOnUserLeave"`
-	AutoCloseNoResponseDays         int    `json:"AutoCloseNoResponseDays"`
-	AutoCloseNoResponseHours        int    `json:"AutoCloseNoResponseHours"`
-	AutoCloseNoResponseMins         int    `json:"AutoCloseNoResponseMins"`
-	AutoCloseSinceLastMessageDays   int    `json:"AutoCloseSinceLastMessageDays"`
-	AutoCloseSinceLastMessageHours  int    `json:"AutoCloseSinceLastMessageHours"`
-	AutoCloseSinceLastMessageMins  int    `json:"AutoCloseSinceLastMessageMins"`
 }
 
 func (h *Handler) HandleGetServerConfig(w http.ResponseWriter, r *http.Request) {

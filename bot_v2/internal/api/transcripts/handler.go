@@ -12,12 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type Handler struct {
-	DB      *db.Queries
-	Storage interface {
-		GeneratePresignedURL(key string) (string, error)
-	}
-}
+
 
 func writeJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
