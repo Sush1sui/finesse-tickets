@@ -3,12 +3,14 @@ package serverconfig
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/Sush1sui/FNS_BOT/internal/bot"
 	"github.com/Sush1sui/FNS_BOT/internal/db"
 	"github.com/Sush1sui/FNS_BOT/internal/utils"
+	"github.com/jackc/pgx/v5"
 )
 
 func (h *Handler) HandleGetStaff(w http.ResponseWriter, r *http.Request) {
@@ -24,8 +26,15 @@ func (h *Handler) HandleGetStaff(w http.ResponseWriter, r *http.Request) {
 
 	_, err = h.DB.GetServerConfig(ctx, serverIDInt)
 	if err != nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "server config not found"})
-		return
+		if errors.Is(err, pgx.ErrNoRows) {
+			if err := h.DB.EnsureServerConfig(ctx, serverIDInt); err != nil {
+				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to initialize server config"})
+				return
+			}
+		} else {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to load server config"})
+			return
+		}
 	}
 
 	members, ok := utils.GetGuildMembersCache(bot.Session, serverID)
@@ -104,8 +113,15 @@ func (h *Handler) HandleUpdateStaff(w http.ResponseWriter, r *http.Request) {
 
 	_, err = h.DB.GetServerConfig(ctx, serverIDInt)
 	if err != nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "server config not found"})
-		return
+		if errors.Is(err, pgx.ErrNoRows) {
+			if err := h.DB.EnsureServerConfig(ctx, serverIDInt); err != nil {
+				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to initialize server config"})
+				return
+			}
+		} else {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to load server config"})
+			return
+		}
 	}
 
 	if err := h.DB.ClearAuthorizedMembers(ctx, serverIDInt); err != nil {

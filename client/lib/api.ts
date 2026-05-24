@@ -172,6 +172,7 @@ export type ServerConfig = {
   ID: number;
   TicketNameStyle: string;
   TicketTranscripts: string;
+  TicketTranscriptCid?: string;
   MaxTicketsPerUser: number;
   TicketPermissionsAttachFiles: boolean;
   TicketPermissionsEmbedLinks: boolean;

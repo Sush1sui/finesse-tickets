@@ -242,16 +242,24 @@ func (s *Server) IsAuthorizedForServer(ctx context.Context, serverID string, cla
 		return false, nil
 	}
 
+	// 1. Check Discord Admin Cache first (0 DB queries for 99% of admin users!)
+	if hasAdminPermsFromCache(serverID, claims.DiscordID) {
+		return true, nil
+	}
+
 	id, err := strconv.ParseInt(serverID, 10, 64)
 	if err != nil {
 		return false, err
 	}
 
+	// 2. Check if configuration exists
+	configExists := true
 	_, err = s.DB.GetServerConfig(ctx, id)
 	if err != nil {
-		return true, nil
+		configExists = false
 	}
 
+	// 3. Check member whitelist
 	isMember, _ := s.DB.IsMemberAuthorized(ctx, db.IsMemberAuthorizedParams{
 		ServerConfigID: id,
 		MemberID:       claims.DiscordID,
@@ -260,10 +268,11 @@ func (s *Server) IsAuthorizedForServer(ctx context.Context, serverID string, cla
 		return true, nil
 	}
 
-	if hasAdminPermsFromCache(serverID, claims.DiscordID) {
-		return true, nil
+	if !configExists {
+		return false, nil
 	}
 
+	// 4. Check role whitelist
 	roleIds, _ := s.DB.GetAuthorizedRoles(ctx, id)
 	if len(roleIds) > 0 && userHasAuthorizedRole(serverID, claims.DiscordID, roleIds) {
 		return true, nil
@@ -360,6 +369,12 @@ func (s *Server) isAuthorizedGuild(ctx context.Context, guild discordGuild, clai
 		return false, nil
 	}
 
+	// Try in-memory Discord cache first (0 network calls!)
+	if userHasAuthorizedRole(guild.ID, claims.DiscordID, roleIds) {
+		return true, nil
+	}
+
+	// Fallback to Discord API call only on cache miss
 	member, err := utils.FetchGuildMember(ctx, s.Config.BotToken, guild.ID, claims.DiscordID)
 	if err != nil {
 		return false, err

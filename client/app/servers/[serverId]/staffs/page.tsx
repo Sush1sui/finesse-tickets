@@ -176,13 +176,14 @@ export default function StaffPage() {
   const [initialized, setInitialized] = useState(false);
 
   const initSelections = useCallback(() => {
-    if (!initialized && authorizedMemberIds.length > 0) {
+    if (!initialized) {
       setSelectedMemberIds([...authorizedMemberIds]);
+      setSelectedRoleIds([...authorizedRoleIds]);
       setInitialized(true);
     }
-  }, [initialized, authorizedMemberIds]);
+  }, [initialized, authorizedMemberIds, authorizedRoleIds]);
 
-  if (!initialized && authorizedMemberIds.length > 0) {
+  if (!initialized && !isLoading) {
     initSelections();
   }
 

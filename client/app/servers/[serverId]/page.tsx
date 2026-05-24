@@ -54,10 +54,13 @@ export default function ServerSettingsPage() {
 
   useEffect(() => {
     if (!config) return;
+    const transcriptChannel = channels.find((ch) => ch.id === config.TicketTranscriptCid);
+    const transcriptName = transcriptChannel ? transcriptChannel.name : (config.TicketTranscriptCid || "");
+
     setFormData((prev) => ({
       ...prev,
       TicketNameStyle: config.TicketNameStyle || "number",
-      TicketTranscripts: config.TicketTranscripts || "",
+      TicketTranscripts: transcriptName,
       MaxTicketsPerUser: config.MaxTicketsPerUser ?? 1,
       TicketPermissionsAttachFiles:
         config.TicketPermissionsAttachFiles || false,
@@ -74,7 +77,7 @@ export default function ServerSettingsPage() {
         config.AutoCloseSinceLastMessageHours || 0,
       AutoCloseSinceLastMessageMins: config.AutoCloseSinceLastMessageMins || 0,
     }));
-  }, [config]);
+  }, [config, channels]);
 
   const handleSave = async () => {
     setSaving(true);
