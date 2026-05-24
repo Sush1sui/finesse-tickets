@@ -9,7 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Sush1sui/FNS_BOT/internal/db"
 	"github.com/bwmarrin/discordgo"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type QnA struct {
@@ -302,6 +304,8 @@ func handleCloseTicket(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
+	saveTranscriptOnClose(s, i)
+
 	if queries != nil {
 		serverID, err := strconv.ParseInt(i.GuildID, 10, 64)
 		if err == nil {
@@ -315,6 +319,369 @@ func handleCloseTicket(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		editEphemeral(s, i, "Failed to close ticket.")
 		return
 	}
+}
+
+type transcriptPayload struct {
+	TicketID string `json:"ticketId"`
+	Username string `json:"username"`
+	UserID   string `json:"userId"`
+	Messages []transcriptMessage `json:"messages"`
+	Metadata transcriptMetadata `json:"metadata"`
+}
+
+type transcriptAuthor struct {
+	ID            string  `json:"id"`
+	Username      string  `json:"username"`
+	Discriminator string  `json:"discriminator"`
+	Avatar        *string `json:"avatar"`
+	Bot           bool    `json:"bot"`
+}
+
+type transcriptEmbedField struct {
+	Name   string `json:"name"`
+	Value  string `json:"value"`
+	Inline bool   `json:"inline"`
+}
+
+type transcriptImage struct {
+	URL string `json:"url"`
+}
+
+type transcriptFooter struct {
+	Text    string  `json:"text"`
+	IconURL *string `json:"iconUrl"`
+}
+
+type transcriptEmbedAuthor struct {
+	Name    string  `json:"name"`
+	URL     *string `json:"url"`
+	IconURL *string `json:"iconUrl"`
+}
+
+type transcriptEmbed struct {
+	Title       *string               `json:"title"`
+	Description *string               `json:"description"`
+	URL         *string               `json:"url"`
+	Color       *int                  `json:"color"`
+	Fields      []transcriptEmbedField `json:"fields"`
+	Image       *transcriptImage      `json:"image"`
+	Thumbnail   *transcriptImage      `json:"thumbnail"`
+	Footer      *transcriptFooter     `json:"footer"`
+	Author      *transcriptEmbedAuthor `json:"author"`
+}
+
+type transcriptAttachment struct {
+	ID          string  `json:"id"`
+	Filename    string  `json:"filename"`
+	URL         string  `json:"url"`
+	ProxyURL    string  `json:"proxyUrl"`
+	Size        int     `json:"size"`
+	ContentType *string `json:"contentType"`
+	Width       *int    `json:"width"`
+	Height      *int    `json:"height"`
+}
+
+type transcriptReaction struct {
+	Emoji string `json:"emoji"`
+	Count int    `json:"count"`
+}
+
+type transcriptMessage struct {
+	ID              string               `json:"id"`
+	Type            string               `json:"type"`
+	Author          transcriptAuthor     `json:"author"`
+	Content         *string              `json:"content"`
+	Timestamp       string               `json:"timestamp"`
+	Embeds          []transcriptEmbed    `json:"embeds,omitempty"`
+	Attachments     []transcriptAttachment `json:"attachments,omitempty"`
+	Edited          bool                 `json:"edited"`
+	EditedTimestamp *string              `json:"editedTimestamp"`
+	Reactions       []transcriptReaction `json:"reactions,omitempty"`
+}
+
+type transcriptClosedBy struct {
+	ID       string `json:"id"`
+	Username string `json:"username"`
+}
+
+type transcriptParticipant struct {
+	ID           string `json:"id"`
+	Username     string `json:"username"`
+	MessageCount int    `json:"messageCount"`
+}
+
+type transcriptMetadata struct {
+	TicketOpenedAt   string                 `json:"ticketOpenedAt"`
+	TicketClosedAt   string                 `json:"ticketClosedAt"`
+	ClosedBy         transcriptClosedBy     `json:"closedBy"`
+	TotalMessages    int                    `json:"totalMessages"`
+	TotalAttachments int                    `json:"totalAttachments"`
+	TotalEmbeds      int                    `json:"totalEmbeds"`
+	Participants     []transcriptParticipant `json:"participants"`
+}
+
+func saveTranscriptOnClose(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	if queries == nil || storageClient == nil {
+		return
+	}
+	if i == nil || i.GuildID == "" || i.ChannelID == "" {
+		return
+	}
+
+	serverID, err := strconv.ParseInt(i.GuildID, 10, 64)
+	if err != nil {
+		return
+	}
+
+	serverConfig, err := queries.GetServerConfig(context.Background(), serverID)
+	if err != nil || !serverConfig.TicketTranscriptCid.Valid || serverConfig.TicketTranscriptCid.String == "" {
+		return
+	}
+
+	messages, err := fetchAllMessages(s, i.ChannelID)
+	if err != nil {
+		log.Printf("fetch transcript messages failed: %v", err)
+		return
+	}
+
+	openedAt := int64(0)
+	userID := ""
+	username := ""
+	if info, err := queries.GetActiveTicketByChannel(context.Background(), serverID, i.ChannelID); err == nil {
+		openedAt = info.CreatedAt
+		userID = info.UserID
+	}
+	if openedAt == 0 {
+		openedAt = time.Now().Unix()
+	}
+	if userID == "" && i.Member != nil && i.Member.User != nil {
+		userID = i.Member.User.ID
+		username = i.Member.User.Username
+	}
+	if username == "" && userID != "" && s != nil && s.State != nil {
+		if m, err := s.State.Member(i.GuildID, userID); err == nil && m.User != nil {
+			username = m.User.Username
+		}
+	}
+
+	closedBy := ""
+	if i.Member != nil && i.Member.User != nil {
+		closedBy = i.Member.User.ID
+	}
+	closedAt := time.Now().Unix()
+
+	content, totalAttachments, totalEmbeds, participants := buildTranscriptContent(messages)
+
+	payload := transcriptPayload{
+		TicketID: i.ChannelID,
+		Username: username,
+		UserID:   userID,
+		Messages: content,
+		Metadata: transcriptMetadata{
+			TicketOpenedAt:   time.Unix(openedAt, 0).UTC().Format(time.RFC3339),
+			TicketClosedAt:   time.Unix(closedAt, 0).UTC().Format(time.RFC3339),
+			ClosedBy:         transcriptClosedBy{ID: closedBy, Username: usernameOrID(s, i.GuildID, closedBy)},
+			TotalMessages:    len(content),
+			TotalAttachments: totalAttachments,
+			TotalEmbeds:      totalEmbeds,
+			Participants:     participants,
+		},
+	}
+
+	data, err := json.Marshal(payload)
+	if err != nil {
+		log.Printf("marshal transcript failed: %v", err)
+		return
+	}
+
+	storageKey := fmt.Sprintf("transcripts/%d/%s/%d.json", serverID, i.ChannelID, closedAt)
+	if err := storageClient.UploadTranscript(context.Background(), storageKey, data); err != nil {
+		log.Printf("upload transcript failed: %v", err)
+		return
+	}
+
+	row, err := queries.CreateTranscript(context.Background(), db.CreateTranscriptParams{
+		ServerConfigID: serverID,
+		TicketID:       pgtype.Text{String: i.ChannelID, Valid: true},
+		Username:       pgtype.Text{String: username, Valid: username != ""},
+		UserID:         pgtype.Text{String: userID, Valid: userID != ""},
+		OpenedAt:       openedAt,
+		ClosedAt:       closedAt,
+		ClosedBy:       closedBy,
+		StorageKey:     storageKey,
+		TotalMessages:  pgtype.Int4{Int32: int32(len(content)), Valid: true},
+		TotalAttachments: pgtype.Int4{Int32: int32(totalAttachments), Valid: true},
+		TotalEmbeds:    pgtype.Int4{Int32: int32(totalEmbeds), Valid: true},
+	})
+	if err != nil {
+		log.Printf("create transcript row failed: %v", err)
+		return
+	}
+
+	if s != nil {
+		_, _ = s.ChannelMessageSend(serverConfig.TicketTranscriptCid.String, fmt.Sprintf("Transcript saved. ID: %d", row.ID))
+	}
+}
+
+func usernameOrID(s *discordgo.Session, guildID, userID string) string {
+	if userID == "" {
+		return ""
+	}
+	if s != nil && s.State != nil {
+		if m, err := s.State.Member(guildID, userID); err == nil && m.User != nil {
+			return m.User.Username
+		}
+	}
+	return userID
+}
+
+func buildTranscriptContent(messages []*discordgo.Message) ([]transcriptMessage, int, int, []transcriptParticipant) {
+	items := make([]transcriptMessage, 0, len(messages))
+	participants := make(map[string]*transcriptParticipant)
+	attachmentsTotal := 0
+	embedsTotal := 0
+
+	for _, m := range messages {
+		if m == nil || m.Author == nil {
+			continue
+		}
+
+		attachmentsTotal += len(m.Attachments)
+		embedsTotal += len(m.Embeds)
+
+		msgType := "message"
+		content := m.Content
+
+		timestamp := m.Timestamp.Format(time.RFC3339)
+		item := transcriptMessage{
+			ID:        m.ID,
+			Type:      msgType,
+			Author: transcriptAuthor{
+				ID:            m.Author.ID,
+				Username:      m.Author.Username,
+				Discriminator: m.Author.Discriminator,
+				Avatar:        strPtr(m.Author.Avatar),
+				Bot:           m.Author.Bot,
+			},
+			Content:   &content,
+			Timestamp: timestamp,
+			Edited:    m.EditedTimestamp != nil,
+		}
+		if m.EditedTimestamp != nil {
+			edited := m.EditedTimestamp.Format(time.RFC3339)
+			item.EditedTimestamp = &edited
+		}
+
+		if len(m.Embeds) > 0 {
+			item.Embeds = make([]transcriptEmbed, 0, len(m.Embeds))
+			for _, e := range m.Embeds {
+				embed := transcriptEmbed{
+					Title:       strPtr(e.Title),
+					Description: strPtr(e.Description),
+					URL:         strPtr(e.URL),
+					Color:       intPtr(e.Color),
+					Fields:      make([]transcriptEmbedField, 0, len(e.Fields)),
+				}
+				for _, f := range e.Fields {
+					embed.Fields = append(embed.Fields, transcriptEmbedField{Name: f.Name, Value: f.Value, Inline: f.Inline})
+				}
+				if e.Image != nil {
+					embed.Image = &transcriptImage{URL: e.Image.URL}
+				}
+				if e.Thumbnail != nil {
+					embed.Thumbnail = &transcriptImage{URL: e.Thumbnail.URL}
+				}
+				if e.Footer != nil {
+					embed.Footer = &transcriptFooter{Text: e.Footer.Text, IconURL: strPtr(e.Footer.IconURL)}
+				}
+				if e.Author != nil {
+					embed.Author = &transcriptEmbedAuthor{Name: e.Author.Name, URL: strPtr(e.Author.URL), IconURL: strPtr(e.Author.IconURL)}
+				}
+				item.Embeds = append(item.Embeds, embed)
+			}
+		}
+
+		if len(m.Attachments) > 0 {
+			item.Attachments = make([]transcriptAttachment, 0, len(m.Attachments))
+			for _, a := range m.Attachments {
+				item.Attachments = append(item.Attachments, transcriptAttachment{
+					ID:          a.ID,
+					Filename:    a.Filename,
+					URL:         a.URL,
+					ProxyURL:    a.ProxyURL,
+					Size:        a.Size,
+					ContentType: strPtr(a.ContentType),
+					Width:       intPtr(a.Width),
+					Height:      intPtr(a.Height),
+				})
+			}
+		}
+
+		if len(m.Reactions) > 0 {
+			item.Reactions = make([]transcriptReaction, 0, len(m.Reactions))
+			for _, r := range m.Reactions {
+				emoji := r.Emoji.Name
+				item.Reactions = append(item.Reactions, transcriptReaction{Emoji: emoji, Count: r.Count})
+			}
+		}
+
+		items = append(items, item)
+		if p, ok := participants[m.Author.ID]; ok {
+			p.MessageCount++
+		} else {
+			participants[m.Author.ID] = &transcriptParticipant{ID: m.Author.ID, Username: m.Author.Username, MessageCount: 1}
+		}
+	}
+
+	list := make([]transcriptParticipant, 0, len(participants))
+	for _, p := range participants {
+		list = append(list, *p)
+	}
+
+	return items, attachmentsTotal, embedsTotal, list
+}
+
+func strPtr(value string) *string {
+	if value == "" {
+		return nil
+	}
+	return &value
+}
+
+func intPtr(value int) *int {
+	if value == 0 {
+		return nil
+	}
+	return &value
+}
+
+func fetchAllMessages(s *discordgo.Session, channelID string) ([]*discordgo.Message, error) {
+	if s == nil {
+		return nil, fmt.Errorf("missing session")
+	}
+
+	all := make([]*discordgo.Message, 0)
+	before := ""
+	for {
+		msgs, err := s.ChannelMessages(channelID, 100, before, "", "")
+		if err != nil {
+			return nil, err
+		}
+		if len(msgs) == 0 {
+			break
+		}
+		all = append(all, msgs...)
+		before = msgs[len(msgs)-1].ID
+		if len(msgs) < 100 {
+			break
+		}
+	}
+
+	for i, j := 0, len(all)-1; i < j; i, j = i+1, j-1 {
+		all[i], all[j] = all[j], all[i]
+	}
+
+	return all, nil
 }
 
 func canCloseTicket(s *discordgo.Session, i *discordgo.InteractionCreate) bool {

@@ -46,6 +46,7 @@ func main() {
 
 	// 2. Connect to Azure Blob Storage
 	azureClient := storage.NewAzureClient()
+	tickets.SetStorage(azureClient)
 
 	// 3. Mount Router
 	mux := api.NewRouter(queries, azureClient, cfg)

@@ -97,6 +97,39 @@ func (h *Handler) HandleGetTranscript(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (h *Handler) HandleGetTranscriptContent(w http.ResponseWriter, r *http.Request) {
+	serverID, transcriptID, err := parseIDs(r)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid ids"})
+		return
+	}
+
+	item, err := h.DB.GetTranscriptByID(context.Background(), db.GetTranscriptByIDParams{
+		ID:             transcriptID,
+		ServerConfigID: serverID,
+	})
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "transcript not found"})
+			return
+		}
+		log.Printf("load transcript failed: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to load transcript"})
+		return
+	}
+
+	data, err := h.Storage.DownloadTranscript(context.Background(), item.StorageKey)
+	if err != nil {
+		log.Printf("download transcript failed: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to download transcript"})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(data)
+}
+
 type TranscriptListItem struct {
 	ID             int32  `json:"id"`
 	TicketID       string `json:"ticketId"`

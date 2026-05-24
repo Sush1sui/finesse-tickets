@@ -64,3 +64,24 @@ func (q *Queries) GetActiveTicketChannelsByUser(ctx context.Context, serverConfi
 	}
 	return items, nil
 }
+
+const getActiveTicketByChannel = `
+SELECT user_id, created_at
+FROM active_ticket
+WHERE server_config_id = $1 AND channel_id = $2
+LIMIT 1
+`
+
+type ActiveTicketInfo struct {
+	UserID    string
+	CreatedAt int64
+}
+
+func (q *Queries) GetActiveTicketByChannel(ctx context.Context, serverConfigID int64, channelID string) (ActiveTicketInfo, error) {
+	row := q.db.QueryRow(ctx, getActiveTicketByChannel, serverConfigID, channelID)
+	var info ActiveTicketInfo
+	if err := row.Scan(&info.UserID, &info.CreatedAt); err != nil {
+		return ActiveTicketInfo{}, err
+	}
+	return info, nil
+}

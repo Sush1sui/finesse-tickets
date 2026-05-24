@@ -33,9 +33,7 @@ function getAvatarUrl(author: TranscriptMessage["author"]): string {
 function MessageContent({ message }: { message: TranscriptMessage }) {
   if (message.type === "system") {
     return (
-      <div className="italic text-zinc-500 text-sm">
-        {message.content}
-      </div>
+      <div className="italic text-zinc-500 text-sm">{message.content}</div>
     );
   }
 
@@ -120,11 +118,14 @@ function MessageContent({ message }: { message: TranscriptMessage }) {
                 </div>
               )}
               {embed.fields && embed.fields.length > 0 && (
-                <div className="mb-2 grid gap-2" style={{
-                  gridTemplateColumns: embed.fields.some(f => f.inline)
-                    ? "repeat(auto-fill, minmax(200px, 1fr))"
-                    : "1fr",
-                }}>
+                <div
+                  className="mb-2 grid gap-2"
+                  style={{
+                    gridTemplateColumns: embed.fields.some((f) => f.inline)
+                      ? "repeat(auto-fill, minmax(200px, 1fr))"
+                      : "1fr",
+                  }}
+                >
                   {embed.fields.map((field, fIdx) => (
                     <div key={fIdx}>
                       <div className="text-xs font-semibold text-zinc-800">
@@ -209,11 +210,17 @@ export default function TranscriptViewerPage() {
   const serverId = params.serverId as string;
   const transcriptId = params.transcriptId as string;
 
-  const { transcript, presignedUrl, isLoading: metaLoading, isError: metaError } =
-    useTranscript(serverId, transcriptId);
+  const {
+    transcript,
+    isLoading: metaLoading,
+    isError: metaError,
+  } = useTranscript(serverId, transcriptId);
 
-  const { content, isLoading: contentLoading, isError: contentError } =
-    useTranscriptContent(presignedUrl);
+  const {
+    content,
+    isLoading: contentLoading,
+    isError: contentError,
+  } = useTranscriptContent(serverId, transcriptId);
 
   if (metaLoading) {
     return (
@@ -291,7 +298,9 @@ export default function TranscriptViewerPage() {
           </div>
           <div>
             <div className="text-xs uppercase text-zinc-500">Closed By</div>
-            <div className="font-medium text-zinc-900">{transcript.closedBy}</div>
+            <div className="font-medium text-zinc-900">
+              {transcript.closedBy}
+            </div>
           </div>
           <div>
             <div className="text-xs uppercase text-zinc-500">Messages</div>
@@ -329,7 +338,8 @@ export default function TranscriptViewerPage() {
         {contentError && (
           <div className="rounded border border-red-200 bg-red-50 p-4 text-center">
             <p className="text-sm text-red-600">
-              Failed to load message content. The stored transcript may be unavailable.
+              Failed to load message content. The stored transcript may be
+              unavailable.
             </p>
           </div>
         )}

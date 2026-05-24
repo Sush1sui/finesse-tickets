@@ -13,18 +13,16 @@ const fetcher = async <T>(url: string): Promise<T> => {
 };
 
 const contentFetcher = async <T>(url: string): Promise<T> => {
-  const res = await fetch(url);
+  const res = await fetch(`${API_BASE}${url}`, { credentials: "include" });
   if (!res.ok) throw new Error("Failed to fetch content");
   return res.json();
 };
 
-export function useTranscripts(
-  serverId: string,
-  page: number,
-  limit = 20,
-) {
+export function useTranscripts(serverId: string, page: number, limit = 20) {
   const { data, error, isLoading, mutate } = useSWR(
-    serverId ? `/api/servers/${serverId}/transcripts?page=${page}&limit=${limit}` : null,
+    serverId
+      ? `/api/servers/${serverId}/transcripts?page=${page}&limit=${limit}`
+      : null,
     fetcher<TranscriptListResponse>,
     {
       revalidateOnFocus: false,
@@ -62,9 +60,11 @@ export function useTranscript(serverId: string, transcriptId: string) {
   };
 }
 
-export function useTranscriptContent(presignedUrl: string | null) {
+export function useTranscriptContent(serverId: string, transcriptId: string) {
   const { data, error, isLoading } = useSWR(
-    presignedUrl ? presignedUrl : null,
+    serverId && transcriptId
+      ? `/api/servers/${serverId}/transcripts/${transcriptId}/content`
+      : null,
     contentFetcher<TranscriptContent>,
     {
       revalidateOnFocus: false,

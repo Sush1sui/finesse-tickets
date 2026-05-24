@@ -67,6 +67,7 @@ func NewRouter(queries *db.Queries, storageClient *storage.Client, cfg *config.C
 	// Transcript routes
 	mux.HandleFunc("GET /api/servers/{server_id}/transcripts", s.wrapAuthConfig(transcriptsHandler.HandleListTranscripts))
 	mux.HandleFunc("GET /api/servers/{server_id}/transcripts/{transcript_id}", s.wrapAuthConfig(transcriptsHandler.HandleGetTranscript))
+	mux.HandleFunc("GET /api/servers/{server_id}/transcripts/{transcript_id}/content", s.wrapAuthConfig(transcriptsHandler.HandleGetTranscriptContent))
 
 	return EnableCORS(mux, cfg.ClientOrigin, true)
 }

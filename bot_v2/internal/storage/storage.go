@@ -4,6 +4,7 @@ package storage
 import (
 	"bytes"
 	"context"
+	"io"
 	"log"
 	"os"
 	"time"
@@ -62,4 +63,15 @@ func (c *Client) GeneratePresignedURL(key string) (string, error) {
 
 	// 3. Generate the SAS URL directly from the blob client
 	return blobClient.GetSASURL(permissions, expiry, nil)
+}
+
+// DownloadTranscript reads transcript JSON from Azure blob storage.
+func (c *Client) DownloadTranscript(ctx context.Context, key string) ([]byte, error) {
+	resp, err := c.client.DownloadStream(ctx, c.containerName, key, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return io.ReadAll(resp.Body)
 }

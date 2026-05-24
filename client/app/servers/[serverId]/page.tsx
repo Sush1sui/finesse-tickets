@@ -58,7 +58,7 @@ export default function ServerSettingsPage() {
       ...prev,
       TicketNameStyle: config.TicketNameStyle || "number",
       TicketTranscripts: config.TicketTranscripts || "",
-      MaxTicketsPerUser: config.MaxTicketsPerUser,
+      MaxTicketsPerUser: config.MaxTicketsPerUser ?? 1,
       TicketPermissionsAttachFiles:
         config.TicketPermissionsAttachFiles || false,
       TicketPermissionsEmbedLinks: config.TicketPermissionsEmbedLinks || false,
@@ -79,7 +79,14 @@ export default function ServerSettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.config.update(serverId, formData);
+      const transcriptChannelId =
+        channels.find((ch) => ch.name === formData.TicketTranscripts)?.id ||
+        formData.TicketTranscripts;
+
+      await api.config.update(serverId, {
+        ...formData,
+        TicketTranscripts: transcriptChannelId,
+      });
     } catch {
       alert("Failed to save settings");
     } finally {
