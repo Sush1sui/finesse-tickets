@@ -77,7 +77,7 @@ export default function TranscriptsPage() {
 
         <div className="mb-2 grid grid-cols-[1fr_1.5fr_1fr_1fr_1fr_0.75fr] gap-3 text-sm font-medium text-zinc-600">
           <span>Ticket</span>
-          <span>Username</span>
+          <span>User ID</span>
           <span>Messages</span>
           <span>Closed At</span>
           <span>Closed By</span>
@@ -98,8 +98,8 @@ export default function TranscriptsPage() {
                 <span className="font-mono text-xs text-zinc-700">
                   {t.ticketId || `#${t.id}`}
                 </span>
-                <span className="text-zinc-900">
-                  {t.username || "Unknown"}
+                <span className="font-mono text-xs text-zinc-900">
+                  {t.userId || "Unknown"}
                 </span>
                 <span className="text-zinc-600">{t.totalMessages}</span>
                 <span className="text-zinc-600">
