@@ -17,6 +17,8 @@ export default function PanelsPage() {
   } = useMultiPanels(serverId);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [deletingMultiId, setDeletingMultiId] = useState<number | null>(null);
+  const [sendingId, setSendingId] = useState<number | null>(null);
+  const [sendingMultiId, setSendingMultiId] = useState<number | null>(null);
 
   const handleDelete = async (panelId: number) => {
     if (!window.confirm("Delete this panel?")) return;
@@ -37,6 +39,30 @@ export default function PanelsPage() {
       await refreshMultiPanels();
     } finally {
       setDeletingMultiId(null);
+    }
+  };
+
+  const handleSend = async (panelId: number) => {
+    setSendingId(panelId);
+    try {
+      await api.panels.send(serverId, panelId.toString());
+    } catch (err) {
+      console.error(err);
+      window.alert("Failed to send panel.");
+    } finally {
+      setSendingId(null);
+    }
+  };
+
+  const handleSendMulti = async (panelId: number) => {
+    setSendingMultiId(panelId);
+    try {
+      await api.multiPanels.send(serverId, panelId.toString());
+    } catch (err) {
+      console.error(err);
+      window.alert("Failed to send multi panel.");
+    } finally {
+      setSendingMultiId(null);
     }
   };
 
@@ -80,8 +106,12 @@ export default function PanelsPage() {
                   >
                     Edit
                   </a>
-                  <button className="rounded-md border border-zinc-300 px-2 py-1 text-xs">
-                    Send
+                  <button
+                    className="rounded-md border border-zinc-300 px-2 py-1 text-xs disabled:opacity-50"
+                    onClick={() => handleSend(panel.ID)}
+                    disabled={sendingId === panel.ID}
+                  >
+                    {sendingId === panel.ID ? "Sending..." : "Send"}
                   </button>
                   <button
                     className="rounded-md border border-zinc-300 px-2 py-1 text-xs disabled:opacity-50"
@@ -135,8 +165,12 @@ export default function PanelsPage() {
                   >
                     Edit
                   </a>
-                  <button className="rounded-md border border-zinc-300 px-2 py-1 text-xs">
-                    Send
+                  <button
+                    className="rounded-md border border-zinc-300 px-2 py-1 text-xs disabled:opacity-50"
+                    onClick={() => handleSendMulti(panel.ID)}
+                    disabled={sendingMultiId === panel.ID}
+                  >
+                    {sendingMultiId === panel.ID ? "Sending..." : "Send"}
                   </button>
                   <button
                     className="rounded-md border border-zinc-300 px-2 py-1 text-xs disabled:opacity-50"

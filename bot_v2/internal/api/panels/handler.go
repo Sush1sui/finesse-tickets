@@ -9,7 +9,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Sush1sui/FNS_BOT/internal/bot"
 	"github.com/Sush1sui/FNS_BOT/internal/db"
+	"github.com/bwmarrin/discordgo"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -313,6 +315,66 @@ func (h *Handler) HandleDeletePanel(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 
+func (h *Handler) HandleSendPanel(w http.ResponseWriter, r *http.Request) {
+	serverID, panelID, err := parseServerPanelIDs(r)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid ids"})
+		return
+	}
+
+	sess := bot.Session
+	if sess == nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "bot not ready"})
+		return
+	}
+
+	item, err := h.DB.GetPanelConfigByID(r.Context(), serverID, panelID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "panel not found"})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to load panel"})
+		return
+	}
+
+	embed := &discordgo.MessageEmbed{
+		Title:       item.Title,
+		Description: textOrEmpty(item.Content),
+		Color:       int(item.EmbedColor),
+	}
+
+	if item.LargeImgUrl.Valid {
+		embed.Image = &discordgo.MessageEmbedImage{URL: item.LargeImgUrl.String}
+	}
+	if item.SmallImgUrl.Valid {
+		embed.Thumbnail = &discordgo.MessageEmbedThumbnail{URL: item.SmallImgUrl.String}
+	}
+
+	button := discordgo.Button{
+		Label:    item.BtnTxt,
+		Style:    buttonStyleFromColor(item.BtnColor),
+		CustomID: "open_ticket_" + strconv.Itoa(int(item.ID)),
+	}
+	if emoji := parseComponentEmoji(textOrEmpty(item.BtnEmoji)); emoji != nil {
+		button.Emoji = emoji
+	}
+
+	msg, err := sess.ChannelMessageSendComplex(item.ChannelID, &discordgo.MessageSend{
+		Embeds: []*discordgo.MessageEmbed{embed},
+		Components: []discordgo.MessageComponent{
+			discordgo.ActionsRow{Components: []discordgo.MessageComponent{button}},
+		},
+	})
+	if err != nil {
+		log.Printf("send panel failed: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to send panel: " + err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"messageId": msg.ID})
+}
+
 func (h *Handler) HandleListMultiPanels(w http.ResponseWriter, r *http.Request) {
 	serverID, err := parseServerID(r)
 	if err != nil {
@@ -457,6 +519,76 @@ func (h *Handler) HandleDeleteMultiPanel(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 
+func (h *Handler) HandleSendMultiPanel(w http.ResponseWriter, r *http.Request) {
+	serverID, multiPanelID, err := parseServerMultiPanelIDs(r)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid ids"})
+		return
+	}
+
+	sess := bot.Session
+	if sess == nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "bot not ready"})
+		return
+	}
+
+	item, err := h.DB.GetMultiPanelConfigByID(r.Context(), serverID, multiPanelID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "multi panel not found"})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to load multi panel"})
+		return
+	}
+
+	if len(item.PanelConfigIds) == 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "multi panel has no panels"})
+		return
+	}
+
+	panels, err := h.DB.GetPanelButtonConfigsByIDs(r.Context(), serverID, item.PanelConfigIds)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to load panel buttons"})
+		return
+	}
+	if len(panels) == 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "no panels available"})
+		return
+	}
+
+	embed := &discordgo.MessageEmbed{
+		Title:       item.Title,
+		Description: textOrEmpty(item.Content),
+		Color:       int(item.EmbedColor),
+	}
+	if item.LargeImgUrl.Valid {
+		embed.Image = &discordgo.MessageEmbedImage{URL: item.LargeImgUrl.String}
+	}
+	if item.SmallImgUrl.Valid {
+		embed.Thumbnail = &discordgo.MessageEmbedThumbnail{URL: item.SmallImgUrl.String}
+	}
+	if item.Footer.Valid {
+		embed.Footer = &discordgo.MessageEmbedFooter{Text: item.Footer.String}
+		if item.FootIconUrl.Valid {
+			embed.Footer.IconURL = item.FootIconUrl.String
+		}
+	}
+
+	components := buildMultiPanelComponents(item.UseDropdown, panels)
+	msg, err := sess.ChannelMessageSendComplex(item.ChannelID, &discordgo.MessageSend{
+		Embeds:     []*discordgo.MessageEmbed{embed},
+		Components: components,
+	})
+	if err != nil {
+		log.Printf("send multi panel failed: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to send multi panel: " + err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"messageId": msg.ID})
+}
+
 func parseServerID(r *http.Request) (int64, error) {
 	serverIDStr := r.PathValue("server_id")
 	return strconv.ParseInt(serverIDStr, 10, 64)
@@ -556,4 +688,107 @@ func missingMultiPanelFields(payload MultiPanelPayload) []string {
 		missing = append(missing, "channelId")
 	}
 	return missing
+}
+
+func buttonStyleFromColor(color string) discordgo.ButtonStyle {
+	switch strings.ToLower(color) {
+	case "blue":
+		return discordgo.PrimaryButton
+	case "green":
+		return discordgo.SuccessButton
+	case "red":
+		return discordgo.DangerButton
+	case "gray":
+		return discordgo.SecondaryButton
+	default:
+		return discordgo.PrimaryButton
+	}
+}
+
+func parseComponentEmoji(input string) *discordgo.ComponentEmoji {
+	value := strings.TrimSpace(input)
+	if value == "" {
+		return nil
+	}
+
+	if strings.HasPrefix(value, "<") && strings.HasSuffix(value, ">") {
+		parts := strings.Split(value[1:len(value)-1], ":")
+		if len(parts) >= 3 {
+			return &discordgo.ComponentEmoji{
+				Name:     parts[1],
+				ID:       parts[2],
+				Animated: parts[0] == "a",
+			}
+		}
+		return nil
+	}
+
+	// Support stored format: name:id or a:name:id
+	if strings.Count(value, ":") >= 1 {
+		parts := strings.Split(value, ":")
+		if len(parts) == 2 {
+			return &discordgo.ComponentEmoji{
+				Name: parts[0],
+				ID:   parts[1],
+			}
+		}
+		if len(parts) >= 3 {
+			return &discordgo.ComponentEmoji{
+				Name:     parts[1],
+				ID:       parts[2],
+				Animated: parts[0] == "a",
+			}
+		}
+	}
+
+	return &discordgo.ComponentEmoji{Name: value}
+}
+
+func buildMultiPanelComponents(useDropdown bool, panels []db.PanelButtonConfig) []discordgo.MessageComponent {
+	if useDropdown {
+		options := make([]discordgo.SelectMenuOption, 0, len(panels))
+		for _, panel := range panels {
+			option := discordgo.SelectMenuOption{
+				Label: panel.Title,
+				Value: strconv.Itoa(int(panel.ID)),
+			}
+			if emoji := parseComponentEmoji(textOrEmpty(panel.BtnEmoji)); emoji != nil {
+				option.Emoji = emoji
+			}
+			options = append(options, option)
+		}
+
+		return []discordgo.MessageComponent{
+			discordgo.ActionsRow{
+				Components: []discordgo.MessageComponent{
+					discordgo.SelectMenu{
+						CustomID:    "select_panel",
+						Placeholder: "Select a panel...",
+						Options:     options,
+					},
+				},
+			},
+		}
+	}
+
+	rows := make([]discordgo.MessageComponent, 0)
+	current := make([]discordgo.MessageComponent, 0, 5)
+	for i, panel := range panels {
+		button := discordgo.Button{
+			Label:    panel.BtnTxt,
+			Style:    buttonStyleFromColor(panel.BtnColor),
+			CustomID: "open_ticket_" + strconv.Itoa(int(panel.ID)),
+		}
+		if emoji := parseComponentEmoji(textOrEmpty(panel.BtnEmoji)); emoji != nil {
+			button.Emoji = emoji
+		}
+
+		current = append(current, button)
+		if len(current) == 5 || i == len(panels)-1 {
+			rows = append(rows, discordgo.ActionsRow{Components: current})
+			current = make([]discordgo.MessageComponent, 0, 5)
+		}
+	}
+
+	return rows
 }

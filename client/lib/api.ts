@@ -78,6 +78,13 @@ export const api = {
           method: "DELETE",
         },
       ),
+    send: (serverId: string, panelId: string) =>
+      fetchApi<{ messageId: string }>(
+        `/api/servers/${serverId}/panels/${panelId}/send`,
+        {
+          method: "POST",
+        },
+      ),
   },
 
   multiPanels: {
@@ -109,6 +116,13 @@ export const api = {
         `/api/servers/${serverId}/multi-panels/${multiPanelId}`,
         {
           method: "DELETE",
+        },
+      ),
+    send: (serverId: string, multiPanelId: string) =>
+      fetchApi<{ messageId: string }>(
+        `/api/servers/${serverId}/multi-panels/${multiPanelId}/send`,
+        {
+          method: "POST",
         },
       ),
   },
@@ -352,7 +366,11 @@ export type TranscriptMessage = {
     image?: { url: string } | null;
     thumbnail?: { url: string } | null;
     footer?: { text: string; iconUrl: string | null } | null;
-    author?: { name: string; url: string | null; iconUrl: string | null } | null;
+    author?: {
+      name: string;
+      url: string | null;
+      iconUrl: string | null;
+    } | null;
   }[];
   attachments?: {
     id: string;

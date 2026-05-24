@@ -76,6 +76,52 @@ func (q *Queries) GetPanelConfigByID(ctx context.Context, serverConfigID int64, 
 	return i, err
 }
 
+type PanelButtonConfig struct {
+	ID       int32
+	Title    string
+	BtnColor string
+	BtnTxt   string
+	BtnEmoji pgtype.Text
+}
+
+const getPanelButtonConfigsByIDs = `
+SELECT id, title, btn_color, btn_txt, btn_emoji
+FROM panel_config
+WHERE server_config_id = $1
+AND id = ANY($2)
+`
+
+func (q *Queries) GetPanelButtonConfigsByIDs(ctx context.Context, serverConfigID int64, panelIDs []int32) ([]PanelButtonConfig, error) {
+	if len(panelIDs) == 0 {
+		return []PanelButtonConfig{}, nil
+	}
+
+	rows, err := q.db.Query(ctx, getPanelButtonConfigsByIDs, serverConfigID, panelIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items := make([]PanelButtonConfig, 0)
+	for rows.Next() {
+		var i PanelButtonConfig
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.BtnColor,
+			&i.BtnTxt,
+			&i.BtnEmoji,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getQuestionsByPanel = `
 SELECT questions
 FROM questions_config
