@@ -5,142 +5,134 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 
 import { useTranscripts } from "../../../../lib/hooks/useTranscripts";
+import { ScrollText, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 
 function formatTimestamp(ts: number): string {
-  if (!ts) return "—";
-  return new Date(ts * 1000).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
+	if (!ts) return "—";
+	return new Date(ts * 1000).toLocaleDateString("en-US", {
+		month: "short",
+		day: "numeric",
+		year: "numeric",
+		hour: "numeric",
+		minute: "2-digit",
+		hour12: true,
+	});
 }
 
 export default function TranscriptsPage() {
-  const params = useParams();
-  const serverId = params.serverId as string;
-  const [page, setPage] = useState(1);
-  const limit = 20;
+	const params = useParams();
+	const serverId = params.serverId as string;
+	const [page, setPage] = useState(1);
+	const limit = 20;
 
-  const { transcripts, pagination, isLoading } = useTranscripts(
-    serverId,
-    page,
-    limit,
-  );
+	const { transcripts, pagination, isLoading } = useTranscripts(serverId, page, limit);
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <Link
-            href={`/servers/${serverId}`}
-            className="text-zinc-500 hover:text-zinc-700"
-          >
-            ← Back
-          </Link>
-          <h1 className="text-lg font-semibold text-zinc-900">Transcripts</h1>
-        </div>
-        <div className="flex items-center justify-center py-16">
-          <p className="text-sm text-zinc-500">Loading transcripts...</p>
-        </div>
-      </div>
-    );
-  }
+	return (
+		<div className="space-y-5 pb-6">
+			{/* Header */}
+			<div className="mb-2">
+				<h1 className="text-xl font-black tracking-tight text-white">Transcripts</h1>
+				<p className="text-xs text-zinc-500 mt-0.5">
+					Saved conversation history from closed tickets.
+				</p>
+			</div>
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <Link
-          href={`/servers/${serverId}`}
-          className="text-zinc-500 hover:text-zinc-700"
-        >
-          ← Back
-        </Link>
-        <h1 className="text-lg font-semibold text-zinc-900">Transcripts</h1>
-      </div>
+			<div className="rounded-xl border border-zinc-800/60 bg-zinc-900/20 backdrop-blur-sm overflow-hidden">
+				{/* Table header */}
+				<div className="grid grid-cols-[1fr_1.4fr_0.7fr_1.3fr_1fr_auto] gap-3 items-center px-5 py-3 border-b border-zinc-800/60 bg-zinc-900/40">
+					<span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Ticket</span>
+					<span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">User ID</span>
+					<span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Messages</span>
+					<span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Closed At</span>
+					<span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Closed By</span>
+					<span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">View</span>
+				</div>
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-4">
-        <div className="mb-3 flex items-center justify-between text-sm text-zinc-500">
-          <span>
-            {pagination.total > 0
-              ? `${pagination.total} transcript${pagination.total > 1 ? "s" : ""}`
-              : "No transcripts"}
-          </span>
-          {pagination.pages > 1 && (
-            <span>
-              Page {pagination.page} of {pagination.pages}
-            </span>
-          )}
-        </div>
+				{/* Rows */}
+				{isLoading ? (
+					<div className="flex items-center justify-center py-16">
+						<div className="flex flex-col items-center gap-3">
+							<div className="h-6 w-6 rounded-full border-2 border-zinc-700 border-t-[#FF5A36] animate-spin" />
+							<p className="text-xs text-zinc-500">Loading transcripts...</p>
+						</div>
+					</div>
+				) : transcripts.length === 0 ? (
+					<div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+						<div className="flex h-12 w-12 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/50">
+							<ScrollText className="h-5 w-5 text-zinc-600" />
+						</div>
+						<div>
+							<p className="text-sm font-semibold text-zinc-400">No transcripts yet</p>
+							<p className="text-xs text-zinc-600 mt-0.5">
+								Transcripts appear here when tickets are closed.
+							</p>
+						</div>
+					</div>
+				) : (
+					<div className="divide-y divide-zinc-800/40">
+						{transcripts.map((t) => (
+							<div
+								key={t.id}
+								className="grid grid-cols-[1fr_1.4fr_0.7fr_1.3fr_1fr_auto] gap-3 items-center px-5 py-3.5 hover:bg-zinc-900/30 transition-colors"
+							>
+								<span className="font-mono text-xs text-zinc-300 font-semibold">
+									{t.ticketId || `#${t.id}`}
+								</span>
+								<span className="font-mono text-xs text-zinc-500 truncate">
+									{t.userId || "Unknown"}
+								</span>
+								<span className="text-xs text-zinc-400">{t.totalMessages}</span>
+								<span className="text-xs text-zinc-500">
+									{formatTimestamp(t.closedAt)}
+								</span>
+								<span className="text-xs text-zinc-500 truncate">{t.closedBy}</span>
+								<Link
+									href={`/servers/${serverId}/transcripts/${t.id}`}
+									className="flex items-center gap-1 rounded-lg border border-zinc-800/60 bg-zinc-900/40 px-2.5 py-1.5 text-xs font-semibold text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 transition-all"
+								>
+									<ExternalLink className="h-3 w-3" />
+									View
+								</Link>
+							</div>
+						))}
+					</div>
+				)}
 
-        <div className="mb-2 grid grid-cols-[1fr_1.5fr_1fr_1fr_1fr_0.75fr] gap-3 text-sm font-medium text-zinc-600">
-          <span>Ticket</span>
-          <span>User ID</span>
-          <span>Messages</span>
-          <span>Closed At</span>
-          <span>Closed By</span>
-          <span>Actions</span>
-        </div>
+				{/* Footer: count + pagination */}
+				{!isLoading && (
+					<div className="flex items-center justify-between px-5 py-3.5 border-t border-zinc-800/50">
+						<span className="text-xs text-zinc-600">
+							{pagination.total > 0
+								? `${pagination.total} transcript${pagination.total > 1 ? "s" : ""}`
+								: "No transcripts"}
+						</span>
 
-        <div className="space-y-2">
-          {transcripts.length === 0 ? (
-            <p className="py-8 text-center text-sm text-zinc-500">
-              No transcripts found.
-            </p>
-          ) : (
-            transcripts.map((t) => (
-              <div
-                key={t.id}
-                className="grid grid-cols-[1fr_1.5fr_1fr_1fr_1fr_0.75fr] items-center gap-3 rounded-md border border-zinc-100 px-3 py-2 text-sm"
-              >
-                <span className="font-mono text-xs text-zinc-700">
-                  {t.ticketId || `#${t.id}`}
-                </span>
-                <span className="font-mono text-xs text-zinc-900">
-                  {t.userId || "Unknown"}
-                </span>
-                <span className="text-zinc-600">{t.totalMessages}</span>
-                <span className="text-zinc-600">
-                  {formatTimestamp(t.closedAt)}
-                </span>
-                <span className="truncate text-zinc-600">{t.closedBy}</span>
-                <span>
-                  <Link
-                    href={`/servers/${serverId}/transcripts/${t.id}`}
-                    className="rounded-md border border-zinc-300 px-2 py-1 text-xs text-zinc-700 hover:bg-zinc-50"
-                  >
-                    View
-                  </Link>
-                </span>
-              </div>
-            ))
-          )}
-        </div>
-
-        {pagination.pages > 1 && (
-          <div className="mt-4 flex items-center justify-center gap-3">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <span className="text-sm text-zinc-500">
-              {page} / {pagination.pages}
-            </span>
-            <button
-              onClick={() => setPage((p) => Math.min(pagination.pages, p + 1))}
-              disabled={page === pagination.pages}
-              className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs disabled:opacity-50"
-            >
-              Next
-            </button>
-          </div>
-        )}
-      </section>
-    </div>
-  );
+						{pagination.pages > 1 && (
+							<div className="flex items-center gap-2">
+								<button
+									onClick={() => setPage((p) => Math.max(1, p - 1))}
+									disabled={page === 1}
+									className="flex items-center gap-1 rounded-lg border border-zinc-800/60 bg-zinc-900/40 px-2.5 py-1.5 text-xs font-semibold text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+								>
+									<ChevronLeft className="h-3.5 w-3.5" />
+									Prev
+								</button>
+								<span className="text-xs text-zinc-500 font-mono">
+									{page} / {pagination.pages}
+								</span>
+								<button
+									onClick={() => setPage((p) => Math.min(pagination.pages, p + 1))}
+									disabled={page === pagination.pages}
+									className="flex items-center gap-1 rounded-lg border border-zinc-800/60 bg-zinc-900/40 px-2.5 py-1.5 text-xs font-semibold text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+								>
+									Next
+									<ChevronRight className="h-3.5 w-3.5" />
+								</button>
+							</div>
+						)}
+					</div>
+				)}
+			</div>
+		</div>
+	);
 }

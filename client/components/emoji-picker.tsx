@@ -3,164 +3,178 @@
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import type { EmojiClickData, Theme } from "emoji-picker-react";
+import { ChevronDown, Smile } from "lucide-react";
 
 import type { DiscordEmoji } from "@/lib/api";
+import { DarkCheckbox } from "./DarkFormFields";
 
 const Picker = dynamic(() => import("emoji-picker-react"), { ssr: false });
 
 type EmojiPickerProps = {
-  value: string;
-  onChange: (value: string) => void;
-  customEmojis: DiscordEmoji[];
-  customEmojiId: string;
-  onCustomEmojiSelect: (emojiId: string) => void;
-  useCustom: boolean;
-  onToggleCustom: (useCustom: boolean) => void;
-  onOpenChange?: (open: boolean) => void;
+	value: string;
+	onChange: (value: string) => void;
+	customEmojis: DiscordEmoji[];
+	customEmojiId: string;
+	onCustomEmojiSelect: (emojiId: string) => void;
+	useCustom: boolean;
+	onToggleCustom: (useCustom: boolean) => void;
+	onOpenChange?: (open: boolean) => void;
 };
 
 const getEmojiUrl = (emoji: DiscordEmoji) => {
-  const ext = emoji.animated ? "gif" : "png";
-  return `https://cdn.discordapp.com/emojis/${emoji.id}.${ext}`;
+	const ext = emoji.animated ? "gif" : "png";
+	return `https://cdn.discordapp.com/emojis/${emoji.id}.${ext}`;
 };
 
 export default function EmojiPicker({
-  value,
-  onChange,
-  customEmojis,
-  customEmojiId,
-  onCustomEmojiSelect,
-  useCustom,
-  onToggleCustom,
-  onOpenChange,
+	value,
+	onChange,
+	customEmojis,
+	customEmojiId,
+	onCustomEmojiSelect,
+	useCustom,
+	onToggleCustom,
+	onOpenChange,
 }: EmojiPickerProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(64);
+	const [isOpen, setIsOpen] = useState(false);
+	const [visibleCount, setVisibleCount] = useState(64);
 
-  const selectedCustomEmoji = useMemo(() => {
-    return customEmojis.find((emoji) => emoji.id === customEmojiId);
-  }, [customEmojis, customEmojiId]);
+	const selectedCustomEmoji = useMemo(() => {
+		return customEmojis.find((emoji) => emoji.id === customEmojiId);
+	}, [customEmojis, customEmojiId]);
 
-  const displayValue = useMemo(() => {
-    if (useCustom) {
-      return selectedCustomEmoji ? `:${selectedCustomEmoji.name}:` : "";
-    }
+	const displayValue = useMemo(() => {
+		if (useCustom) {
+			return selectedCustomEmoji ? `:${selectedCustomEmoji.name}:` : "";
+		}
+		return value;
+	}, [useCustom, selectedCustomEmoji, value]);
 
-    return value;
-  }, [useCustom, selectedCustomEmoji, value]);
+	const placeholder = useCustom ? "Select custom emoji" : "Select emoji";
 
-  const placeholder = useCustom ? "Select custom emoji" : "Select emoji";
+	useEffect(() => {
+		if (isOpen && useCustom) setVisibleCount(64);
+	}, [isOpen, useCustom]);
 
-  useEffect(() => {
-    if (isOpen && useCustom) {
-      setVisibleCount(64);
-    }
-  }, [isOpen, useCustom]);
+	useEffect(() => {
+		onOpenChange?.(isOpen);
+	}, [isOpen, onOpenChange]);
 
-  useEffect(() => {
-    onOpenChange?.(isOpen);
-  }, [isOpen, onOpenChange]);
+	const handleEmojiClick = (emojiData: EmojiClickData) => {
+		onChange(emojiData.emoji);
+		setIsOpen(false);
+	};
 
-  const handleEmojiClick = (emojiData: EmojiClickData) => {
-    onChange(emojiData.emoji);
-    setIsOpen(false);
-  };
+	const handleCustomEmojiSelect = (emojiId: string) => {
+		onCustomEmojiSelect(emojiId);
+		setIsOpen(false);
+	};
 
-  const handleCustomEmojiSelect = (emojiId: string) => {
-    onCustomEmojiSelect(emojiId);
-    setIsOpen(false);
-  };
+	const handleToggleCustom = (checked: boolean) => {
+		onToggleCustom(checked);
+		setIsOpen(false);
+	};
 
-  const handleToggleCustom = (checked: boolean) => {
-    onToggleCustom(checked);
-    setIsOpen(false);
-  };
+	const visibleEmojis = useMemo(
+		() => customEmojis.slice(0, visibleCount),
+		[customEmojis, visibleCount],
+	);
 
-  const handleOpenToggle = () => {
-    setIsOpen((prev) => !prev);
-  };
+	return (
+		<div className="space-y-2.5">
+			<DarkCheckbox
+				checked={useCustom}
+				onChange={handleToggleCustom}
+				label="Use server custom emoji"
+			/>
 
-  const visibleEmojis = useMemo(() => {
-    return customEmojis.slice(0, visibleCount);
-  }, [customEmojis, visibleCount]);
+			<div className={`relative ${isOpen ? "z-30" : ""}`}>
+				{/* Trigger button */}
+				<button
+					type="button"
+					onClick={() => setIsOpen((p) => !p)}
+					className="w-full flex items-center justify-between gap-2 bg-zinc-900/60 border border-zinc-800/80 rounded-lg px-3 py-2.5 text-sm text-left transition-all hover:border-zinc-700/80 focus:outline-none focus:border-[#FF5A36]/50 focus:ring-1 focus:ring-[#FF5A36]/20"
+				>
+					<div className="flex items-center gap-2">
+						{displayValue ? (
+							<span className="text-lg leading-none">{!useCustom && displayValue}</span>
+						) : (
+							<Smile className="h-4 w-4 text-zinc-600" />
+						)}
+						<span className={displayValue ? "text-zinc-200 text-sm" : "text-zinc-600 text-sm"}>
+							{displayValue || placeholder}
+						</span>
+					</div>
+					<ChevronDown
+						className={`h-4 w-4 text-zinc-500 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+					/>
+				</button>
 
-  return (
-    <div className="relative">
-      <label className="mb-2 flex items-center gap-2 text-sm text-zinc-700">
-        <input
-          type="checkbox"
-          checked={useCustom}
-          onChange={(event) => handleToggleCustom(event.target.checked)}
-        />
-        Use custom emoji
-      </label>
-
-      <input
-        className="w-full cursor-pointer rounded-md border border-zinc-200 p-2 text-sm"
-        readOnly
-        value={displayValue}
-        placeholder={placeholder}
-        onClick={handleOpenToggle}
-      />
-
-      {isOpen && (
-        <div className="absolute z-20 mt-2 w-full rounded-md border border-zinc-200 bg-white p-2 shadow-lg">
-          {useCustom ? (
-            customEmojis.length === 0 ? (
-              <p className="text-xs text-zinc-500">No custom emojis.</p>
-            ) : (
-              <div className="space-y-2">
-                <div className="grid max-h-72 grid-cols-8 gap-2 overflow-y-auto">
-                  {visibleEmojis.map((emoji) => (
-                    <button
-                      key={emoji.id}
-                      type="button"
-                      onClick={() => handleCustomEmojiSelect(emoji.id)}
-                      className={
-                        emoji.id === customEmojiId
-                          ? "rounded-md border border-zinc-900 bg-zinc-50 p-1"
-                          : "rounded-md border border-zinc-200 p-1"
-                      }
-                      title={emoji.name}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={getEmojiUrl(emoji)}
-                        alt={emoji.name}
-                        className="h-8 w-8"
-                      />
-                    </button>
-                  ))}
-                </div>
-                {customEmojis.length > visibleCount && (
-                  <button
-                    type="button"
-                    className="w-full rounded-md border border-zinc-200 py-1 text-xs text-zinc-600"
-                    onClick={() => setVisibleCount((prev) => prev + 64)}
-                  >
-                    Show more
-                  </button>
-                )}
-              </div>
-            )
-          ) : (
-            <Picker
-              onEmojiClick={handleEmojiClick}
-              theme={"light" as Theme}
-              searchPlaceHolder="Search emojis"
-              width="100%"
-              height="350px"
-              previewConfig={{ showPreview: false }}
-            />
-          )}
-
-          {useCustom && selectedCustomEmoji && (
-            <p className="mt-2 text-xs text-zinc-500">
-              Selected: {selectedCustomEmoji.name}
-            </p>
-          )}
-        </div>
-      )}
-    </div>
-  );
+				{/* Dropdown */}
+				{isOpen && (
+					<>
+						<div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
+						<div className="absolute z-20 mt-1.5 w-full rounded-xl border border-zinc-800/80 bg-zinc-950/95 backdrop-blur-xl shadow-2xl overflow-hidden">
+							{useCustom ? (
+								customEmojis.length === 0 ? (
+									<p className="px-4 py-6 text-center text-xs text-zinc-600">
+										No custom emojis in this server.
+									</p>
+								) : (
+									<div className="p-3 space-y-3">
+										<div className="grid max-h-64 grid-cols-8 gap-1.5 overflow-y-auto">
+											{visibleEmojis.map((emoji) => (
+												<button
+													key={emoji.id}
+													type="button"
+													onClick={() => handleCustomEmojiSelect(emoji.id)}
+													title={emoji.name}
+													className={`rounded-lg p-1.5 transition-all hover:bg-zinc-800/80 ${
+														emoji.id === customEmojiId
+															? "bg-[#FF5A36]/15 ring-1 ring-[#FF5A36]/40"
+															: ""
+													}`}
+												>
+													{/* eslint-disable-next-line @next/next/no-img-element */}
+													<img
+														src={getEmojiUrl(emoji)}
+														alt={emoji.name}
+														className="h-7 w-7"
+													/>
+												</button>
+											))}
+										</div>
+										{customEmojis.length > visibleCount && (
+											<button
+												type="button"
+												className="w-full rounded-lg border border-zinc-800/60 py-1.5 text-xs text-zinc-500 hover:text-zinc-300 hover:border-zinc-700 transition-all"
+												onClick={() => setVisibleCount((p) => p + 64)}
+											>
+												Show more ({customEmojis.length - visibleCount} remaining)
+											</button>
+										)}
+										{selectedCustomEmoji && (
+											<p className="text-xs text-zinc-500 text-center">
+												Selected:{" "}
+												<span className="text-zinc-300">:{selectedCustomEmoji.name}:</span>
+											</p>
+										)}
+									</div>
+								)
+							) : (
+								<Picker
+									onEmojiClick={handleEmojiClick}
+									theme={"dark" as Theme}
+									searchPlaceHolder="Search emojis"
+									width="100%"
+									height="350px"
+									previewConfig={{ showPreview: false }}
+								/>
+							)}
+						</div>
+					</>
+				)}
+			</div>
+		</div>
+	);
 }
