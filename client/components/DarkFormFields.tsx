@@ -566,19 +566,21 @@ export function DarkCheckbox({
 	checked,
 	onChange,
 	label,
+	description,
 }: {
 	checked: boolean;
 	onChange: (v: boolean) => void;
 	label: string;
+	description?: string;
 }) {
 	return (
-		<label className="flex items-center gap-2.5 cursor-pointer group">
+		<label className="flex items-start gap-2.5 cursor-pointer group">
 			<button
 				type="button"
 				role="checkbox"
 				aria-checked={checked}
 				onClick={() => onChange(!checked)}
-				className={`shrink-0 rounded border transition-all duration-150 flex items-center justify-center ${
+				className={`mt-0.5 shrink-0 rounded border transition-all duration-150 flex items-center justify-center ${
 					checked
 						? "bg-[#FF5A36] border-[#FF5A36]"
 						: "bg-zinc-900 border-zinc-700 group-hover:border-zinc-500"
@@ -589,9 +591,14 @@ export function DarkCheckbox({
 					<Check className="h-3 w-3 text-white" strokeWidth={3} />
 				)}
 			</button>
-			<span className="text-sm text-zinc-300 group-hover:text-zinc-100 transition-colors">
-				{label}
-			</span>
+			<div>
+				<span className="text-sm text-zinc-300 group-hover:text-zinc-100 transition-colors">
+					{label}
+				</span>
+				{description && (
+					<p className="text-xs text-zinc-500 mt-0.5">{description}</p>
+				)}
+			</div>
 		</label>
 	);
 }

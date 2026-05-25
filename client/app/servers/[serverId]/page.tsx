@@ -18,7 +18,7 @@ import {
 type FormData = {
 	TicketNameStyle: string;
 	TicketTranscripts: string;
-	MaxTicketsPerUser: string;
+	MaxTicketsPerUser: string | number;
 	TicketPermissionsAttachFiles: boolean;
 	TicketPermissionsEmbedLinks: boolean;
 	TicketPermissionsAddReactions: boolean;
@@ -140,7 +140,7 @@ export default function ServerSettingsPage() {
 			await api.config.update(serverId, {
 				...formData,
 				TicketTranscripts: transcriptChannelId,
-				MaxTicketsPerUser: toInt(formData.MaxTicketsPerUser),
+				MaxTicketsPerUser: typeof formData.MaxTicketsPerUser === "string" ? toInt(formData.MaxTicketsPerUser) : formData.MaxTicketsPerUser,
 				AutoCloseNoResponseDays: toInt(formData.AutoCloseNoResponseDays),
 				AutoCloseNoResponseHours: toInt(formData.AutoCloseNoResponseHours),
 				AutoCloseNoResponseMins: toInt(formData.AutoCloseNoResponseMins),
