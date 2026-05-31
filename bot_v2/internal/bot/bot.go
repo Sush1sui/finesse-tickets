@@ -56,7 +56,7 @@ func StartBot() {
 			Status: "idle",
 			Activities: []*discordgo.Activity{
 				{
-					Name: "Finesse Bot",
+					Name: "Sushi Tickets!",
 				},
 			},
 		})
