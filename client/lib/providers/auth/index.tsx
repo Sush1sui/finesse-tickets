@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
-import { api } from "../../api";
+import { api, setMemoryCsrfToken } from "../../api";
 import { AuthContext } from "../../context/auth";
 import type { User } from "../../context/auth/types";
 
@@ -19,6 +19,9 @@ export default function AuthProvider({
     try {
       const data = await api.auth.me();
       setUser(data.user ?? null);
+      if (data.csrfToken) {
+        setMemoryCsrfToken(data.csrfToken);
+      }
     } catch {
       setUser(null);
     } finally {

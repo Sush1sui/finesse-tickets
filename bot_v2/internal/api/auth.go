@@ -168,6 +168,11 @@ func (s *Server) handleAuthMe(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	csrfToken := ""
+	if cookie, err := r.Cookie(csrfCookieName); err == nil {
+		csrfToken = cookie.Value
+	}
+
 	writeJSON(w, http.StatusOK, map[string]any{
 		"user": map[string]string{
 			"id":        claims.UserID,
@@ -177,6 +182,7 @@ func (s *Server) handleAuthMe(w http.ResponseWriter, r *http.Request) {
 			"discordId": claims.DiscordID,
 		},
 		"authorized": authorized,
+		"csrfToken":  csrfToken,
 	})
 }
 

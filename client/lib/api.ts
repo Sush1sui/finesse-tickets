@@ -10,6 +10,11 @@ export const API_BASE = (() => {
   }
   return base ?? "";
 })();
+let memoryCsrfToken: string | null = null;
+
+export const setMemoryCsrfToken = (token: string | null) => {
+  memoryCsrfToken = token;
+};
 
 const readCookie = (name: string): string | null => {
   if (typeof document === "undefined") return null;
@@ -38,7 +43,7 @@ const fetchApi = async <T>(
     headers.set("Idempotency-Key", genId());
   }
   if (method !== "GET" && method !== "HEAD" && !headers.has("X-CSRF-Token")) {
-    const token = readCookie("fns_csrf");
+    const token = memoryCsrfToken || readCookie("fns_csrf");
     if (token) headers.set("X-CSRF-Token", token);
   }
 
@@ -61,20 +66,23 @@ export const api = {
       fetchApi<{
         user: import("./context/auth/types").User | null;
         authorized?: boolean;
+        csrfToken?: string;
       }>("/api/auth/me"),
     servers: () => fetchApi<{ servers: ServerSummary[] }>("/api/auth/servers"),
     login: () => {
       window.location.href = `${API_BASE}/api/auth/login`;
     },
     logout: async () => {
+      const token = memoryCsrfToken || readCookie("fns_csrf") || "";
       await fetch(`${API_BASE}/api/auth/logout`, {
         method: "POST",
         credentials: "include",
         headers: {
           "Idempotency-Key": genId(),
-          "X-CSRF-Token": readCookie("fns_csrf") ?? "",
+          "X-CSRF-Token": token,
         },
       });
+      memoryCsrfToken = null;
     },
   },
 
