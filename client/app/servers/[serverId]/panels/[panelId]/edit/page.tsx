@@ -118,7 +118,7 @@ export default function EditPanelPage() {
 			footerText: "",
 			footerIconUrl: "",
 		},
-		color: "#5865f2",
+		color: "#FF5A36",
 		channelId: "",
 		buttonColor: "blue",
 		buttonText: "Open Ticket",
@@ -175,7 +175,7 @@ export default function EditPanelPage() {
 				footerText: welcome?.footerText ?? "",
 				footerIconUrl: welcome?.footerIconUrl ?? "",
 			},
-			color: toHex(panel.embedColor ?? 0, "#5865f2"),
+			color: toHex(panel.embedColor ?? 0, "#FF5A36"),
 			channelId: panel.channelId ?? "",
 			buttonColor: panel.btnColor ?? "blue",
 			buttonText: panel.btnTxt ?? "Open Ticket",
@@ -688,7 +688,7 @@ export default function EditPanelPage() {
 									authorName="Sushi Tickets"
 									embedTitle={form.title || "Support Tickets"}
 									embedDescription={form.content || "Click the button below to open a ticket."}
-									embedColor={form.color || "#5865f2"}
+									embedColor={form.color || "#FF5A36"}
 									largeImageUrl={form.largeImageUrl}
 									smallImageUrl={form.smallImageUrl}
 									fields={[]}

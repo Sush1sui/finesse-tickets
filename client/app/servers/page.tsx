@@ -61,7 +61,11 @@ export default function ServersPage() {
   if (!user) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background text-zinc-100 font-sans">
-        <span className="text-4xl select-none text-glow-sushi">🍣</span>
+        <img
+          src="/assets/sushi_logo_without_bg.png"
+          alt="Sushi Logo"
+          className="h-14 w-14 object-contain filter drop-shadow-[0_0_12px_rgba(255,90,54,0.5)] select-none mb-2 hover:scale-105 transition-all duration-300"
+        />
         <p className="text-zinc-300 text-sm font-semibold">You need to log in first.</p>
         <Link
           href="/"

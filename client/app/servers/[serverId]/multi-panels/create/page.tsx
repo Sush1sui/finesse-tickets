@@ -38,7 +38,7 @@ export default function CreateMultiPanelPage() {
 	const serverId = params.serverId as string;
 
 	const [form, setForm] = useState<MultiPanelForm>({
-		embedColor: "#5865f2",
+		embedColor: "#FF5A36",
 		title: "",
 		content: "",
 		authorName: "",
@@ -240,7 +240,7 @@ export default function CreateMultiPanelPage() {
 										<DarkInput
 											value={form.embedColor}
 											onChange={(e) => setForm((p) => ({ ...p, embedColor: e.target.value }))}
-											placeholder="#5865F2"
+											placeholder="#FF5A36"
 											className="flex-1"
 										/>
 									</div>

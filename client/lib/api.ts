@@ -1,9 +1,15 @@
 import { genId } from "./utils";
 
-export const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE ??
-  process.env.NEXT_PUBLIC_API_BASE_URL ??
-  "http://localhost:8080";
+export const API_BASE = (() => {
+  const base =
+    process.env.NEXT_PUBLIC_API_BASE ??
+    process.env.NEXT_PUBLIC_API_BASE_URL;
+  if (!base && typeof window === "undefined") {
+    // SSR/build-time: warn loudly but don't crash — Next.js needs to render
+    console.error("[api] NEXT_PUBLIC_API_BASE is not set");
+  }
+  return base ?? "";
+})();
 
 const readCookie = (name: string): string | null => {
   if (typeof document === "undefined") return null;

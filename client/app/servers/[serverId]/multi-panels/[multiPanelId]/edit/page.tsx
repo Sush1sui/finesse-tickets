@@ -46,7 +46,7 @@ export default function EditMultiPanelPage() {
 	const multiPanelId = params.multiPanelId as string;
 
 	const [form, setForm] = useState<MultiPanelForm>({
-		embedColor: "#5865f2",
+		embedColor: "#FF5A36",
 		title: "",
 		content: "",
 		authorName: "",
@@ -90,7 +90,7 @@ export default function EditMultiPanelPage() {
 		setForm({
 			title: multiPanel.title ?? "",
 			content: multiPanel.content ?? "",
-			embedColor: toHex(multiPanel.embedColor ?? 0, "#5865f2"),
+			embedColor: toHex(multiPanel.embedColor ?? 0, "#FF5A36"),
 			authorName: "",
 			authorIconUrl: "",
 			authorUrl: "",
@@ -317,7 +317,7 @@ export default function EditMultiPanelPage() {
 										<DarkInput
 											value={form.embedColor}
 											onChange={(e) => setForm((p) => ({ ...p, embedColor: e.target.value }))}
-											placeholder="#5865F2"
+											placeholder="#FF5A36"
 											className="flex-1"
 										/>
 									</div>

@@ -23,7 +23,7 @@ func NewRouter(queries *db.Queries, storageClient *storage.Client, cfg *config.C
 		Limiter: newRateLimiter(),
 	}
 	s.Limiter.startCleanup(5 * time.Minute)
-	s.startSessionCleanup(14 * 24 * time.Hour)
+	s.startSessionCleanup(4 * time.Hour)
 
 	configHandler := &serverconfig.Handler{DB: queries}
 	authHandler := &auth.Handler{Server: s}

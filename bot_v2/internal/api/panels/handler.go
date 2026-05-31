@@ -30,7 +30,16 @@ func validatePanelPayload(p PanelPayload) utils.ValidationErrors {
 	utils.ValidateMaxLength(p.BtnEmoji, "btnEmoji", 100, errs)
 	utils.ValidateSnowflake(p.CategoryID, "categoryId", errs)
 	utils.ValidateMaxLength(p.LargeImgUrl, "largeImgUrl", 2048, errs)
+	utils.ValidateHTTPSURL(p.LargeImgUrl, "largeImgUrl", errs)
 	utils.ValidateMaxLength(p.SmallImgUrl, "smallImgUrl", 2048, errs)
+	utils.ValidateHTTPSURL(p.SmallImgUrl, "smallImgUrl", errs)
+	if len(p.MentionRolesOnOpen) > 50 {
+		errs["mentionRolesOnOpen"] = "max 50 roles allowed"
+	} else {
+		for i, roleID := range p.MentionRolesOnOpen {
+			utils.ValidateSnowflake(roleID, "mentionRolesOnOpen["+strconv.Itoa(i)+"]", errs)
+		}
+	}
 	if len(p.Questions) > 10 {
 		errs["questions"] = "max 10 questions allowed"
 	}
@@ -40,10 +49,14 @@ func validatePanelPayload(p PanelPayload) utils.ValidationErrors {
 	utils.ValidateMaxLength(p.WelcomeMessage.Title, "welcomeMessage.title", 256, errs)
 	utils.ValidateMaxLength(p.WelcomeMessage.Description, "welcomeMessage.description", 4000, errs)
 	utils.ValidateMaxLength(p.WelcomeMessage.TitleURL, "welcomeMessage.titleUrl", 2048, errs)
+	utils.ValidateHTTPSURL(p.WelcomeMessage.TitleURL, "welcomeMessage.titleUrl", errs)
 	utils.ValidateMaxLength(p.WelcomeMessage.LargeImgUrl, "welcomeMessage.largeImgUrl", 2048, errs)
+	utils.ValidateHTTPSURL(p.WelcomeMessage.LargeImgUrl, "welcomeMessage.largeImgUrl", errs)
 	utils.ValidateMaxLength(p.WelcomeMessage.SmallImgUrl, "welcomeMessage.smallImgUrl", 2048, errs)
+	utils.ValidateHTTPSURL(p.WelcomeMessage.SmallImgUrl, "welcomeMessage.smallImgUrl", errs)
 	utils.ValidateMaxLength(p.WelcomeMessage.FooterText, "welcomeMessage.footerText", 2048, errs)
 	utils.ValidateMaxLength(p.WelcomeMessage.FooterIconUrl, "welcomeMessage.footerIconUrl", 2048, errs)
+	utils.ValidateHTTPSURL(p.WelcomeMessage.FooterIconUrl, "welcomeMessage.footerIconUrl", errs)
 	return errs
 }
 
@@ -53,9 +66,12 @@ func validateMultiPanelPayload(p MultiPanelPayload) utils.ValidationErrors {
 	utils.ValidateMaxLength(p.Content, "content", 4000, errs)
 	utils.ValidateSnowflake(p.ChannelID, "channelId", errs)
 	utils.ValidateMaxLength(p.LargeImgUrl, "largeImgUrl", 2048, errs)
+	utils.ValidateHTTPSURL(p.LargeImgUrl, "largeImgUrl", errs)
 	utils.ValidateMaxLength(p.SmallImgUrl, "smallImgUrl", 2048, errs)
+	utils.ValidateHTTPSURL(p.SmallImgUrl, "smallImgUrl", errs)
 	utils.ValidateMaxLength(p.Footer, "footer", 2048, errs)
 	utils.ValidateMaxLength(p.FootIconUrl, "footIconUrl", 2048, errs)
+	utils.ValidateHTTPSURL(p.FootIconUrl, "footIconUrl", errs)
 	if len(p.PanelConfigIds) > 25 {
 		errs["panelConfigIds"] = "max 25 panels allowed"
 	}

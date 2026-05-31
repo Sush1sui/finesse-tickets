@@ -51,9 +51,11 @@ export default function ServerLayout({
 				{/* Brand */}
 				<div className="px-5 py-5.5 border-b border-white/5">
 					<Link href="/" className="flex items-center gap-2.5 group">
-						<span className="text-xl filter drop-shadow-[0_0_8px_rgba(255,90,54,0.6)] select-none group-hover:scale-110 transition-transform">
-							🍣
-						</span>
+						<img
+							src="/assets/sushi_logo_without_bg.png"
+							alt="Sushi Logo"
+							className="h-7 w-7 object-contain filter drop-shadow-[0_0_8px_rgba(255,90,54,0.5)] select-none group-hover:scale-105 group-hover:rotate-6 transition-all duration-300"
+						/>
 						<div className="flex flex-col">
 							<span className="text-sm font-black tracking-tight bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent uppercase font-mono leading-none">
 								Sushi Tickets

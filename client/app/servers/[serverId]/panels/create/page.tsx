@@ -73,7 +73,7 @@ export default function CreatePanelPage() {
 			footerText: "",
 			footerIconUrl: "",
 		},
-		color: "#5865f2",
+		color: "#FF5A36",
 		channelId: "",
 		buttonColor: "blue",
 		buttonText: "Open Ticket",
@@ -568,7 +568,7 @@ export default function CreatePanelPage() {
 								authorName="Sushi Tickets"
 								embedTitle={form.title || "Support Tickets"}
 								embedDescription={form.content || "Click the button below to open a ticket."}
-								embedColor={form.color || "#5865f2"}
+								embedColor={form.color || "#FF5A36"}
 								largeImageUrl={form.largeImageUrl}
 								smallImageUrl={form.smallImageUrl}
 								fields={[]}

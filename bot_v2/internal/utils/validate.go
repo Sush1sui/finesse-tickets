@@ -1,6 +1,9 @@
 package utils
 
-import "fmt"
+import (
+	"fmt"
+	"net/url"
+)
 
 type ValidationErrors map[string]string
 
@@ -57,5 +60,15 @@ func ValidateBtnColor(value, field string, errs ValidationErrors) {
 	}
 	if !valid[value] {
 		errs[field] = field + " must be one of: success, danger, primary, secondary"
+	}
+}
+
+func ValidateHTTPSURL(value, field string, errs ValidationErrors) {
+	if value == "" {
+		return
+	}
+	u, err := url.Parse(value)
+	if err != nil || (u.Scheme != "https" && u.Scheme != "http") {
+		errs[field] = field + " must be a valid http/https URL"
 	}
 }

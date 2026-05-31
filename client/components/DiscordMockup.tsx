@@ -15,6 +15,7 @@ export interface DiscordButton {
 
 interface DiscordMockupProps {
 	authorName?: string;
+	avatarUrl?: string;
 	avatarEmoji?: string;
 	avatarBg?: string;
 	embedTitle?: string;
@@ -28,6 +29,7 @@ interface DiscordMockupProps {
 
 export default function DiscordMockup({
 	authorName = "Sushi Tickets",
+	avatarUrl = "/assets/sushi_logo_with_bg.png",
 	avatarEmoji = "🍣",
 	avatarBg = "#FF5A36",
 	embedTitle = "Sushi Support Menu",
@@ -43,7 +45,7 @@ export default function DiscordMockup({
 		{ label: "Custom", emoji: "🌶️", style: "secondary" }
 	],
 	largeImageUrl = "",
-	smallImageUrl = ""
+	smallImageUrl = "/assets/sushi_logo_with_bg.png"
 }: DiscordMockupProps) {
 	const getButtonClass = (style?: "primary" | "secondary" | "success" | "danger") => {
 		switch (style) {
@@ -63,12 +65,21 @@ export default function DiscordMockup({
 		<div className="w-full max-w-[480px] rounded-[8px] bg-[#313338] p-4 text-left shadow-2xl select-none font-sans">
 			<div className="flex gap-4">
 				{/* Bot Avatar */}
-				<div
-					className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white font-bold shadow-md select-none text-base"
-					style={{ backgroundColor: avatarBg }}
-				>
-					{avatarEmoji}
-				</div>
+				{avatarUrl ? (
+					// eslint-disable-next-line @next/next/no-img-element
+					<img
+						src={avatarUrl}
+						alt="Bot Avatar"
+						className="h-10 w-10 shrink-0 rounded-full object-cover shadow-md select-none border border-[#FF5A36]/15"
+					/>
+				) : (
+					<div
+						className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white font-bold shadow-md select-none text-base"
+						style={{ backgroundColor: avatarBg }}
+					>
+						{avatarEmoji}
+					</div>
+				)}
 
 				{/* Message Details */}
 				<div className="flex-1 min-w-0">

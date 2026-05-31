@@ -376,8 +376,8 @@ func hasAdminPermsFromCache(guildID, userID string) bool {
 		perms |= role.Permissions
 	}
 
-	// Admin = 0x8, Manage Channels = 0x10, Manage Server = 0x20
-	return perms&0x8 != 0 || perms&0x10 != 0 || perms&0x20 != 0
+	// Administrator = 0x8, Manage Guild = 0x20 only — MANAGE_CHANNELS intentionally excluded
+	return perms&0x8 != 0 || perms&0x20 != 0
 }
 
 func (s *Server) isAuthorizedGuild(ctx context.Context, guild discordGuild, claims *AuthClaims) (bool, error) {
