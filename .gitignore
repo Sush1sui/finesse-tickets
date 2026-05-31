@@ -26,3 +26,7 @@ Thumbs.db
 node_modules/
 *agents
 skills-lock.json
+
+Caddyfile
+CADDYFILE_README.md
+ACCESS_TOKEN_ROTATION.md

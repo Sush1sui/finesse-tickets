@@ -22,6 +22,8 @@ interface DiscordMockupProps {
 	embedColor?: string;
 	fields?: DiscordField[];
 	buttons?: DiscordButton[];
+	largeImageUrl?: string;
+	smallImageUrl?: string;
 }
 
 export default function DiscordMockup({
@@ -39,7 +41,9 @@ export default function DiscordMockup({
 		{ label: "Open Support", emoji: "🍣", style: "primary" },
 		{ label: "Transcripts", emoji: "📁", style: "secondary" },
 		{ label: "Custom", emoji: "🌶️", style: "secondary" }
-	]
+	],
+	largeImageUrl = "",
+	smallImageUrl = ""
 }: DiscordMockupProps) {
 	const getButtonClass = (style?: "primary" | "secondary" | "success" | "danger") => {
 		switch (style) {
@@ -59,7 +63,7 @@ export default function DiscordMockup({
 		<div className="w-full max-w-[480px] rounded-[8px] bg-[#313338] p-4 text-left shadow-2xl select-none font-sans">
 			<div className="flex gap-4">
 				{/* Bot Avatar */}
-				<div 
+				<div
 					className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white font-bold shadow-md select-none text-base"
 					style={{ backgroundColor: avatarBg }}
 				>
@@ -84,26 +88,39 @@ export default function DiscordMockup({
 					{/* Simulated Discord Embed */}
 					<div className="max-w-[420px] rounded-[4px] bg-[#2B2D31] flex overflow-hidden">
 						{/* Color Stripe */}
-						<div 
-							className="w-[4px] shrink-0" 
+						<div
+							className="w-[4px] shrink-0"
 							style={{ backgroundColor: embedColor }}
 						/>
-						
+
 						{/* Embed Content */}
 						<div className="flex-1 p-3 text-left space-y-2">
-							{embedTitle && (
-								<div className="flex items-center gap-1.5">
-									<h3 className="font-semibold text-white text-[15px] leading-tight">
-										{embedTitle}
-									</h3>
+							<div className="flex justify-between items-start gap-4">
+								<div className="flex-1 space-y-2">
+									{embedTitle && (
+										<div className="flex items-center gap-1.5">
+											<h3 className="font-semibold text-white text-[15px] leading-tight">
+												{embedTitle}
+											</h3>
+										</div>
+									)}
+									{embedDescription && (
+										<p className="text-[13px] text-[#DBDEE1] leading-relaxed whitespace-pre-wrap">
+											{embedDescription}
+										</p>
+									)}
 								</div>
-							)}
-							{embedDescription && (
-								<p className="text-[13px] text-[#DBDEE1] leading-relaxed">
-									{embedDescription}
-								</p>
-							)}
-							
+								{smallImageUrl && (
+									// eslint-disable-next-line @next/next/no-img-element
+									<img
+										src={smallImageUrl}
+										alt=""
+										className="h-20 w-20 rounded-[4px] shrink-0 object-cover border border-white/5 bg-zinc-950/20"
+										onError={(e) => (e.currentTarget.style.display = "none")}
+									/>
+								)}
+							</div>
+
 							{/* Embed Fields */}
 							{fields.length > 0 && (
 								<div className="grid grid-cols-2 gap-y-2 gap-x-4 pt-1 text-[13px]">
@@ -119,6 +136,23 @@ export default function DiscordMockup({
 									))}
 								</div>
 							)}
+
+							{/* Embed Large Image */}
+							{largeImageUrl && (
+								<div className="mt-3 rounded-[4px] overflow-hidden max-h-[260px] w-full border border-white/5 bg-zinc-950/20 flex items-center justify-center">
+									{/* eslint-disable-next-line @next/next/no-img-element */}
+									<img
+										src={largeImageUrl}
+										alt=""
+										className="max-h-[260px] w-full object-cover"
+										onError={(e) => {
+											if (e.currentTarget.parentElement) {
+												e.currentTarget.parentElement.style.display = "none";
+											}
+										}}
+									/>
+								</div>
+							)}
 						</div>
 					</div>
 
@@ -126,11 +160,22 @@ export default function DiscordMockup({
 					{buttons.length > 0 && (
 						<div className="flex flex-wrap gap-2 mt-[4px]">
 							{buttons.map((btn, idx) => (
-								<button 
+								<button
 									key={idx}
-									className={`flex items-center gap-[3px] rounded-[3px] px-4 h-8 text-[14px] font-medium text-white transition-colors active:scale-98 select-none ${getButtonClass(btn.style)}`}
+									className={`flex items-center gap-[3px] rounded-[9px] px-4 h-8 text-[14px] font-medium text-white transition-colors active:scale-98 select-none ${getButtonClass(btn.style)}`}
 								>
-									{btn.emoji && <span className="text-[15px] leading-none">{btn.emoji}</span>}
+									{btn.emoji && (
+										btn.emoji.startsWith("http") ? (
+											// eslint-disable-next-line @next/next/no-img-element
+											<img
+												src={btn.emoji}
+												alt=""
+												className="h-[16px] w-[16px] object-contain shrink-0 select-none mr-0.5"
+											/>
+										) : (
+											<span className="text-[15px] leading-none">{btn.emoji}</span>
+										)
+									)}
 									{btn.label}
 								</button>
 							))}

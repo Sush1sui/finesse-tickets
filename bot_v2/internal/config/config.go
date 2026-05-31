@@ -1,8 +1,10 @@
 package config
 
 import (
+	"encoding/base64"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -15,9 +17,10 @@ type Config struct {
 	DiscordClientID     string
 	DiscordClientSecret string
 	DiscordRedirectURL  string
-	JwtSecret           string
 	ClientOrigin        string
 	CookieSecure        bool
+	TrustedProxies      []string
+	AccessTokenKey      []byte
 }
 
 func Load() *Config {
@@ -54,17 +57,35 @@ func Load() *Config {
 		log.Fatal("DISCORD_REDIRECT_URL is required in .env")
 	}
 
-	jwtSecret := os.Getenv("JWT_SECRET")
-	if jwtSecret == "" {
-		log.Fatal("JWT_SECRET is required in .env")
-	}
-
 	clientOrigin := os.Getenv("CLIENT_ORIGIN")
 	if clientOrigin == "" {
 		log.Fatal("CLIENT_ORIGIN is required in .env")
 	}
 
 	cookieSecure := os.Getenv("COOKIE_SECURE") == "true"
+
+	accessTokenKeyStr := os.Getenv("ACCESS_TOKEN_KEY")
+	if accessTokenKeyStr == "" {
+		log.Fatal("ACCESS_TOKEN_KEY is required in .env")
+	}
+	accessTokenKey, err := base64.StdEncoding.DecodeString(accessTokenKeyStr)
+	if err != nil || len(accessTokenKey) != 32 {
+		log.Fatal("ACCESS_TOKEN_KEY must be base64 for 32 bytes")
+	}
+
+	trustedProxiesStr := os.Getenv("TRUSTED_PROXIES")
+	var trustedProxies []string
+	if trustedProxiesStr != "" {
+		for _, p := range strings.Split(trustedProxiesStr, ",") {
+			p = strings.TrimSpace(p)
+			if p != "" {
+				trustedProxies = append(trustedProxies, p)
+			}
+		}
+	}
+	if len(trustedProxies) == 0 {
+		trustedProxies = []string{"127.0.0.1", "::1"}
+	}
 
 	return &Config{
 		Port:     port,
@@ -74,8 +95,9 @@ func Load() *Config {
 		DiscordClientID:     discordClientID,
 		DiscordClientSecret: discordClientSecret,
 		DiscordRedirectURL:  discordRedirectURL,
-		JwtSecret:           jwtSecret,
 		ClientOrigin:        clientOrigin,
 		CookieSecure:        cookieSecure,
+		TrustedProxies:      trustedProxies,
+		AccessTokenKey:      accessTokenKey,
 	}
 }

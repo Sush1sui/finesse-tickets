@@ -52,12 +52,38 @@ func SetAuthCookie(w http.ResponseWriter, token string, secure bool, sameSite ht
 	http.SetCookie(w, cookie)
 }
 
+func SetCSRFCookie(w http.ResponseWriter, token string, secure bool, sameSite http.SameSite, cookieName string, maxAge int) {
+	cookie := &http.Cookie{
+		Name:     cookieName,
+		Value:    token,
+		Path:     "/",
+		HttpOnly: false,
+		Secure:   secure,
+		SameSite: sameSite,
+		MaxAge:   maxAge,
+	}
+	http.SetCookie(w, cookie)
+}
+
 func ClearAuthCookie(w http.ResponseWriter, secure bool, sameSite http.SameSite, cookieName string) {
 	cookie := &http.Cookie{
 		Name:     cookieName,
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
+		Secure:   secure,
+		SameSite: sameSite,
+		MaxAge:   -1,
+	}
+	http.SetCookie(w, cookie)
+}
+
+func ClearCSRFCookie(w http.ResponseWriter, secure bool, sameSite http.SameSite, cookieName string) {
+	cookie := &http.Cookie{
+		Name:     cookieName,
+		Value:    "",
+		Path:     "/",
+		HttpOnly: false,
 		Secure:   secure,
 		SameSite: sameSite,
 		MaxAge:   -1,

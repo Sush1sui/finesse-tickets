@@ -3,6 +3,7 @@ package serverconfig
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -18,6 +19,19 @@ func writeJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(data)
+}
+
+func validateServerConfigForm(f FormData) utils.ValidationErrors {
+	errs := make(utils.ValidationErrors)
+	utils.ValidateMaxLength(f.TicketNameStyle, "TicketNameStyle", 32, errs)
+	utils.ValidateIntRange(f.MaxTicketsPerUser, "MaxTicketsPerUser", 1, 100, errs)
+	utils.ValidateIntRange(f.AutoCloseNoResponseDays, "AutoCloseNoResponseDays", 0, 365, errs)
+	utils.ValidateIntRange(f.AutoCloseNoResponseHours, "AutoCloseNoResponseHours", 0, 23, errs)
+	utils.ValidateIntRange(f.AutoCloseNoResponseMins, "AutoCloseNoResponseMins", 0, 59, errs)
+	utils.ValidateIntRange(f.AutoCloseSinceLastMessageDays, "AutoCloseSinceLastMessageDays", 0, 365, errs)
+	utils.ValidateIntRange(f.AutoCloseSinceLastMessageHours, "AutoCloseSinceLastMessageHours", 0, 23, errs)
+	utils.ValidateIntRange(f.AutoCloseSinceLastMessageMins, "AutoCloseSinceLastMessageMins", 0, 59, errs)
+	return errs
 }
 
 func (h *Handler) HandleGetServerConfig(w http.ResponseWriter, r *http.Request) {
@@ -59,6 +73,11 @@ func (h *Handler) HandleUpdateServerConfig(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	if errs := validateServerConfigForm(form); len(errs) > 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "validation failed", "fields": errs})
+		return
+	}
+
 	// Encode ticket permissions as JSON array of names (only true ones)
 	var perms TicketPermissions
 	if form.TicketPermissionsAttachFiles {
@@ -81,7 +100,8 @@ func (h *Handler) HandleUpdateServerConfig(w http.ResponseWriter, r *http.Reques
 		TicketPermissions:   permsJSON,
 	})
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to save config: " + err.Error()})
+		log.Printf("failed to save config: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to save config"})
 		return
 	}
 	_ = cfg // use cfg to ensure it's read
@@ -99,7 +119,8 @@ func (h *Handler) HandleUpdateServerConfig(w http.ResponseWriter, r *http.Reques
 		CloseSinceLastMessageMins:        pgtype.Int4{Int32: sinceLastMessageMins, Valid: true},
 	})
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to save auto close config: " + err.Error()})
+		log.Printf("failed to save auto close config: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to save auto close config"})
 		return
 	}
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -94,6 +95,23 @@ func (h *Handler) HandleGetStaff(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, resp)
 }
 
+func validateStaffPayload(p StaffUpdatePayload) utils.ValidationErrors {
+	errs := make(utils.ValidationErrors)
+	if len(p.AuthorizedMemberIds) > 100 {
+		errs["authorizedMemberIds"] = "max 100 members allowed"
+	}
+	if len(p.AuthorizedRoleIds) > 100 {
+		errs["authorizedRoleIds"] = "max 100 roles allowed"
+	}
+	for _, id := range p.AuthorizedMemberIds {
+		utils.ValidateSnowflake(id, "authorizedMemberIds", errs)
+	}
+	for _, id := range p.AuthorizedRoleIds {
+		utils.ValidateSnowflake(id, "authorizedRoleIds", errs)
+	}
+	return errs
+}
+
 func (h *Handler) HandleUpdateStaff(w http.ResponseWriter, r *http.Request) {
 	serverID := r.PathValue("server_id")
 
@@ -106,6 +124,11 @@ func (h *Handler) HandleUpdateStaff(w http.ResponseWriter, r *http.Request) {
 	var payload StaffUpdatePayload
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid json body"})
+		return
+	}
+
+	if errs := validateStaffPayload(payload); len(errs) > 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "validation failed", "fields": errs})
 		return
 	}
 
@@ -125,12 +148,14 @@ func (h *Handler) HandleUpdateStaff(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.DB.ClearAuthorizedMembers(ctx, serverIDInt); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to clear members: " + err.Error()})
+		log.Printf("failed to clear members: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to clear members"})
 		return
 	}
 
 	if err := h.DB.ClearAuthorizedRoles(ctx, serverIDInt); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to clear roles: " + err.Error()})
+		log.Printf("failed to clear roles: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to clear roles"})
 		return
 	}
 
@@ -139,7 +164,8 @@ func (h *Handler) HandleUpdateStaff(w http.ResponseWriter, r *http.Request) {
 			ServerConfigID: serverIDInt,
 			MemberID:       mid,
 		}); err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to save member: " + err.Error()})
+			log.Printf("failed to save member: %v", err)
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to save member"})
 			return
 		}
 	}
@@ -149,7 +175,8 @@ func (h *Handler) HandleUpdateStaff(w http.ResponseWriter, r *http.Request) {
 			ServerConfigID: serverIDInt,
 			RoleID:         rid,
 		}); err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to save role: " + err.Error()})
+			log.Printf("failed to save role: %v", err)
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to save role"})
 			return
 		}
 	}

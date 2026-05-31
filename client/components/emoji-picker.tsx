@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import type { EmojiClickData, Theme } from "emoji-picker-react";
-import { ChevronDown, Smile } from "lucide-react";
+import { ChevronDown, Smile, X } from "lucide-react";
 
 import type { DiscordEmoji } from "@/lib/api";
 import { DarkCheckbox } from "./DarkFormFields";
@@ -93,21 +93,44 @@ export default function EmojiPicker({
 				<button
 					type="button"
 					onClick={() => setIsOpen((p) => !p)}
-					className="w-full flex items-center justify-between gap-2 bg-zinc-900/60 border border-zinc-800/80 rounded-lg px-3 py-2.5 text-sm text-left transition-all hover:border-zinc-700/80 focus:outline-none focus:border-[#FF5A36]/50 focus:ring-1 focus:ring-[#FF5A36]/20"
+					className="w-full flex items-center justify-between gap-2 bg-[#1e1f22] border border-white/5 rounded-xl px-4 py-2.5 text-sm text-left transition-all duration-200 hover:border-white/10 focus:outline-none focus:border-[#FF5A36]/60 focus:ring-2 focus:ring-[#FF5A36]/15 shadow-inner"
 				>
 					<div className="flex items-center gap-2">
 						{displayValue ? (
-							<span className="text-lg leading-none">{!useCustom && displayValue}</span>
+							useCustom && selectedCustomEmoji ? (
+								// eslint-disable-next-line @next/next/no-img-element
+								<img
+									src={getEmojiUrl(selectedCustomEmoji)}
+									alt={selectedCustomEmoji.name}
+									className="h-5 w-5 object-contain select-none shrink-0"
+								/>
+							) : (
+								<span className="text-lg leading-none">{displayValue}</span>
+							)
 						) : (
 							<Smile className="h-4 w-4 text-zinc-600" />
 						)}
-						<span className={displayValue ? "text-zinc-200 text-sm" : "text-zinc-600 text-sm"}>
+						<span className={displayValue ? "text-zinc-100 text-sm font-medium" : "text-zinc-400 text-sm"}>
 							{displayValue || placeholder}
 						</span>
 					</div>
-					<ChevronDown
-						className={`h-4 w-4 text-zinc-500 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-					/>
+					<div className="flex items-center gap-1.5 shrink-0">
+						{displayValue && (
+							<span
+								onClick={(e) => {
+									e.stopPropagation();
+									onChange("");
+									onCustomEmojiSelect("");
+								}}
+								className="text-zinc-400 hover:text-zinc-200 transition-colors p-1 hover:bg-white/5 rounded-lg cursor-pointer"
+							>
+								<X className="h-4 w-4" />
+							</span>
+						)}
+						<ChevronDown
+							className={`h-4 w-4 text-zinc-400 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+						/>
+					</div>
 				</button>
 
 				{/* Dropdown */}

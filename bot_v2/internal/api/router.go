@@ -1,7 +1,10 @@
 package api
 
 import (
+	"errors"
+	"log"
 	"net/http"
+	"time"
 
 	"github.com/Sush1sui/FNS_BOT/internal/api/auth"
 	"github.com/Sush1sui/FNS_BOT/internal/api/panels"
@@ -17,7 +20,10 @@ func NewRouter(queries *db.Queries, storageClient *storage.Client, cfg *config.C
 		DB:      queries,
 		Storage: storageClient,
 		Config:  cfg,
+		Limiter: newRateLimiter(),
 	}
+	s.Limiter.startCleanup(5 * time.Minute)
+	s.startSessionCleanup(14 * 24 * time.Hour)
 
 	configHandler := &serverconfig.Handler{DB: queries}
 	authHandler := &auth.Handler{Server: s}
@@ -26,7 +32,14 @@ func NewRouter(queries *db.Queries, storageClient *storage.Client, cfg *config.C
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /health", s.handleHealth)
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
+		ip := s.clientIP(r)
+		if !s.Limiter.Allow("health:"+ip, 30, time.Minute) {
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": "rate limit"})
+			return
+		}
+		s.handleHealth(w, r)
+	})
 
 	// Server config routes with auth wrapper
 	mux.HandleFunc("GET /api/config/{server_id}", s.wrapAuthConfig(configHandler.HandleGetServerConfig))
@@ -42,11 +55,11 @@ func NewRouter(queries *db.Queries, storageClient *storage.Client, cfg *config.C
 	mux.HandleFunc("PUT /api/servers/{server_id}/staff", s.wrapAuthConfig(configHandler.HandleUpdateStaff))
 
 	// Auth routes
-	mux.HandleFunc("GET /api/auth/login", authHandler.HandleAuthLogin)
-	mux.HandleFunc("GET /api/auth/callback", authHandler.HandleAuthCallback)
-	mux.HandleFunc("GET /api/auth/me", authHandler.HandleAuthMe)
-	mux.HandleFunc("GET /api/auth/servers", authHandler.HandleAuthServers)
-	mux.HandleFunc("POST /api/auth/logout", authHandler.HandleAuthLogout)
+	mux.HandleFunc("GET /api/auth/login", s.wrapIPRateLimit("auth:login:", 20, time.Minute, authHandler.HandleAuthLogin))
+	mux.HandleFunc("GET /api/auth/callback", s.wrapIPRateLimit("auth:callback:", 40, time.Minute, authHandler.HandleAuthCallback))
+	mux.HandleFunc("GET /api/auth/me", s.wrapIPRateLimit("auth:me:", 60, time.Minute, authHandler.HandleAuthMe))
+	mux.HandleFunc("GET /api/auth/servers", s.wrapIPRateLimit("auth:servers:", 60, time.Minute, authHandler.HandleAuthServers))
+	mux.HandleFunc("POST /api/auth/logout", s.wrapIPRateLimit("auth:logout:", 30, time.Minute, authHandler.HandleAuthLogout))
 
 	// Panel routes
 	mux.HandleFunc("GET /api/servers/{server_id}/panels", s.wrapAuthConfig(panelsHandler.HandleListPanels))
@@ -69,7 +82,7 @@ func NewRouter(queries *db.Queries, storageClient *storage.Client, cfg *config.C
 	mux.HandleFunc("GET /api/servers/{server_id}/transcripts/{transcript_id}", s.wrapAuthConfig(transcriptsHandler.HandleGetTranscript))
 	mux.HandleFunc("GET /api/servers/{server_id}/transcripts/{transcript_id}/content", s.wrapAuthConfig(transcriptsHandler.HandleGetTranscriptContent))
 
-	return EnableCORS(mux, cfg.ClientOrigin, true)
+	return SecurityHeaders(LimitRequestBody(EnableCORS(mux, cfg.ClientOrigin, true)))
 }
 
 // wrapAuthConfig wraps a handler to require auth + server authorization
@@ -93,6 +106,52 @@ func (s *Server) wrapAuthConfig(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
+		if s.Limiter != nil {
+			key := "user:" + claims.UserID
+			if !s.Limiter.Allow(key, 60, time.Minute) {
+				writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": "rate limit"})
+				return
+			}
+		}
+
+		if isCSRFProtectedMethod(r.Method) && !validateCSRF(r) {
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "csrf"})
+			return
+		}
+
+		if isIdempotentMethod(r.Method) {
+			ctx, recorder, err := s.startIdempotency(w, r, claims)
+			if err != nil {
+				if errors.Is(err, errIdempotencyConflict) {
+					writeJSON(w, http.StatusConflict, map[string]string{"error": "idempotency key conflict"})
+					return
+				}
+				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "idempotency check failed"})
+				return
+			}
+			if recorder == nil {
+				return
+			}
+			next(recorder, r)
+			if err := s.finishIdempotency(r.Context(), ctx, recorder); err != nil {
+				log.Printf("idempotency store failed: %v", err)
+			}
+			return
+		}
+
+		next(w, r)
+	}
+}
+
+func (s *Server) wrapIPRateLimit(prefix string, limit int, window time.Duration, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if s.Limiter != nil {
+			ip := s.clientIP(r)
+			if !s.Limiter.Allow(prefix+ip, limit, window) {
+				writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": "rate limit"})
+				return
+			}
+		}
 		next(w, r)
 	}
 }

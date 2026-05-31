@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 
 import { api, type DiscordEmoji, type DiscordRole } from "../../../../../lib/api";
 import EmojiPicker from "@/components/emoji-picker";
+import DiscordMockup from "@/components/DiscordMockup";
 import { useGuildEmojis, useGuildMeta } from "../../../../../lib/hooks/useGuildMeta";
 import {
 	DarkInput,
@@ -88,7 +89,7 @@ export default function CreatePanelPage() {
 	const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
 	const { emojis, isLoading: emojisLoading } = useGuildEmojis(
 		serverId,
-		form.customEmoji && emojiPickerOpen,
+		form.customEmoji,
 	);
 	const [saving, setSaving] = useState(false);
 
@@ -164,22 +165,26 @@ export default function CreatePanelPage() {
 		...categories.map((c) => ({ value: c.id, label: c.name })),
 	];
 
+	const customEmojiUrl = selectedCustomEmoji
+		? `https://cdn.discordapp.com/emojis/${selectedCustomEmoji.id}.${selectedCustomEmoji.animated ? "gif" : "png"}`
+		: undefined;
+
 	return (
-		<form onSubmit={handleSubmit} className="space-y-5 pb-6">
+		<form onSubmit={handleSubmit} className="space-y-6 pb-6">
 			{/* Header */}
-			<div className="flex items-center justify-between mb-2">
+			<div className="flex items-center justify-between mb-4 bg-white/2 border border-white/5 rounded-2xl p-5 shadow-sm backdrop-blur-md">
 				<div>
-					<h1 className="text-xl font-black tracking-tight text-white">Create Panel</h1>
-					<p className="text-xs text-zinc-500 mt-0.5">
-						Configure the ticket panel that appears in your Discord channel.
+					<h1 className="text-2xl font-black tracking-tight text-white uppercase text-glow-sushi/10">Create Panel</h1>
+					<p className="text-xs text-zinc-300 font-semibold mt-1">
+						Configure the ticket panel posted in your Discord channel.
 					</p>
 				</div>
 				<button
 					type="submit"
 					disabled={saving || isLoading}
-					className="flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold bg-[#FF5A36] hover:bg-[#FF6B4A] text-white shadow-[0_0_16px_rgba(255,90,54,0.25)] transition-all duration-200 active:scale-95 disabled:opacity-60"
+					className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold bg-[#FF5A36] hover:bg-[#FF6B4A] text-white shadow-lg shadow-orange-950/20 transition-all duration-200 active:scale-95 disabled:opacity-60 shrink-0 hover:-translate-y-0.5"
 				>
-					<Save className="h-3.5 w-3.5" />
+					<Save className="h-4 w-4" />
 					{saving ? "Saving..." : "Create Panel"}
 				</button>
 			</div>
@@ -188,331 +193,382 @@ export default function CreatePanelPage() {
 				<div className="flex items-center justify-center py-12">
 					<div className="flex flex-col items-center gap-3">
 						<div className="h-6 w-6 rounded-full border-2 border-zinc-700 border-t-[#FF5A36] animate-spin" />
-						<p className="text-xs text-zinc-500">Loading server data...</p>
+						<p className="text-xs text-zinc-400 font-bold">Loading server data...</p>
 					</div>
 				</div>
 			)}
 
-			{/* Panel Settings */}
-			<SectionCard title="Panel Settings" description="The embed message posted in your Discord channel.">
-				<div className="space-y-4">
-					<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-						<FormLabel label="Send to channel">
-							<DarkSelect
-								value={form.channelId}
-								onChange={(v) => setForm((p) => ({ ...p, channelId: v }))}
-								options={channelOptions}
-								placeholder="Select channel..."
-							/>
-						</FormLabel>
-						<FormLabel label="Panel title">
-							<DarkInput
-								value={form.title}
-								onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
-								placeholder="Support Tickets"
-							/>
-						</FormLabel>
-						<FormLabel label="Panel color">
-							<div className="flex items-center gap-2">
-								<input
-									type="color"
-									value={form.color}
-									onChange={(e) => setForm((p) => ({ ...p, color: e.target.value }))}
-									className="h-10 w-12 rounded-lg border border-zinc-800/80 bg-zinc-900/60 cursor-pointer p-1"
-								/>
-								<DarkInput
-									value={form.color}
-									onChange={(e) => setForm((p) => ({ ...p, color: e.target.value }))}
-									placeholder="#5865F2"
-									className="flex-1"
-								/>
+			{/* Two-Column Responsive Split Layout */}
+			<div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+				{/* LEFT COLUMN: Clean Config Forms (7/12 width) */}
+				<div className="lg:col-span-7 space-y-6">
+
+					{/* Panel Settings */}
+					<SectionCard title="Panel Info & Channel" description="Basic details of the message posted in your channel.">
+						<div className="space-y-4">
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<FormLabel label="Target channel">
+									<DarkSelect
+										value={form.channelId}
+										onChange={(v) => setForm((p) => ({ ...p, channelId: v }))}
+										options={channelOptions}
+										placeholder="Select channel..."
+									/>
+								</FormLabel>
+								<FormLabel label="Panel title">
+									<DarkInput
+										value={form.title}
+										onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+										placeholder="Support Tickets"
+									/>
+								</FormLabel>
 							</div>
-						</FormLabel>
-					</div>
 
-					<FormLabel label="Panel description">
-						<DarkTextarea
-							value={form.content}
-							onChange={(e) => setForm((p) => ({ ...p, content: e.target.value }))}
-							placeholder="Click the button below to open a ticket."
-							rows={3}
-						/>
-					</FormLabel>
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<FormLabel label="Panel color">
+									<div className="flex items-center gap-2">
+										<input
+											type="color"
+											value={form.color}
+											onChange={(e) => setForm((p) => ({ ...p, color: e.target.value }))}
+											className="h-10 w-12 rounded-xl border border-white/5 bg-[#1e1f22] cursor-pointer p-1"
+										/>
+										<DarkInput
+											value={form.color}
+											onChange={(e) => setForm((p) => ({ ...p, color: e.target.value }))}
+											placeholder="#5865F2"
+											className="flex-1"
+										/>
+									</div>
+								</FormLabel>
 
-					<div className="grid grid-cols-2 gap-4">
-						<FormLabel label="Large image URL" hint="optional">
-							<DarkInput
-								value={form.largeImageUrl}
-								onChange={(e) => setForm((p) => ({ ...p, largeImageUrl: e.target.value }))}
-								placeholder="https://..."
-							/>
-						</FormLabel>
-						<FormLabel label="Small image URL" hint="optional">
-							<DarkInput
-								value={form.smallImageUrl}
-								onChange={(e) => setForm((p) => ({ ...p, smallImageUrl: e.target.value }))}
-								placeholder="https://..."
-							/>
-						</FormLabel>
-					</div>
-				</div>
-			</SectionCard>
+								<div className="grid grid-cols-2 gap-2">
+									<FormLabel label="Large image" hint="optional">
+										<DarkInput
+											value={form.largeImageUrl}
+											onChange={(e) => setForm((p) => ({ ...p, largeImageUrl: e.target.value }))}
+											placeholder="https://..."
+										/>
+									</FormLabel>
+									<FormLabel label="Small image" hint="optional">
+										<DarkInput
+											value={form.smallImageUrl}
+											onChange={(e) => setForm((p) => ({ ...p, smallImageUrl: e.target.value }))}
+											placeholder="https://..."
+										/>
+									</FormLabel>
+								</div>
+							</div>
 
-			{/* Button */}
-			<SectionCard title="Button" description="The button users click to open a ticket.">
-				<div className="space-y-4">
-					<div className="grid grid-cols-2 gap-4">
-						<FormLabel label="Button text">
-							<DarkInput
-								value={form.buttonText}
-								onChange={(e) => setForm((p) => ({ ...p, buttonText: e.target.value }))}
-								placeholder="Open Ticket"
-							/>
-						</FormLabel>
-						<FormLabel label="Button color">
-							<DarkSelect
-								value={form.buttonColor}
-								onChange={(v) => setForm((p) => ({ ...p, buttonColor: v }))}
-								options={buttonColorOptions}
-							/>
-						</FormLabel>
-					</div>
-					<FormLabel label="Button emoji" hint="optional">
-						{emojisLoading && form.customEmoji ? (
-							<p className="text-xs text-zinc-500 py-2">Loading server emojis...</p>
-						) : (
-							<EmojiPicker
-								value={form.emoji}
-								onChange={(value) => setForm((p) => ({ ...p, emoji: value }))}
-								customEmojis={emojis}
-								customEmojiId={form.customEmojiId}
-								onCustomEmojiSelect={(emojiId) => {
-									const picked = emojis.find((e) => e.id === emojiId);
-									setForm((p) => ({
-										...p,
-										customEmojiId: emojiId,
-										customEmojiToken: picked
-											? `${picked.name}:${picked.id}`
-											: p.customEmojiToken,
-									}));
-								}}
-								useCustom={form.customEmoji}
-								onToggleCustom={(useCustom) =>
-									setForm((p) => ({ ...p, customEmoji: useCustom }))
-								}
-								onOpenChange={setEmojiPickerOpen}
-							/>
-						)}
-					</FormLabel>
-				</div>
-			</SectionCard>
+							<FormLabel label="Panel description text">
+								<DarkTextarea
+									value={form.content}
+									onChange={(e) => setForm((p) => ({ ...p, content: e.target.value }))}
+									placeholder="Click the button below to open a ticket."
+									rows={3}
+								/>
+							</FormLabel>
+						</div>
+					</SectionCard>
 
-			<SectionCard title="Ticket Channel" description="Where tickets are created.">
-				<div className="space-y-4">
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-						<FormLabel label="Ticket category">
-							<DarkSelect
-								value={form.categoryId}
-								onChange={(v) => setForm((p) => ({ ...p, categoryId: v }))}
-								options={categoryOptions}
-							/>
-						</FormLabel>
-						<FormLabel label="Mention roles on open" hint="optional">
-							<DarkMultiRolePicker
-								roles={sortedRoles.map((r: DiscordRole) => ({
-									id: r.id,
-									name: r.name,
-									color: r.color,
-								}))}
-								selectedIds={form.mentionRoles}
-								onToggle={toggleMentionRole}
-							/>
-						</FormLabel>
-					</div>
-				</div>
-			</SectionCard>
+					{/* Button & Styling */}
+					<SectionCard title="Ticket Button Config" description="The actual button users click inside the channel.">
+						<div className="space-y-4">
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<FormLabel label="Button text">
+									<DarkInput
+										value={form.buttonText}
+										onChange={(e) => setForm((p) => ({ ...p, buttonText: e.target.value }))}
+										placeholder="Open Ticket"
+									/>
+								</FormLabel>
+								<FormLabel label="Button style / color">
+									<DarkSelect
+										value={form.buttonColor}
+										onChange={(v) => setForm((p) => ({ ...p, buttonColor: v }))}
+										options={buttonColorOptions}
+									/>
+								</FormLabel>
+							</div>
+							<FormLabel label="Button emoji" hint="optional">
+								{emojisLoading && form.customEmoji ? (
+									<p className="text-xs text-zinc-400 py-2">Loading server emojis...</p>
+								) : (
+									<EmojiPicker
+										value={form.emoji}
+										onChange={(value) => setForm((p) => ({ ...p, emoji: value }))}
+										customEmojis={emojis}
+										customEmojiId={form.customEmojiId}
+										onCustomEmojiSelect={(emojiId) => {
+											const picked = emojis.find((e) => e.id === emojiId);
+											setForm((p) => ({
+												...p,
+												customEmojiId: emojiId,
+												customEmojiToken: picked
+													? `${picked.name}:${picked.id}`
+													: p.customEmojiToken,
+											}));
+										}}
+										useCustom={form.customEmoji}
+										onToggleCustom={(useCustom) =>
+											setForm((p) => ({ ...p, customEmoji: useCustom }))
+										}
+										onOpenChange={setEmojiPickerOpen}
+									/>
+								)}
+							</FormLabel>
+						</div>
+					</SectionCard>
 
-			{/* Questions */}
-			<SectionCard
-				title="Questions"
-				description="Users answer these when opening a ticket."
-				action={
-					<button
-						type="button"
-						onClick={() =>
-							setForm((p) => ({ ...p, questions: [...p.questions, ""] }))
-						}
-						className="flex items-center gap-1.5 rounded-lg border border-zinc-800/60 bg-zinc-900/40 px-3 py-1.5 text-xs font-semibold text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 transition-all"
-					>
-						<Plus className="h-3.5 w-3.5" />
-						Add Question
-					</button>
-				}
-			>
-				<div className="space-y-2.5">
-					{form.questions.map((question, index) => (
-						<div key={index} className="flex items-center gap-2">
-							<span className="text-xs font-mono text-zinc-600 w-5 shrink-0 text-right">
-								{index + 1}.
-							</span>
-							<DarkInput
-								value={question}
-								onChange={(e) => {
-									const next = [...form.questions];
-									next[index] = e.target.value;
-									setForm((p) => ({ ...p, questions: next }));
-								}}
-								placeholder={`Question ${index + 1}...`}
-								className="flex-1"
-							/>
+					{/* Routing Rules */}
+					<SectionCard title="Routing & Assignment" description="Where channels are created and who to alert.">
+						<div className="space-y-4">
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<FormLabel label="Create under Category">
+									<DarkSelect
+										value={form.categoryId}
+										onChange={(v) => setForm((p) => ({ ...p, categoryId: v }))}
+										options={categoryOptions}
+									/>
+								</FormLabel>
+								<FormLabel label="Mention roles on open" hint="optional">
+									<DarkMultiRolePicker
+										roles={sortedRoles.map((r: DiscordRole) => ({
+											id: r.id,
+											name: r.name,
+											color: r.color,
+										}))}
+										selectedIds={form.mentionRoles}
+										onToggle={toggleMentionRole}
+									/>
+								</FormLabel>
+							</div>
+						</div>
+					</SectionCard>
+
+					{/* Questions */}
+					<SectionCard
+						title="Pre-Flight Questions"
+						description="Users will fill these out before a ticket is created."
+						action={
 							<button
 								type="button"
-								onClick={() => {
-									const next = form.questions.filter((_, i) => i !== index);
-									setForm((p) => ({ ...p, questions: next.length ? next : [""] }));
-								}}
-								className="p-2 rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800/60 transition-all"
+								onClick={() =>
+									setForm((p) => ({ ...p, questions: [...p.questions, ""] }))
+								}
+								className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-zinc-300 hover:text-white hover:border-white/20 transition-all cursor-pointer shadow-sm"
 							>
-								<Trash2 className="h-3.5 w-3.5" />
+								<Plus className="h-3.5 w-3.5" />
+								Add Question
 							</button>
+						}
+					>
+						<div className="space-y-3">
+							{form.questions.map((question, index) => (
+								<div key={index} className="flex items-center gap-3">
+									<span className="text-xs font-bold font-mono text-zinc-400 w-5 shrink-0 text-right">
+										{index + 1}.
+									</span>
+									<DarkInput
+										value={question}
+										onChange={(e) => {
+											const next = [...form.questions];
+											next[index] = e.target.value;
+											setForm((p) => ({ ...p, questions: next }));
+										}}
+										placeholder={`Question ${index + 1} (e.g. Describe your issue...)`}
+										className="flex-1"
+									/>
+									<button
+										type="button"
+										onClick={() => {
+											const next = form.questions.filter((_, i) => i !== index);
+											setForm((p) => ({ ...p, questions: next.length ? next : [""] }));
+										}}
+										className="p-2.5 rounded-xl text-zinc-400 hover:text-[#FF5A36] hover:bg-white/5 transition-all shrink-0 cursor-pointer"
+									>
+										<Trash2 className="h-4 w-4" />
+									</button>
+								</div>
+							))}
+							{form.questions.length === 0 && (
+								<p className="text-xs text-zinc-400 italic text-center py-4">
+									No pre-flight questions — click "Add Question" above.
+								</p>
+							)}
 						</div>
-					))}
-					{form.questions.length === 0 && (
-						<p className="text-xs text-zinc-600 text-center py-4">
-							No questions yet — click "Add Question" above.
-						</p>
-					)}
-				</div>
-			</SectionCard>
+					</SectionCard>
 
-			{/* Welcome Message */}
-			<SectionCard
-				title="Welcome Message"
-				description="Embed sent inside the ticket channel when it's opened."
-			>
-				<div className="space-y-4">
-					<div className="grid grid-cols-2 gap-4">
-						<FormLabel label="Title">
-							<DarkInput
-								value={form.welcomeMessage.title}
-								onChange={(e) =>
-									setForm((p) => ({
-										...p,
-										welcomeMessage: { ...p.welcomeMessage, title: e.target.value },
-									}))
-								}
-								placeholder="Your ticket is open!"
-							/>
-						</FormLabel>
-						<FormLabel label="Embed color">
-							<div className="flex items-center gap-2">
-								<input
-									type="color"
-									value={form.welcomeMessage.embedColor}
-									onChange={(e) =>
-										setForm((p) => ({
-											...p,
-											welcomeMessage: { ...p.welcomeMessage, embedColor: e.target.value },
-										}))
-									}
-									className="h-10 w-12 rounded-lg border border-zinc-800/80 bg-zinc-900/60 cursor-pointer p-1"
-								/>
-								<DarkInput
-									value={form.welcomeMessage.embedColor}
-									onChange={(e) =>
-										setForm((p) => ({
-											...p,
-											welcomeMessage: { ...p.welcomeMessage, embedColor: e.target.value },
-										}))
-									}
-									className="flex-1"
-								/>
+					{/* Welcome Message */}
+					<SectionCard
+						title="Channel Welcome Message"
+						description="Sleek embed sent inside the ticket channel when it's opened."
+					>
+						<div className="space-y-4">
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<FormLabel label="Embed Welcome Title">
+									<DarkInput
+										value={form.welcomeMessage.title}
+										onChange={(e) =>
+											setForm((p) => ({
+												...p,
+												welcomeMessage: { ...p.welcomeMessage, title: e.target.value },
+											}))
+										}
+										placeholder="Your ticket is open!"
+									/>
+								</FormLabel>
+								<FormLabel label="Embed color border">
+									<div className="flex items-center gap-2">
+										<input
+											type="color"
+											value={form.welcomeMessage.embedColor}
+											onChange={(e) =>
+												setForm((p) => ({
+													...p,
+													welcomeMessage: { ...p.welcomeMessage, embedColor: e.target.value },
+												}))
+											}
+											className="h-10 w-12 rounded-xl border border-white/5 bg-[#1e1f22] cursor-pointer p-1"
+										/>
+										<DarkInput
+											value={form.welcomeMessage.embedColor}
+											onChange={(e) =>
+												setForm((p) => ({
+													...p,
+													welcomeMessage: { ...p.welcomeMessage, embedColor: e.target.value },
+												}))
+											}
+											className="flex-1"
+										/>
+									</div>
+								</FormLabel>
 							</div>
-						</FormLabel>
+
+							<FormLabel label="Embed Description text">
+								<DarkTextarea
+									value={form.welcomeMessage.description}
+									onChange={(e) =>
+										setForm((p) => ({
+											...p,
+											welcomeMessage: { ...p.welcomeMessage, description: e.target.value },
+										}))
+									}
+									placeholder="A staff member will be with you shortly."
+									rows={3}
+								/>
+							</FormLabel>
+
+							<FormLabel label="Title Redirect URL" hint="optional">
+								<DarkInput
+									value={form.welcomeMessage.titleUrl}
+									onChange={(e) =>
+										setForm((p) => ({
+											...p,
+											welcomeMessage: { ...p.welcomeMessage, titleUrl: e.target.value },
+										}))
+									}
+									placeholder="https://..."
+								/>
+							</FormLabel>
+
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<FormLabel label="Embed Large image link" hint="optional">
+									<DarkInput
+										value={form.welcomeMessage.largeImgUrl}
+										onChange={(e) =>
+											setForm((p) => ({
+												...p,
+												welcomeMessage: { ...p.welcomeMessage, largeImgUrl: e.target.value },
+											}))
+										}
+										placeholder="https://..."
+									/>
+								</FormLabel>
+								<FormLabel label="Embed Small thumbnail" hint="optional">
+									<DarkInput
+										value={form.welcomeMessage.smallImgUrl}
+										onChange={(e) =>
+											setForm((p) => ({
+												...p,
+												welcomeMessage: { ...p.welcomeMessage, smallImgUrl: e.target.value },
+											}))
+										}
+										placeholder="https://..."
+									/>
+								</FormLabel>
+							</div>
+
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<FormLabel label="Embed Footer Label" hint="optional">
+									<DarkInput
+										value={form.welcomeMessage.footerText}
+										onChange={(e) =>
+											setForm((p) => ({
+												...p,
+												welcomeMessage: { ...p.welcomeMessage, footerText: e.target.value },
+											}))
+										}
+										placeholder="Sushi Tickets"
+									/>
+								</FormLabel>
+								<FormLabel label="Embed Footer Icon link" hint="optional">
+									<DarkInput
+										value={form.welcomeMessage.footerIconUrl}
+										onChange={(e) =>
+											setForm((p) => ({
+												...p,
+												welcomeMessage: { ...p.welcomeMessage, footerIconUrl: e.target.value },
+											}))
+										}
+										placeholder="https://..."
+									/>
+								</FormLabel>
+							</div>
+						</div>
+					</SectionCard>
+
+				</div>
+
+				{/* RIGHT COLUMN: Real-Time Live Discord Preview (5/12 width) */}
+				<div className="lg:col-span-5 lg:sticky lg:top-24 space-y-4">
+					<div className="flex items-center justify-between px-4">
+						<span className="text-xs uppercase font-extrabold tracking-widest text-[#FF5A36] text-glow-sushi">
+							Live Panel Preview
+						</span>
+						<span className="text-[10px] text-zinc-400 font-bold bg-white/5 border border-white/5 rounded-full px-2.5 py-1">
+							Tactile Simulation
+						</span>
 					</div>
 
-					<FormLabel label="Description">
-						<DarkTextarea
-							value={form.welcomeMessage.description}
-							onChange={(e) =>
-								setForm((p) => ({
-									...p,
-									welcomeMessage: { ...p.welcomeMessage, description: e.target.value },
-								}))
-							}
-							placeholder="A staff member will be with you shortly."
-							rows={3}
-						/>
-					</FormLabel>
-
-					<FormLabel label="Title URL" hint="optional">
-						<DarkInput
-							value={form.welcomeMessage.titleUrl}
-							onChange={(e) =>
-								setForm((p) => ({
-									...p,
-									welcomeMessage: { ...p.welcomeMessage, titleUrl: e.target.value },
-								}))
-							}
-							placeholder="https://..."
-						/>
-					</FormLabel>
-
-					<div className="grid grid-cols-2 gap-4">
-						<FormLabel label="Large image URL" hint="optional">
-							<DarkInput
-								value={form.welcomeMessage.largeImgUrl}
-								onChange={(e) =>
-									setForm((p) => ({
-										...p,
-										welcomeMessage: { ...p.welcomeMessage, largeImgUrl: e.target.value },
-									}))
+					<div className="bg-zinc-900/10 border border-white/5 p-6 rounded-2xl shadow-xl backdrop-blur-md flex flex-col items-center justify-center min-h-[300px]">
+						<DiscordMockup
+							authorName="Sushi Tickets"
+							embedTitle={form.title || "Support Tickets"}
+							embedDescription={form.content || "Click the button below to open a ticket."}
+							embedColor={form.color || "#5865f2"}
+							largeImageUrl={form.largeImageUrl}
+							smallImageUrl={form.smallImageUrl}
+							fields={[]}
+							buttons={[
+								{
+									label: form.buttonText || "Open Ticket",
+									emoji: form.customEmoji ? customEmojiUrl : form.emoji || undefined,
+									style: form.buttonColor === "blue" ? "primary" : form.buttonColor === "green" ? "success" : form.buttonColor === "red" ? "danger" : "secondary"
 								}
-								placeholder="https://..."
-							/>
-						</FormLabel>
-						<FormLabel label="Small image URL" hint="optional">
-							<DarkInput
-								value={form.welcomeMessage.smallImgUrl}
-								onChange={(e) =>
-									setForm((p) => ({
-										...p,
-										welcomeMessage: { ...p.welcomeMessage, smallImgUrl: e.target.value },
-									}))
-								}
-								placeholder="https://..."
-							/>
-						</FormLabel>
+							]}
+						/>
 					</div>
 
-					<div className="grid grid-cols-2 gap-4">
-						<FormLabel label="Footer text" hint="optional">
-							<DarkInput
-								value={form.welcomeMessage.footerText}
-								onChange={(e) =>
-									setForm((p) => ({
-										...p,
-										welcomeMessage: { ...p.welcomeMessage, footerText: e.target.value },
-									}))
-								}
-								placeholder="Sushi Tickets"
-							/>
-						</FormLabel>
-						<FormLabel label="Footer icon URL" hint="optional">
-							<DarkInput
-								value={form.welcomeMessage.footerIconUrl}
-								onChange={(e) =>
-									setForm((p) => ({
-										...p,
-										welcomeMessage: { ...p.welcomeMessage, footerIconUrl: e.target.value },
-									}))
-								}
-								placeholder="https://..."
-							/>
-						</FormLabel>
+					<div className="bg-zinc-950/20 border border-white/2 p-4 rounded-xl text-center">
+						<p className="text-[11px] text-zinc-400 font-medium leading-relaxed">
+							This preview displays a real-time simulation of exactly how your ticket panel will render inside your Discord guild.
+						</p>
 					</div>
 				</div>
-			</SectionCard>
+
+			</div>
 		</form>
 	);
 }

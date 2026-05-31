@@ -1,19 +1,45 @@
+import { genId } from "./utils";
+
 export const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE ??
   process.env.NEXT_PUBLIC_API_BASE_URL ??
   "http://localhost:8080";
 
+const readCookie = (name: string): string | null => {
+  if (typeof document === "undefined") return null;
+  const value = document.cookie
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${name}=`));
+  if (!value) return null;
+  return decodeURIComponent(value.split("=")[1] ?? "");
+};
+
 const fetchApi = async <T>(
   endpoint: string,
   options: RequestInit = {},
 ): Promise<T> => {
+  const method = (options.method ?? "GET").toUpperCase();
+  const headers = new Headers(options.headers);
+  if (!headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+  if (
+    method !== "GET" &&
+    method !== "HEAD" &&
+    !headers.has("Idempotency-Key")
+  ) {
+    headers.set("Idempotency-Key", genId());
+  }
+  if (method !== "GET" && method !== "HEAD" && !headers.has("X-CSRF-Token")) {
+    const token = readCookie("fns_csrf");
+    if (token) headers.set("X-CSRF-Token", token);
+  }
+
   const res = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
+    headers,
   });
 
   if (!res.ok) {
@@ -38,6 +64,10 @@ export const api = {
       await fetch(`${API_BASE}/api/auth/logout`, {
         method: "POST",
         credentials: "include",
+        headers: {
+          "Idempotency-Key": genId(),
+          "X-CSRF-Token": readCookie("fns_csrf") ?? "",
+        },
       });
     },
   },

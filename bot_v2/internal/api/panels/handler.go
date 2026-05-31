@@ -16,6 +16,52 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+func init() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+}
+
+func validatePanelPayload(p PanelPayload) utils.ValidationErrors {
+	errs := make(utils.ValidationErrors)
+	utils.ValidateMaxLength(p.Title, "title", 256, errs)
+	utils.ValidateMaxLength(p.Content, "content", 4000, errs)
+	utils.ValidateSnowflake(p.ChannelID, "channelId", errs)
+	utils.ValidateBtnColor(p.BtnColor, "btnColor", errs)
+	utils.ValidateMaxLength(p.BtnTxt, "btnTxt", 80, errs)
+	utils.ValidateMaxLength(p.BtnEmoji, "btnEmoji", 100, errs)
+	utils.ValidateSnowflake(p.CategoryID, "categoryId", errs)
+	utils.ValidateMaxLength(p.LargeImgUrl, "largeImgUrl", 2048, errs)
+	utils.ValidateMaxLength(p.SmallImgUrl, "smallImgUrl", 2048, errs)
+	if len(p.Questions) > 10 {
+		errs["questions"] = "max 10 questions allowed"
+	}
+	for i, q := range p.Questions {
+		utils.ValidateMaxLength(q, "questions["+strconv.Itoa(i)+"]", 256, errs)
+	}
+	utils.ValidateMaxLength(p.WelcomeMessage.Title, "welcomeMessage.title", 256, errs)
+	utils.ValidateMaxLength(p.WelcomeMessage.Description, "welcomeMessage.description", 4000, errs)
+	utils.ValidateMaxLength(p.WelcomeMessage.TitleURL, "welcomeMessage.titleUrl", 2048, errs)
+	utils.ValidateMaxLength(p.WelcomeMessage.LargeImgUrl, "welcomeMessage.largeImgUrl", 2048, errs)
+	utils.ValidateMaxLength(p.WelcomeMessage.SmallImgUrl, "welcomeMessage.smallImgUrl", 2048, errs)
+	utils.ValidateMaxLength(p.WelcomeMessage.FooterText, "welcomeMessage.footerText", 2048, errs)
+	utils.ValidateMaxLength(p.WelcomeMessage.FooterIconUrl, "welcomeMessage.footerIconUrl", 2048, errs)
+	return errs
+}
+
+func validateMultiPanelPayload(p MultiPanelPayload) utils.ValidationErrors {
+	errs := make(utils.ValidationErrors)
+	utils.ValidateMaxLength(p.Title, "title", 256, errs)
+	utils.ValidateMaxLength(p.Content, "content", 4000, errs)
+	utils.ValidateSnowflake(p.ChannelID, "channelId", errs)
+	utils.ValidateMaxLength(p.LargeImgUrl, "largeImgUrl", 2048, errs)
+	utils.ValidateMaxLength(p.SmallImgUrl, "smallImgUrl", 2048, errs)
+	utils.ValidateMaxLength(p.Footer, "footer", 2048, errs)
+	utils.ValidateMaxLength(p.FootIconUrl, "footIconUrl", 2048, errs)
+	if len(p.PanelConfigIds) > 25 {
+		errs["panelConfigIds"] = "max 25 panels allowed"
+	}
+	return errs
+}
+
 
 
 func writeJSON(w http.ResponseWriter, status int, data any) {
@@ -34,7 +80,7 @@ func (h *Handler) HandleListPanels(w http.ResponseWriter, r *http.Request) {
 	items, err := h.DB.GetPanelConfigsByServer(context.Background(), serverID)
 	if err != nil {
 		log.Printf("load panels failed: %v", err)
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to load panels: " + err.Error()})
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to load panels"})
 		return
 	}
 	writeJSON(w, http.StatusOK, items)
@@ -135,6 +181,11 @@ func (h *Handler) HandleCreatePanel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if errs := validatePanelPayload(payload); len(errs) > 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "validation failed", "fields": errs})
+		return
+	}
+
 	item, err := h.DB.CreatePanelConfig(context.Background(), db.CreatePanelConfigParams{
 		ServerConfigID:     serverID,
 		MentionRolesOnOpen: payload.MentionRolesOnOpen,
@@ -196,6 +247,11 @@ func (h *Handler) HandleUpdatePanel(w http.ResponseWriter, r *http.Request) {
 			"error":   "missing required fields",
 			"missing": strings.Join(missing, ", "),
 		})
+		return
+	}
+
+	if errs := validatePanelPayload(payload); len(errs) > 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "validation failed", "fields": errs})
 		return
 	}
 
@@ -313,7 +369,7 @@ func (h *Handler) HandleSendPanel(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		log.Printf("send panel failed: %v", err)
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to send panel: " + err.Error()})
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to send panel"})
 		return
 	}
 
@@ -330,7 +386,7 @@ func (h *Handler) HandleListMultiPanels(w http.ResponseWriter, r *http.Request) 
 	items, err := h.DB.GetMultiPanelConfigsByServer(context.Background(), serverID)
 	if err != nil {
 		log.Printf("load multi panels failed: %v", err)
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to load multi panels: " + err.Error()})
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to load multi panels"})
 		return
 	}
 	writeJSON(w, http.StatusOK, items)
@@ -388,6 +444,11 @@ func (h *Handler) HandleCreateMultiPanel(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	if errs := validateMultiPanelPayload(payload); len(errs) > 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "validation failed", "fields": errs})
+		return
+	}
+
 	item, err := h.DB.CreateMultiPanelConfig(context.Background(), db.CreateMultiPanelConfigParams{
 		ServerConfigID: serverID,
 		Title:          payload.Title,
@@ -426,6 +487,11 @@ func (h *Handler) HandleUpdateMultiPanel(w http.ResponseWriter, r *http.Request)
 			"error":   "missing required fields",
 			"missing": strings.Join(missing, ", "),
 		})
+		return
+	}
+
+	if errs := validateMultiPanelPayload(payload); len(errs) > 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "validation failed", "fields": errs})
 		return
 	}
 
@@ -527,7 +593,7 @@ func (h *Handler) HandleSendMultiPanel(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		log.Printf("send multi panel failed: %v", err)
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to send multi panel: " + err.Error()})
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to send multi panel"})
 		return
 	}
 

@@ -142,7 +142,7 @@ export default function EditPanelPage() {
 	const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
 	const { emojis, isLoading: emojisLoading } = useGuildEmojis(
 		serverId,
-		form.customEmoji && emojiPickerOpen,
+		form.customEmoji,
 	);
 	const [saving, setSaving] = useState(false);
 	const [deleting, setDeleting] = useState(false);
@@ -343,7 +343,7 @@ export default function EditPanelPage() {
 											type="color"
 											value={form.color}
 											onChange={(e) => setForm((p) => ({ ...p, color: e.target.value }))}
-											className="h-10 w-12 rounded-lg border border-zinc-800/80 bg-zinc-900/60 cursor-pointer p-1"
+											className="h-10 w-12 rounded-xl border border-white/5 bg-[#1e1f22] cursor-pointer p-1"
 										/>
 										<DarkInput
 											value={form.color}
@@ -541,7 +541,7 @@ export default function EditPanelPage() {
 													welcomeMessage: { ...p.welcomeMessage, embedColor: e.target.value },
 												}))
 											}
-											className="h-10 w-12 rounded-lg border border-zinc-800/80 bg-zinc-900/60 cursor-pointer p-1"
+											className="h-10 w-12 rounded-xl border border-white/5 bg-[#1e1f22] cursor-pointer p-1"
 										/>
 										<DarkInput
 											value={form.welcomeMessage.embedColor}

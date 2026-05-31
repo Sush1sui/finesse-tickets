@@ -14,6 +14,7 @@ type Server struct {
 	DB      *db.Queries
 	Storage *storage.Client
 	Config  *config.Config
+	Limiter *rateLimiter
 }
 
 func writeJSON(w http.ResponseWriter, status int, data any) {

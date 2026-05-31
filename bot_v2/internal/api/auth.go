@@ -7,17 +7,22 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Sush1sui/FNS_BOT/internal/bot"
 	"github.com/Sush1sui/FNS_BOT/internal/db"
 	"github.com/Sush1sui/FNS_BOT/internal/utils"
-	"github.com/golang-jwt/jwt/v5"
+	"github.com/jackc/pgx/v5"
 )
 
 const (
 	authCookieName  = "fns_auth"
 	stateCookieName = "fns_oauth_state"
+	csrfCookieName  = "fns_csrf"
+	csrfHeaderName  = "X-CSRF-Token"
+	sessionTTL      = 7 * 24 * time.Hour
+	lastSeenGap     = 30 * time.Minute
 )
 
 type AuthClaims struct {
@@ -26,8 +31,7 @@ type AuthClaims struct {
 	Email       string `json:"email,omitempty"`
 	Image       string `json:"image,omitempty"`
 	DiscordID   string `json:"discord_id"`
-	AccessToken string `json:"access_token"`
-	jwt.RegisteredClaims
+	AccessToken string `json:"-"`
 }
 
 func (c *AuthClaims) GetDiscordID() string   { return c.DiscordID }
@@ -63,7 +67,7 @@ func (s *Server) handleAuthLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleAuthCallback(w http.ResponseWriter, r *http.Request) {
-	// Exchange code for token, fetch user, mint JWT cookie.
+	// Exchange code for token, fetch user, mint session cookie.
 	code := r.URL.Query().Get("code")
 	state := r.URL.Query().Get("state")
 	if code == "" || state == "" {
@@ -98,20 +102,51 @@ func (s *Server) handleAuthCallback(w http.ResponseWriter, r *http.Request) {
 		image = fmt.Sprintf("https://cdn.discordapp.com/avatars/%s/%s.png", user.ID, user.Avatar)
 	}
 
-	jwtToken, err := s.signJWT(*user, name, image, token)
+	sessionID, err := utils.RandomState(32)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to sign token"})
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to init session"})
 		return
 	}
 
-	utils.SetAuthCookie(w, jwtToken, s.Config.CookieSecure, utils.CookieSameSite(s.Config.CookieSecure), authCookieName)
+	encryptedToken, err := utils.EncryptTokenV1(s.Config.AccessTokenKey, token.AccessToken)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to encrypt session"})
+		return
+	}
+
+	now := time.Now()
+	if err := s.DB.CreateAuthSession(r.Context(), db.CreateAuthSessionParams{
+		SessionID:   sessionID,
+		UserID:      user.ID,
+		DiscordID:   user.ID,
+		Name:        name,
+		Email:       user.Email,
+		Image:       image,
+		AccessToken: encryptedToken,
+		CreatedAt:   now.Unix(),
+		ExpiresAt:   now.Add(sessionTTL).Unix(),
+		LastSeen:    now.Unix(),
+	}); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to create session"})
+		return
+	}
+
+	utils.SetAuthCookie(w, sessionID, s.Config.CookieSecure, utils.CookieSameSite(s.Config.CookieSecure), authCookieName)
+	csrfToken, err := utils.RandomState(32)
+	if err == nil {
+		utils.SetCSRFCookie(w, csrfToken, s.Config.CookieSecure, utils.CookieSameSite(s.Config.CookieSecure), csrfCookieName, int(sessionTTL.Seconds()))
+	}
 	utils.ClearStateCookie(w, s.Config.CookieSecure, utils.CookieSameSite(s.Config.CookieSecure), stateCookieName)
 
 	http.Redirect(w, r, s.Config.ClientOrigin, http.StatusFound)
 }
 
 func (s *Server) handleAuthLogout(w http.ResponseWriter, r *http.Request) {
+	if cookie, err := r.Cookie(authCookieName); err == nil && cookie.Value != "" {
+		_ = s.DB.DeleteAuthSession(r.Context(), cookie.Value)
+	}
 	utils.ClearAuthCookie(w, s.Config.CookieSecure, utils.CookieSameSite(s.Config.CookieSecure), authCookieName)
+	utils.ClearCSRFCookie(w, s.Config.CookieSecure, utils.CookieSameSite(s.Config.CookieSecure), csrfCookieName)
 	writeJSON(w, http.StatusOK, map[string]string{"status": "logged out"})
 }
 
@@ -189,50 +224,54 @@ func (s *Server) handleAuthServers(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"servers": servers})
 }
 
-// AuthFromRequest extracts JWT claims from request cookie
+// AuthFromRequest extracts session claims from request cookie
 func (s *Server) AuthFromRequest(r *http.Request) (*AuthClaims, error) {
 	cookie, err := r.Cookie(authCookieName)
 	if err != nil || cookie.Value == "" {
 		return nil, errors.New("missing auth cookie")
 	}
 
-	token, err := jwt.ParseWithClaims(cookie.Value, &AuthClaims{}, func(t *jwt.Token) (any, error) {
-		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("invalid signing method")
-		}
-		return []byte(s.Config.JwtSecret), nil
-	})
-	if err != nil || !token.Valid {
-		return nil, errors.New("invalid token")
-	}
-
-	claims, ok := token.Claims.(*AuthClaims)
-	if !ok {
-		return nil, errors.New("invalid claims")
-	}
-	return claims, nil
-}
-
-func (s *Server) signJWT(user discordUser, name, image string, token *discordTokenResponse) (string, error) {
-	expiresAt := time.Now().Add(7 * 24 * time.Hour)
-	claims := AuthClaims{
-		UserID:      user.ID,
-		Name:        name,
-		Email:       user.Email,
-		Image:       image,
-		DiscordID:   user.ID,
-		AccessToken: token.AccessToken,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expiresAt),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
-	}
-
-	signed, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(s.Config.JwtSecret))
+	session, err := s.DB.GetAuthSession(r.Context(), cookie.Value)
 	if err != nil {
-		return "", err
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, errors.New("invalid session")
+		}
+		return nil, errors.New("failed to load session")
 	}
-	return signed, nil
+
+	now := time.Now().Unix()
+	if session.ExpiresAt <= now {
+		_ = s.DB.DeleteAuthSession(r.Context(), session.SessionID)
+		return nil, errors.New("session expired")
+	}
+	if session.LastSeen == 0 || now-session.LastSeen > int64(lastSeenGap.Seconds()) {
+		_ = s.DB.UpdateAuthSessionLastSeen(r.Context(), session.SessionID, now)
+	}
+
+	accessToken := session.AccessToken
+	if accessToken != "" {
+		if strings.HasPrefix(accessToken, utils.TokenEncPrefix) {
+			decrypted, err := utils.DecryptTokenV1(s.Config.AccessTokenKey, accessToken)
+			if err != nil {
+				return nil, errors.New("failed to decrypt session token")
+			}
+			accessToken = decrypted
+		} else {
+			encrypted, err := utils.EncryptTokenV1(s.Config.AccessTokenKey, accessToken)
+			if err == nil {
+				_ = s.DB.UpdateAuthSessionAccessToken(r.Context(), session.SessionID, encrypted)
+			}
+		}
+	}
+
+	return &AuthClaims{
+		UserID:      session.UserID,
+		Name:        session.Name,
+		Email:       session.Email,
+		Image:       session.Image,
+		DiscordID:   session.DiscordID,
+		AccessToken: accessToken,
+	}, nil
 }
 
 // IsAuthorizedForServer checks if user is authorized to access a server
@@ -338,7 +377,7 @@ func hasAdminPermsFromCache(guildID, userID string) bool {
 	}
 
 	// Admin = 0x8, Manage Channels = 0x10, Manage Server = 0x20
-return perms&0x8 != 0 || perms&0x10 != 0 || perms&0x20 != 0
+	return perms&0x8 != 0 || perms&0x10 != 0 || perms&0x20 != 0
 }
 
 func (s *Server) isAuthorizedGuild(ctx context.Context, guild discordGuild, claims *AuthClaims) (bool, error) {
