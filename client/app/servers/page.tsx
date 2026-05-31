@@ -74,7 +74,7 @@ export default function ServersPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#313338] text-zinc-100 font-sans selection:bg-[#FF5A36]/30">
+    <div className="relative min-h-screen overflow-hidden bg-[#1E1F22] text-zinc-100 font-sans selection:bg-[#FF5A36]/30">
       <div className="relative mx-auto max-w-5xl px-6 py-8 md:py-16 flex flex-col min-h-screen justify-between gap-12">
         {/* Header */}
         <Navbar />

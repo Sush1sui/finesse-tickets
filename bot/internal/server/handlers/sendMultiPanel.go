@@ -13,8 +13,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-
-
 func SendMultiPanelHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -44,7 +42,7 @@ func SendMultiPanelHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse color from hex string to int
 	colorInt, err := strconv.ParseInt(req.Embed.Color[1:], 16, 64)
 	if err != nil {
-		colorInt = 0x5865F2 // Default Discord blurple
+		colorInt = 0x5865F2
 	}
 
 	// Create embed

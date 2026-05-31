@@ -7,6 +7,7 @@ import useSWR from "swr";
 import { api, type MultiPanelDetail } from "../../../../../../lib/api";
 import { useGuildMeta } from "../../../../../../lib/hooks/useGuildMeta";
 import { usePanels } from "../../../../../../lib/hooks/usePanels";
+import DarkConfirmModal from "@/components/DarkConfirmModal";
 import {
 	DarkInput,
 	DarkTextarea,
@@ -74,6 +75,7 @@ export default function EditMultiPanelPage() {
 	const { panels, isLoading: panelsLoading } = usePanels(serverId);
 	const [saving, setSaving] = useState(false);
 	const [deleting, setDeleting] = useState(false);
+	const [modalOpen, setModalOpen] = useState(false);
 
 	const isLoading = panelLoading || metaLoading || panelsLoading;
 
@@ -160,7 +162,6 @@ export default function EditMultiPanelPage() {
 	};
 
 	const handleDelete = async () => {
-		if (!window.confirm("Delete this multi panel?")) return;
 		setDeleting(true);
 		try {
 			await api.multiPanels.delete(serverId, multiPanelId);
@@ -184,6 +185,7 @@ export default function EditMultiPanelPage() {
 	const panelOptions = sortedPanels.map((p) => ({ value: String(p.ID), label: p.Title }));
 
 	return (
+		<>
 		<form onSubmit={handleSubmit} className="space-y-5 pb-6">
 			{/* Header */}
 			<div className="flex items-center justify-between mb-2">
@@ -196,7 +198,7 @@ export default function EditMultiPanelPage() {
 				<div className="flex items-center gap-2.5">
 					<button
 						type="button"
-						onClick={handleDelete}
+						onClick={() => setModalOpen(true)}
 						disabled={deleting || isLoading}
 						className="flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold bg-zinc-950 border border-red-900/30 text-red-400 hover:bg-red-500/10 active:scale-95 transition-all duration-200 disabled:opacity-60"
 					>
@@ -393,5 +395,16 @@ export default function EditMultiPanelPage() {
 				</>
 			)}
 		</form>
+
+		<DarkConfirmModal
+			isOpen={modalOpen}
+			onClose={() => setModalOpen(false)}
+			onConfirm={handleDelete}
+			title="Delete Multi Panel"
+			message="Are you sure you want to permanently delete this multi panel? This action cannot be undone."
+			confirmText="Delete"
+			type="danger"
+		/>
+		</>
 	);
 }

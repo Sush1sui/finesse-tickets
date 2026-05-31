@@ -18,7 +18,7 @@ import {
 import { Save, Plus, Trash2 } from "lucide-react";
 
 const buttonColorOptions = [
-	{ value: "blue", label: "🔵  Blurple" },
+	{ value: "blue", label: "🔵  Blue" },
 	{ value: "green", label: "🟢  Green" },
 	{ value: "red", label: "🔴  Red" },
 	{ value: "gray", label: "⚫  Gray" },
@@ -92,6 +92,7 @@ export default function CreatePanelPage() {
 		form.customEmoji,
 	);
 	const [saving, setSaving] = useState(false);
+	const [previewTab, setPreviewTab] = useState<"panel" | "welcome">("panel");
 
 	const sortedRoles = useMemo(
 		() => [...roles].sort((a, b) => b.position - a.position),
@@ -528,42 +529,82 @@ export default function CreatePanelPage() {
 							</div>
 						</div>
 					</SectionCard>
-
 				</div>
 
 				{/* RIGHT COLUMN: Real-Time Live Discord Preview (5/12 width) */}
 				<div className="lg:col-span-5 lg:sticky lg:top-24 space-y-4">
 					<div className="flex items-center justify-between px-4">
 						<span className="text-xs uppercase font-extrabold tracking-widest text-[#FF5A36] text-glow-sushi">
-							Live Panel Preview
+							Live Previews
 						</span>
-						<span className="text-[10px] text-zinc-400 font-bold bg-white/5 border border-white/5 rounded-full px-2.5 py-1">
-							Tactile Simulation
-						</span>
+						{/* Tab Switcher */}
+						<div className="flex bg-white/5 border border-white/5 rounded-xl p-1 text-xs font-bold text-zinc-400 gap-1">
+							<button
+								type="button"
+								onClick={() => setPreviewTab("panel")}
+								className={`px-4 py-2 rounded-lg transition-all cursor-pointer font-bold text-xs ${previewTab === "panel"
+									? "bg-[#FF5A36] text-white shadow-md shadow-orange-950/15"
+									: "hover:text-zinc-200"
+									}`}
+							>
+								Panel
+							</button>
+							<button
+								type="button"
+								onClick={() => setPreviewTab("welcome")}
+								className={`px-4 py-2 rounded-lg transition-all cursor-pointer font-bold text-xs ${previewTab === "welcome"
+									? "bg-[#FF5A36] text-white shadow-md shadow-orange-950/15"
+									: "hover:text-zinc-200"
+									}`}
+							>
+								Welcome
+							</button>
+						</div>
 					</div>
 
-					<div className="bg-zinc-900/10 border border-white/5 p-6 rounded-2xl shadow-xl backdrop-blur-md flex flex-col items-center justify-center min-h-[300px]">
-						<DiscordMockup
-							authorName="Sushi Tickets"
-							embedTitle={form.title || "Support Tickets"}
-							embedDescription={form.content || "Click the button below to open a ticket."}
-							embedColor={form.color || "#5865f2"}
-							largeImageUrl={form.largeImageUrl}
-							smallImageUrl={form.smallImageUrl}
-							fields={[]}
-							buttons={[
-								{
-									label: form.buttonText || "Open Ticket",
-									emoji: form.customEmoji ? customEmojiUrl : form.emoji || undefined,
-									style: form.buttonColor === "blue" ? "primary" : form.buttonColor === "green" ? "success" : form.buttonColor === "red" ? "danger" : "secondary"
-								}
-							]}
-						/>
+					<div className="bg-zinc-900/10 border border-white/5 p-6 rounded-2xl shadow-xl backdrop-blur-md flex flex-col items-center justify-center min-h-[320px]">
+						{previewTab === "panel" ? (
+							<DiscordMockup
+								authorName="Sushi Tickets"
+								embedTitle={form.title || "Support Tickets"}
+								embedDescription={form.content || "Click the button below to open a ticket."}
+								embedColor={form.color || "#5865f2"}
+								largeImageUrl={form.largeImageUrl}
+								smallImageUrl={form.smallImageUrl}
+								fields={[]}
+								buttons={[
+									{
+										label: form.buttonText || "Open Ticket",
+										emoji: form.customEmoji ? customEmojiUrl : form.emoji || undefined,
+										style: form.buttonColor === "blue" ? "primary" : form.buttonColor === "green" ? "success" : form.buttonColor === "red" ? "danger" : "secondary"
+									}
+								]}
+							/>
+						) : (
+							<DiscordMockup
+								authorName="Sushi Tickets"
+								embedTitle={form.welcomeMessage.title || "Ticket Opened"}
+								embedDescription={form.welcomeMessage.description || "A staff member will be with you shortly.\n\nSupport staff can close this ticket by clicking the button below."}
+								embedColor={form.welcomeMessage.embedColor || "#57f287"}
+								largeImageUrl={form.welcomeMessage.largeImgUrl}
+								smallImageUrl={form.welcomeMessage.smallImgUrl}
+								fields={[]}
+								buttons={[
+									{
+										label: "Close Ticket",
+										emoji: "🔒",
+										style: "danger"
+									}
+								]}
+							/>
+						)}
 					</div>
 
 					<div className="bg-zinc-950/20 border border-white/2 p-4 rounded-xl text-center">
 						<p className="text-[11px] text-zinc-400 font-medium leading-relaxed">
-							This preview displays a real-time simulation of exactly how your ticket panel will render inside your Discord guild.
+							{previewTab === "panel"
+								? "This preview displays a real-time simulation of exactly how your public ticket panel will render in your Discord channel."
+								: "This preview displays a real-time simulation of exactly how the welcome embed will render in the opened private ticket channel."}
 						</p>
 					</div>
 				</div>

@@ -42,7 +42,7 @@ func SendPanelHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse color from hex string to int
 	colorInt, err := strconv.ParseInt(req.Color[1:], 16, 64)
 	if err != nil {
-		colorInt = 0x5865F2 // Default Discord blurple
+		colorInt = 0x5865F2
 	}
 
 	// Create embed

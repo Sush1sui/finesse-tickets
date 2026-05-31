@@ -171,57 +171,60 @@ export default function StaffPage() {
 				</button>
 			</div>
 
-			{/* Members */}
-			<SectionCard
-				title="Authorized Members"
-				description="Individual users who can manage tickets."
-				action={
-					<span className="rounded-full border border-zinc-800/60 bg-zinc-900/40 px-2.5 py-1 text-xs font-semibold text-zinc-400">
-						<Users className="inline h-3 w-3 mr-1 -mt-0.5" />
-						{selectedMemberIds.length}
-					</span>
-				}
-			>
-				<div className="space-y-3">
-					<DarkSearchDropdown
-						items={allMemberItems}
-						selectedIds={selectedMemberIdSet}
-						onSelect={addMember}
-						placeholder="Search and add members..."
-					/>
-					<DarkChipList
-						items={authorizedMembers}
-						onRemove={removeMember}
-						emptyMessage="No authorized members — add one above."
-					/>
-				</div>
-			</SectionCard>
+			{/* Grid Layout for Members & Roles to prevent wasted horizontal space */}
+			<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+				{/* Members */}
+				<SectionCard
+					title="Authorized Members"
+					description="Individual users who can manage tickets."
+					action={
+						<span className="rounded-full border border-zinc-800/60 bg-zinc-900/40 px-2.5 py-1 text-xs font-semibold text-zinc-400">
+							<Users className="inline h-3 w-3 mr-1 -mt-0.5" />
+							{selectedMemberIds.length}
+						</span>
+					}
+				>
+					<div className="space-y-3">
+						<DarkSearchDropdown
+							items={allMemberItems}
+							selectedIds={selectedMemberIdSet}
+							onSelect={addMember}
+							placeholder="Search and add members..."
+						/>
+						<DarkChipList
+							items={authorizedMembers}
+							onRemove={removeMember}
+							emptyMessage="No authorized members — add one above."
+						/>
+					</div>
+				</SectionCard>
 
-			{/* Roles */}
-			<SectionCard
-				title="Authorized Roles"
-				description="Anyone with these roles can manage tickets."
-				action={
-					<span className="rounded-full border border-zinc-800/60 bg-zinc-900/40 px-2.5 py-1 text-xs font-semibold text-zinc-400">
-						<Shield className="inline h-3 w-3 mr-1 -mt-0.5" />
-						{selectedRoleIds.length}
-					</span>
-				}
-			>
-				<div className="space-y-3">
-					<DarkSearchDropdown
-						items={allRoleItems}
-						selectedIds={selectedRoleIdSet}
-						onSelect={addRole}
-						placeholder="Search and add roles..."
-					/>
-					<DarkChipList
-						items={authorizedRoles}
-						onRemove={removeRole}
-						emptyMessage="No authorized roles — add one above."
-					/>
-				</div>
-			</SectionCard>
+				{/* Roles */}
+				<SectionCard
+					title="Authorized Roles"
+					description="Anyone with these roles can manage tickets."
+					action={
+						<span className="rounded-full border border-zinc-800/60 bg-zinc-900/40 px-2.5 py-1 text-xs font-semibold text-zinc-400">
+							<Shield className="inline h-3 w-3 mr-1 -mt-0.5" />
+							{selectedRoleIds.length}
+						</span>
+					}
+				>
+					<div className="space-y-3">
+						<DarkSearchDropdown
+							items={allRoleItems}
+							selectedIds={selectedRoleIdSet}
+							onSelect={addRole}
+							placeholder="Search and add roles..."
+						/>
+						<DarkChipList
+							items={authorizedRoles}
+							onRemove={removeRole}
+							emptyMessage="No authorized roles — add one above."
+						/>
+					</div>
+				</SectionCard>
+			</div>
 		</div>
 	);
 }

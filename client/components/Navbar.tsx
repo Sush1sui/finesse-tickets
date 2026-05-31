@@ -28,31 +28,34 @@ export default function Navbar() {
       <div>
         {user && (
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 rounded-full border border-zinc-800/60 bg-zinc-900/30 px-3 py-1.5">
+            {/* Glassmorphic User Profile Capsule matching website theme */}
+            <div className="group flex items-center gap-2.5 rounded-xl border border-white/5 bg-white/5 px-3 py-1.5 shadow-inner backdrop-blur-md transition-all duration-300 hover:bg-white/8 hover:border-[#FF5A36]/20">
               {user.image ? (
                 <img
                   src={user.image}
                   alt={user.name}
-                  className="h-5 w-5 rounded-full shrink-0 ring-1 ring-zinc-700/50"
+                  className="h-5.5 w-5.5 rounded-full shrink-0 ring-2 ring-white/10 group-hover:ring-[#FF5A36]/50 transition-all duration-300 group-hover:scale-105"
                 />
               ) : (
-                <div className="h-5 w-5 rounded-full shrink-0 bg-zinc-800 ring-1 ring-zinc-700 flex items-center justify-center text-[10px] font-black text-zinc-400 select-none">
+                <div className="h-5.5 w-5.5 rounded-full shrink-0 bg-zinc-800 ring-2 ring-white/10 group-hover:ring-[#FF5A36]/50 flex items-center justify-center text-[10px] font-black text-zinc-300 select-none transition-all duration-300">
                   {user.name[0]?.toUpperCase()}
                 </div>
               )}
-              <span className="text-xs font-semibold text-zinc-300">
+              <span className="text-xs font-bold text-zinc-200 group-hover:text-white transition-colors tracking-tight select-none">
                 {user.name}
               </span>
             </div>
 
-            <div className="h-4 w-[1px] bg-zinc-800/60" />
+            {/* Subtle divider */}
+            <div className="h-5 w-[1px] bg-white/5" />
 
+            {/* Premium brand-colored Logout Button matching homepage buttons */}
             <button
               onClick={logout}
-              className="group flex items-center gap-1.5 rounded-lg border border-zinc-800/80 bg-zinc-900/40 px-3.5 py-1.5 text-xs font-semibold text-zinc-400 hover:border-[#FF5A36]/40 hover:bg-[#FF5A36]/5 hover:text-white transition-all duration-300 active:scale-95"
+              className="group flex items-center gap-1.5 rounded-xl border border-white/5 bg-white/5 px-3.5 py-1.5 text-xs font-bold text-zinc-400 hover:border-[#FF5A36]/30 hover:bg-[#FF5A36]/10 hover:text-white hover:shadow-[0_0_12px_rgba(255,90,54,0.15)] transition-all duration-300 active:scale-95 cursor-pointer"
             >
-              <LogOut className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform text-zinc-500 group-hover:text-[#FF5A36]" />
-              Logout
+              <LogOut className="h-3.5 w-3.5 text-zinc-500 group-hover:text-[#FF5A36] group-hover:translate-x-0.5 transition-all" />
+              <span>Logout</span>
             </button>
           </div>
         )}

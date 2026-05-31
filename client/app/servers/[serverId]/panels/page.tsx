@@ -16,6 +16,7 @@ import {
 	Hash,
 } from "lucide-react";
 import { SectionCard } from "../../../../components/DarkFormFields";
+import DarkConfirmModal from "../../../../components/DarkConfirmModal";
 
 function PanelRow({
 	title,
@@ -86,26 +87,66 @@ export default function PanelsPage() {
 	const [sendingId, setSendingId] = useState<number | null>(null);
 	const [sendingMultiId, setSendingMultiId] = useState<number | null>(null);
 
-	const handleDelete = async (panelId: number) => {
-		if (!window.confirm("Delete this panel?")) return;
-		setDeletingId(panelId);
-		try {
-			await api.panels.delete(serverId, panelId.toString());
-			await refresh();
-		} finally {
-			setDeletingId(null);
-		}
+	// State for custom modal
+	const [modalOpen, setModalOpen] = useState(false);
+	const [modalConfig, setModalConfig] = useState<{
+		title: string;
+		message: string;
+		type: "danger" | "warning" | "info";
+		confirmText?: string;
+		onConfirm: () => void;
+	}>({
+		title: "",
+		message: "",
+		type: "danger",
+		onConfirm: () => {},
+	});
+
+	const showConfirm = (config: {
+		title: string;
+		message: string;
+		type: "danger" | "warning" | "info";
+		confirmText?: string;
+		onConfirm: () => void;
+	}) => {
+		setModalConfig(config);
+		setModalOpen(true);
 	};
 
-	const handleDeleteMulti = async (panelId: number) => {
-		if (!window.confirm("Delete this multi panel?")) return;
-		setDeletingMultiId(panelId);
-		try {
-			await api.multiPanels.delete(serverId, panelId.toString());
-			await refreshMultiPanels();
-		} finally {
-			setDeletingMultiId(null);
-		}
+	const handleDelete = (panelId: number) => {
+		showConfirm({
+			title: "Delete Panel",
+			message: "Are you sure you want to permanently delete this panel? This action cannot be undone.",
+			type: "danger",
+			confirmText: "Delete",
+			onConfirm: async () => {
+				setDeletingId(panelId);
+				try {
+					await api.panels.delete(serverId, panelId.toString());
+					await refresh();
+				} finally {
+					setDeletingId(null);
+				}
+			}
+		});
+	};
+
+	const handleDeleteMulti = (panelId: number) => {
+		showConfirm({
+			title: "Delete Multi Panel",
+			message: "Are you sure you want to permanently delete this multi panel? This action cannot be undone.",
+			type: "danger",
+			confirmText: "Delete",
+			onConfirm: async () => {
+				setDeletingMultiId(panelId);
+				try {
+					await api.multiPanels.delete(serverId, panelId.toString());
+					await refreshMultiPanels();
+				} finally {
+					setDeletingMultiId(null);
+				}
+			}
+		});
 	};
 
 	const handleSend = async (panelId: number) => {
@@ -114,7 +155,13 @@ export default function PanelsPage() {
 			await api.panels.send(serverId, panelId.toString());
 		} catch (err) {
 			console.error(err);
-			window.alert("Failed to send panel.");
+			showConfirm({
+				title: "Send Failed",
+				message: "Failed to send panel to Discord. Please check your bot configurations or server permissions.",
+				type: "warning",
+				confirmText: "OK",
+				onConfirm: () => {}
+			});
 		} finally {
 			setSendingId(null);
 		}
@@ -126,7 +173,13 @@ export default function PanelsPage() {
 			await api.multiPanels.send(serverId, panelId.toString());
 		} catch (err) {
 			console.error(err);
-			window.alert("Failed to send multi panel.");
+			showConfirm({
+				title: "Send Failed",
+				message: "Failed to send multi panel to Discord. Please check your bot configurations or server permissions.",
+				type: "warning",
+				confirmText: "OK",
+				onConfirm: () => {}
+			});
 		} finally {
 			setSendingMultiId(null);
 		}
@@ -239,6 +292,16 @@ export default function PanelsPage() {
 					)}
 				</SectionCard>
 			</div>
+
+			<DarkConfirmModal
+				isOpen={modalOpen}
+				onClose={() => setModalOpen(false)}
+				onConfirm={modalConfig.onConfirm}
+				title={modalConfig.title}
+				message={modalConfig.message}
+				confirmText={modalConfig.confirmText}
+				type={modalConfig.type}
+			/>
 		</div>
 	);
 }

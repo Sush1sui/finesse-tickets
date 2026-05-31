@@ -20,13 +20,12 @@ type WelcomeEmbedData struct {
 }
 
 type PanelData struct {
-	PanelID         string                 `json:"panelId"`
-	ServerID        string                 `json:"serverId"`
-	MentionOnOpen   []string               `json:"mentionOnOpen"`
-	TicketCategory  *string                `json:"ticketCategory"`
-	WelcomeEmbed    *WelcomeEmbedData      `json:"welcomeEmbed"`
+	PanelID        string            `json:"panelId"`
+	ServerID       string            `json:"serverId"`
+	MentionOnOpen  []string          `json:"mentionOnOpen"`
+	TicketCategory *string           `json:"ticketCategory"`
+	WelcomeEmbed   *WelcomeEmbedData `json:"welcomeEmbed"`
 }
-
 
 func SendWelcomeMessage(s *discordgo.Session, channelID string, user *discordgo.User, panelData PanelData, QuestionAndAnswers []QnA) {
 	var embed *discordgo.MessageEmbed
@@ -78,7 +77,7 @@ func SendWelcomeMessage(s *discordgo.Session, channelID string, user *discordgo.
 		embed = &discordgo.MessageEmbed{
 			Title:       "Ticket Created",
 			Description: fmt.Sprintf("Hello %s! Thank you for creating a ticket. A staff member will assist you shortly.", user.Mention()),
-			Color:       0x5865F2, // Discord blurple
+			Color:       0x5865F2,
 		}
 	}
 

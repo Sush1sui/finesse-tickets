@@ -72,7 +72,7 @@ function MessageContent({ message }: { message: TranscriptMessage }) {
           {message.embeds.map((embed, idx) => (
             <div
               key={idx}
-              className="rounded-2xl border border-white/5 border-l-4 bg-zinc-950/40 p-4 text-sm shadow-inner"
+              className="rounded-2xl border border-white/5 border-l-4 bg-zinc-950/40 p-4 text-sm shadow-inner max-w-[520px] w-full"
               style={{
                 borderLeftColor: embed.color
                   ? `#${embed.color.toString(16).padStart(6, "0")}`

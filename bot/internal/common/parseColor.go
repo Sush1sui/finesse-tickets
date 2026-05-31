@@ -10,7 +10,7 @@ func parseColor(colorStr string) int {
 	var colorInt int64
 	fmt.Sscanf(colorStr, "%x", &colorInt)
 	if colorInt == 0 {
-		return 0x5865F2 // Default to Discord blurple
+		return 0x5865F2
 	}
 	return int(colorInt)
 }

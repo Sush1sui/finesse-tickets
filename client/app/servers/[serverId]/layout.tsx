@@ -167,9 +167,9 @@ export default function ServerLayout({
 			</aside>
 
 			{/* ── Main Content ── */}
-			<div className="relative z-10 flex-1 h-full overflow-y-auto flex flex-col bg-[#313338]">
+			<div className="relative z-10 flex-1 h-full overflow-y-auto flex flex-col bg-[#1E1F22]">
 				{/* Top bar */}
-				<div className="sticky top-0 z-10 border-b border-white/5 bg-[#313338]/85 backdrop-blur-xl px-8 py-4.5 flex items-center justify-between shrink-0">
+				<div className="sticky top-0 z-40 border-b border-white/5 bg-[#1E1F22]/85 backdrop-blur-xl px-8 py-4.5 flex items-center justify-between shrink-0">
 					<div>
 						{(() => {
 							const current = navItems.find((item) => {
@@ -196,10 +196,9 @@ export default function ServerLayout({
 				</main>
 
 				{/* Footer */}
-				<footer className="px-8 py-5 border-t border-white/5 shrink-0 bg-[#313338]/60">
+				<footer className="px-8 py-5 border-t border-white/5 shrink-0 bg-[#1E1F22]/60">
 					<p className="text-xs text-zinc-400 font-medium">
-						© 2026 Sushi Tickets. Built with{" "}
-						<span className="text-[#FF5A36] text-glow-sushi">♥</span> using Finesse.
+						© 2026 Sushi Tickets
 					</p>
 				</footer>
 			</div>
