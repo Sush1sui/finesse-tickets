@@ -54,6 +54,11 @@ export default function ServersPage() {
   const { user, authLoading } = useAuth();
   const { servers, isLoading } = useServers();
 
+  const clientId = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID;
+  const inviteUrl = clientId
+    ? `https://discord.com/oauth2/authorize?client_id=${clientId}&permissions=268435456&scope=bot%20applications.commands`
+    : "https://discord.com/oauth2/authorize";
+
   if (authLoading || isLoading) {
     return <LoadingScreen />;
   }
@@ -110,7 +115,7 @@ export default function ServersPage() {
                 </p>
               </div>
               <a
-                href="https://discord.com/oauth2/authorize"
+                href={inviteUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-bold text-zinc-300 hover:border-white/20 hover:text-white transition-all shadow-md"
