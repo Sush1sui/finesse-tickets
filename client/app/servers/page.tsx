@@ -56,7 +56,7 @@ export default function ServersPage() {
 
   const clientId = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID;
   const inviteUrl = clientId
-    ? `https://discord.com/oauth2/authorize?client_id=${clientId}&permissions=8&scope=bot%20applications.commands`
+    ? `https://discord.com/oauth2/authorize?client_id=${clientId}`
     : "https://discord.com/oauth2/authorize";
 
   if (authLoading || isLoading) {
