@@ -2,6 +2,7 @@ package tickets
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/Sush1sui/FNS_BOT/internal/db"
@@ -96,7 +97,9 @@ func buildWelcomeEmbed(user *discordgo.User, welcome db.WelcomeMsgConfig, hasWel
 }
 
 func sendQnAMessage(s *discordgo.Session, channelID string, user *discordgo.User, qna []QnA) {
+	log.Printf("[sendQnAMessage] called: channelID=%s userID=%s qnaLen=%d", channelID, user.ID, len(qna))
 	if len(qna) == 0 {
+		log.Printf("[sendQnAMessage] skipped: qna empty")
 		return
 	}
 
@@ -129,5 +132,10 @@ func sendQnAMessage(s *discordgo.Session, channelID string, user *discordgo.User
 		Embeds:  []*discordgo.MessageEmbed{embed},
 	}
 
-	_, _ = s.ChannelMessageSendComplex(channelID, message)
+	_, err := s.ChannelMessageSendComplex(channelID, message)
+	if err != nil {
+		log.Printf("[sendQnAMessage] send failed: %v", err)
+	} else {
+		log.Printf("[sendQnAMessage] sent OK to channel %s", channelID)
+	}
 }
