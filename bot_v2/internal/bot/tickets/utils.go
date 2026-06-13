@@ -248,20 +248,10 @@ func showQuestionsModal(s *discordgo.Session, i *discordgo.InteractionCreate, pa
 	})
 }
 
-func loadPanelQuestions(guildID string, panelID int32) ([]string, error) {
+func loadPanelQuestions(panelID int32) ([]string, error) {
 	if queries == nil {
 		return nil, fmt.Errorf("queries not set")
 	}
-	serverID, err := strconv.ParseInt(guildID, 10, 64)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = queries.GetPanelConfigByID(context.Background(), serverID, panelID)
-	if err != nil {
-		return nil, err
-	}
-
 	return queries.GetPanelQuestions(context.Background(), panelID)
 }
 

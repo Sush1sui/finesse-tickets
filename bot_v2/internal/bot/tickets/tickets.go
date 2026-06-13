@@ -79,7 +79,7 @@ func HandleModalSubmit(s *discordgo.Session, i *discordgo.InteractionCreate) {
 }
 
 func handlePanelOpen(s *discordgo.Session, i *discordgo.InteractionCreate, panelID int32) {
-	questions, err := loadPanelQuestions(i.GuildID, panelID)
+	questions, err := loadPanelQuestions(panelID)
 	if err != nil {
 		log.Printf("load questions failed: %v", err)
 		respondEphemeral(s, i, "Failed to load panel. Please try again later.")
