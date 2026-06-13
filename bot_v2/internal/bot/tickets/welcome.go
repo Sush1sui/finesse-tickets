@@ -23,7 +23,6 @@ func SendWelcomeMessage(
 	}
 
 	embed := buildWelcomeEmbed(user, welcome, hasWelcome)
-	appendQnA(embed, qna)
 
 	mentions := make([]string, 0, 1+len(mentionRoles))
 	mentions = append(mentions, user.Mention())
@@ -52,6 +51,7 @@ func SendWelcomeMessage(
 	}
 
 	_, _ = s.ChannelMessageSendComplex(channelID, message)
+	sendQnAMessage(s, channelID, user, qna)
 }
 
 func buildWelcomeEmbed(user *discordgo.User, welcome db.WelcomeMsgConfig, hasWelcome bool) *discordgo.MessageEmbed {
@@ -95,29 +95,39 @@ func buildWelcomeEmbed(user *discordgo.User, welcome db.WelcomeMsgConfig, hasWel
 	}
 }
 
-func appendQnA(embed *discordgo.MessageEmbed, qna []QnA) {
-	if len(qna) == 0 || embed == nil {
+func sendQnAMessage(s *discordgo.Session, channelID string, user *discordgo.User, qna []QnA) {
+	if len(qna) == 0 {
 		return
 	}
 
-	parts := make([]string, 0, len(qna))
+	fields := make([]*discordgo.MessageEmbedField, 0, len(qna))
 	for _, qa := range qna {
 		ans := strings.TrimSpace(qa.Answer)
 		if ans == "" {
 			ans = "_No response provided_"
 		}
-		parts = append(parts, fmt.Sprintf("**%s**\n> %s", qa.Question, ans))
+		const maxRunes = 1024
+		if len([]rune(ans)) > maxRunes {
+			r := []rune(ans)
+			ans = string(r[:maxRunes-1]) + "…"
+		}
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:   qa.Question,
+			Value:  ans,
+			Inline: false,
+		})
 	}
 
-	joined := strings.Join(parts, "\n\n")
-	const maxRunes = 1024
-	if len([]rune(joined)) > maxRunes {
-		r := []rune(joined)
-		joined = string(r[:maxRunes-1]) + "…"
+	embed := &discordgo.MessageEmbed{
+		Title:  "📋 Ticket Responses",
+		Color:  0x5865F2,
+		Fields: fields,
 	}
 
-	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-		Name:  "Responses",
-		Value: joined,
-	})
+	message := &discordgo.MessageSend{
+		Content: fmt.Sprintf("> Ticket responses from %s", user.Mention()),
+		Embeds:  []*discordgo.MessageEmbed{embed},
+	}
+
+	_, _ = s.ChannelMessageSendComplex(channelID, message)
 }
