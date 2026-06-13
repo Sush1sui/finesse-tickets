@@ -2,7 +2,6 @@ package tickets
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/Sush1sui/FNS_BOT/internal/db"
@@ -52,7 +51,7 @@ func SendWelcomeMessage(
 	}
 
 	_, _ = s.ChannelMessageSendComplex(channelID, message)
-	sendQnAMessage(s, channelID, user, qna)
+	sendQnAMessage(s, channelID, user, qna, embed.Color)
 }
 
 func buildWelcomeEmbed(user *discordgo.User, welcome db.WelcomeMsgConfig, hasWelcome bool) *discordgo.MessageEmbed {
@@ -92,14 +91,12 @@ func buildWelcomeEmbed(user *discordgo.User, welcome db.WelcomeMsgConfig, hasWel
 	return &discordgo.MessageEmbed{
 		Title:       "Sushi Tickets",
 		Description: fmt.Sprintf("Hello %s! Thank you for creating a ticket. A staff member will assist you shortly.", user.Mention()),
-		Color:       0xFFFFFF,
+		Color:       0xFF5A36,
 	}
 }
 
-func sendQnAMessage(s *discordgo.Session, channelID string, user *discordgo.User, qna []QnA) {
-	log.Printf("[sendQnAMessage] called: channelID=%s userID=%s qnaLen=%d", channelID, user.ID, len(qna))
+func sendQnAMessage(s *discordgo.Session, channelID string, user *discordgo.User, qna []QnA, color int) {
 	if len(qna) == 0 {
-		log.Printf("[sendQnAMessage] skipped: qna empty")
 		return
 	}
 
@@ -123,7 +120,7 @@ func sendQnAMessage(s *discordgo.Session, channelID string, user *discordgo.User
 
 	embed := &discordgo.MessageEmbed{
 		Title:  "📋 Ticket Responses",
-		Color:  0x5865F2,
+		Color:  color,
 		Fields: fields,
 	}
 
@@ -132,10 +129,5 @@ func sendQnAMessage(s *discordgo.Session, channelID string, user *discordgo.User
 		Embeds:  []*discordgo.MessageEmbed{embed},
 	}
 
-	_, err := s.ChannelMessageSendComplex(channelID, message)
-	if err != nil {
-		log.Printf("[sendQnAMessage] send failed: %v", err)
-	} else {
-		log.Printf("[sendQnAMessage] sent OK to channel %s", channelID)
-	}
+	_, _ = s.ChannelMessageSendComplex(channelID, message)
 }
