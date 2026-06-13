@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -365,16 +366,30 @@ func extractModalAnswers(data discordgo.ModalSubmitInteractionData) ([]string, [
 	questions := make([]string, 0, 5)
 	answers := make([]string, 0, 5)
 
-	for _, row := range data.Components {
-		components, ok := row.(discordgo.ActionsRow)
-		if !ok {
+	log.Printf("[extractModalAnswers] total rows: %d", len(data.Components))
+	for i, row := range data.Components {
+		log.Printf("[extractModalAnswers] row[%d] type: %T", i, row)
+		var rowComponents []discordgo.MessageComponent
+		switch r := row.(type) {
+		case discordgo.ActionsRow:
+			rowComponents = r.Components
+		case *discordgo.ActionsRow:
+			rowComponents = r.Components
+		default:
 			continue
 		}
-		for _, comp := range components.Components {
-			input, ok := comp.(discordgo.TextInput)
-			if !ok {
+		for j, comp := range rowComponents {
+			log.Printf("[extractModalAnswers] row[%d] comp[%d] type: %T", i, j, comp)
+			var input discordgo.TextInput
+			switch c := comp.(type) {
+			case discordgo.TextInput:
+				input = c
+			case *discordgo.TextInput:
+				input = *c
+			default:
 				continue
 			}
+			log.Printf("[extractModalAnswers] q=%q a=%q", input.Label, input.Value)
 			questions = append(questions, input.Label)
 			answers = append(answers, input.Value)
 		}
